@@ -1,0 +1,35 @@
+import { z } from 'zod';
+
+export const loginSchema = z.object({
+  email: z.string().email('Email invalide').optional().or(z.literal('')),
+  phone: z.string().min(8, 'Numéro invalide').optional().or(z.literal('')),
+  password: z.string().min(6, 'Mot de passe trop court'),
+}).refine((data) => data.email || data.phone, {
+  message: 'Email ou téléphone requis',
+});
+
+export const registerSchema = z.object({
+  firstName: z.string().min(2, 'Prénom requis'),
+  lastName: z.string().min(2, 'Nom requis'),
+  email: z.string().email('Email invalide'),
+  phone: z.preprocess((v) => (v === '' ? undefined : v), z.string().min(8, 'Numéro invalide').optional()),
+  password: z.string().min(8, 'Mot de passe trop court (8 caractères minimum)'),
+  confirmPassword: z.string().min(1, 'Confirmation requise'),
+  role: z.enum(['BUYER', 'ORGANIZER']).default('BUYER'),
+  companyName: z.string().optional(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'Les mots de passe ne correspondent pas',
+  path: ['confirmPassword'],
+});
+
+export const checkoutSchema = z.object({
+  buyerName: z.string().min(2, 'Nom requis'),
+  buyerEmail: z.string().email('Email invalide').optional().or(z.literal('')),
+  buyerPhone: z.string().min(8, 'Numéro de téléphone requis'),
+  provider: z.enum(['AIRTEL_MONEY', 'MOOV_MONEY']),
+  paymentPhone: z.string().min(8, 'Numéro de paiement requis'),
+});
+
+export type LoginFormData = z.infer<typeof loginSchema>;
+export type RegisterFormData = z.infer<typeof registerSchema>;
+export type CheckoutFormData = z.infer<typeof checkoutSchema>;

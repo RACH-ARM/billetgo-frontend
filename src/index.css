@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  * {
+    @apply border-violet-neon/20;
+  }
+
+  body {
+    @apply bg-bg text-white font-sora antialiased;
+    background-image:
+      radial-gradient(ellipse at 20% 50%, rgba(123, 47, 190, 0.06) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(0, 229, 255, 0.04) 0%, transparent 50%);
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { @apply bg-bg-secondary; }
+  ::-webkit-scrollbar-thumb { @apply bg-violet-neon/50 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-violet-neon; }
+}
+
+@layer components {
+  .neon-border {
+    @apply border border-violet-neon/30 shadow-neon;
+  }
+
+  .glass-card {
+    @apply bg-bg-card/80 backdrop-blur-md border border-white/5 rounded-2xl;
+  }
+
+  .neon-button {
+    @apply bg-neon-gradient text-white font-sora font-semibold px-6 py-3 rounded-xl
+           transition-all duration-200 hover:shadow-neon-rose hover:scale-105 active:scale-95;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-neon-gradient;
+  }
+
+  .text-gradient-cyan {
+    @apply bg-clip-text text-transparent bg-cyan-gradient;
+  }
+
+  .section-title {
+    @apply font-bebas text-4xl md:text-5xl tracking-wider;
+  }
+}
+
+@layer utilities {
+  .text-neon-glow {
+    text-shadow: 0 0 20px rgba(224, 64, 251, 0.6);
+  }
+
+  .text-cyan-glow {
+    text-shadow: 0 0 20px rgba(0, 229, 255, 0.6);
+  }
+}
