@@ -50,7 +50,7 @@ export default function Checkout() {
   const [buyerInfo, setBuyerInfo] = useState({
     name: `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
     email: user?.email ?? '',
-    phone: user?.phone ?? '',
+    phone: '',
   });
   const [provider, setProvider] = useState<'AIRTEL_MONEY' | 'MOOV_MONEY'>('AIRTEL_MONEY');
   const [cgvAccepted, setCgvAccepted] = useState(false);
@@ -534,7 +534,7 @@ export default function Checkout() {
                           value={buyerInfo.phone}
                           onChange={(e) => setBuyerInfo((b) => ({ ...b, phone: e.target.value }))}
                           type="tel"
-                          placeholder="62 55 76 55"
+                          placeholder="XX XX XX XX"
                           className={`flex-1 bg-bg-secondary border rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none transition-colors ${
                             buyerInfo.phone && !phoneValid
                               ? 'border-rose-neon focus:border-rose-neon'
