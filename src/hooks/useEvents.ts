@@ -13,6 +13,7 @@ export const useEvents = (filters?: EventFilters, options?: { enabled?: boolean 
 export const useEvent = (id: string) => {
   return useQuery(['event', id], () => eventService.getEventById(id), {
     enabled: !!id,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: true,
   });
 };

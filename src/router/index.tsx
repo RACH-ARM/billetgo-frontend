@@ -25,6 +25,11 @@ const ForgotPassword = lazy(() => import('../pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('../pages/ResetPassword'));
 const VerifyEmail = lazy(() => import('../pages/VerifyEmail'));
 const OrganizerPublicPage = lazy(() => import('../pages/OrganizerPublicPage'));
+const Notifications = lazy(() => import('../pages/Notifications'));
+const OrganizerLayout = lazy(() => import('../components/layout/OrganizerLayout'));
+const Versements = lazy(() => import('../pages/Versements'));
+const MesEvenements = lazy(() => import('../pages/MesEvenements'));
+const MonCompte = lazy(() => import('../pages/MonCompte'));
 const PublicLayout = lazy(() => import('../components/layout/PageLayout'));
 
 const Spinner = () => (
@@ -113,7 +118,28 @@ export const router = createBrowserRouter(
     },
     {
       element: <ProtectedRoute roles={['ORGANIZER']} />,
-      children: [{ path: 'dashboard', element: <OrganizerDashboard /> }],
+      children: [
+        {
+          element: <OrganizerLayout />,
+          children: [
+            { path: 'dashboard', element: <OrganizerDashboard /> },
+            { path: 'mes-evenements', element: <MesEvenements /> },
+            { path: 'versements', element: <Versements /> },
+          ],
+        },
+      ],
+    },
+    {
+      element: <ProtectedRoute roles={['BUYER', 'ORGANIZER']} />,
+      children: [
+        { path: 'notifications', element: <Notifications /> },
+      ],
+    },
+    {
+      element: <ProtectedRoute roles={['BUYER', 'ORGANIZER', 'SCANNER', 'ADMIN']} />,
+      children: [
+        { path: 'compte', element: <MonCompte /> },
+      ],
     },
     {
       element: <ProtectedRoute roles={['ADMIN']} />,
@@ -125,4 +151,10 @@ export const router = createBrowserRouter(
     },
     { path: '*', element: <Navigate to="/" replace /> },
   ],
+  {
+    future: {
+      v7_startTransition: true,
+      v7_relativeSplatPath: true,
+    },
+  }
 );

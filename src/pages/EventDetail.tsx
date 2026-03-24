@@ -75,7 +75,7 @@ export default function EventDetail() {
   };
 
   // Waitlist
-  const { data: waitlistStatus, refetch: refetchWaitlist } = useQuery(
+  const { data: waitlistStatus, isError: waitlistError } = useQuery(
     ['waitlist-status', id],
     () => api.get(`/events/${id}/waitlist/status`).then((r) => r.data.data),
     { enabled: !!id && isAuthenticated && user?.role === 'BUYER', staleTime: 60 * 1000 }
@@ -185,6 +185,7 @@ export default function EventDetail() {
   const totalSold = event.ticketCategories.reduce((a, c) => a + c.quantitySold, 0);
   const totalTickets = event.ticketCategories.reduce((a, c) => a + c.quantityTotal, 0);
   const occupancy = totalTickets > 0 ? Math.round((totalSold / totalTickets) * 100) : 0;
+  const isCompleted = event.status === 'COMPLETED';
 
   const handleAddToCart = (category: TicketCategory) => {
     const qty = quantities[category.id] || 1;
@@ -193,7 +194,8 @@ export default function EventDetail() {
       toast.error(`Seulement ${available} place(s) disponible(s)`);
       return;
     }
-    setEvent(event);
+    const cartEvent = useCartStore.getState().event;
+    if (!cartEvent || cartEvent.id !== event.id) setEvent(event);
     addItem(category, qty);
     toast.success(`${qty}× ${category.name} ajouté(s) au panier`);
   };
@@ -458,10 +460,11 @@ export default function EventDetail() {
             {(() => {
               const reviews: Array<{ id: string; rating: number; comment: string | null; createdAt: string; user: { firstName: string; lastName: string } }> = reviewsData?.reviews ?? [];
               const avgRating: number | null = reviewsData?.avgRating ?? null;
-              const myReview = myReviewData ?? null;
+              const myReview = myReviewData?.review ?? null;
+              const hasPurchased: boolean = myReviewData?.hasPurchased ?? false;
               const isPast = event && new Date(event.eventDate) < new Date();
               const isBuyer = user?.role === 'BUYER';
-              const canReview = isAuthenticated && isBuyer && isPast;
+              const canReview = isAuthenticated && isBuyer && isPast && hasPurchased;
 
               return (
                 <motion.div
@@ -488,6 +491,26 @@ export default function EventDetail() {
                       </div>
                     )}
                   </div>
+
+                  {/* Invite à se connecter pour les visiteurs non connectés sur un événement passé */}
+                  {isPast && !isAuthenticated && (
+                    <div className="mb-4 p-4 rounded-xl bg-bg-secondary border border-white/5 text-center">
+                      <p className="text-white/50 text-sm mb-2">Tu as assisté à cet événement ?</p>
+                      <button
+                        onClick={() => navigate('/login')}
+                        className="text-violet-neon hover:text-rose-neon text-sm font-semibold transition-colors"
+                      >
+                        Connecte-toi pour laisser un avis
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Acheteur connecté mais sans billet pour cet événement */}
+                  {isPast && isAuthenticated && isBuyer && !hasPurchased && (
+                    <div className="mb-4 p-4 rounded-xl bg-bg-secondary border border-white/5 text-center">
+                      <p className="text-white/40 text-sm">Seuls les acheteurs ayant assisté à cet événement peuvent laisser un avis.</p>
+                    </div>
+                  )}
 
                   {/* Review form */}
                   {canReview && (
@@ -579,8 +602,8 @@ export default function EventDetail() {
               );
             })()}
 
-            {/* Sales progress */}
-            <motion.div
+            {/* Sales progress — masqué pour les événements terminés */}
+            {!isCompleted && <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25 }}
@@ -604,21 +627,32 @@ export default function EventDetail() {
                   Plus que {totalTickets - totalSold} place(s) disponible(s) !
                 </p>
               )}
-            </motion.div>
+            </motion.div>}
 
           </div>
 
           {/* ===== RIGHT COL — Ticket panel ===== */}
           <div className="space-y-4">
-            <motion.h2
-              initial={{ opacity: 0, x: 16 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="font-bebas text-2xl tracking-wider text-white"
-            >
-              Billets disponibles
-            </motion.h2>
+            {isCompleted ? (
+              <motion.div
+                initial={{ opacity: 0, x: 16 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="glass-card p-6 border border-white/10 text-center"
+              >
+                <p className="font-bebas text-2xl tracking-wider text-white/40 mb-1">ÉVÉNEMENT TERMINÉ</p>
+                <p className="text-white/30 text-sm">Cet événement s'est déroulé le {new Date(event.eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}.</p>
+              </motion.div>
+            ) : (
+              <>
+                <motion.h2
+                  initial={{ opacity: 0, x: 16 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="font-bebas text-2xl tracking-wider text-white"
+                >
+                  Billets disponibles
+                </motion.h2>
 
-            {event.ticketCategories
+                {event.ticketCategories
               .filter((cat) => cat.isVisible)
               .sort((a, b) => a.sortOrder - b.sortOrder)
               .map((cat, i) => {
@@ -705,7 +739,9 @@ export default function EventDetail() {
                   <p className="text-white/60 text-sm mb-3 text-center">
                     Cet événement est complet. Souhaitez-vous être prévenu en cas de désistement ?
                   </p>
-                  {onWaitlist ? (
+                  {waitlistError ? (
+                    <p className="text-xs text-white/30 text-center">Statut liste d'attente indisponible</p>
+                  ) : onWaitlist ? (
                     <div className="flex flex-col items-center gap-2">
                       <p className="flex items-center gap-1.5 text-xs text-green-400">
                         <Bell className="w-3.5 h-3.5" />
@@ -740,9 +776,12 @@ export default function EventDetail() {
               );
             })()}
 
+              </>
+            )}
+
             {/* Cart summary */}
             <AnimatePresence>
-              {getTotalItems() > 0 && (
+              {!isCompleted && getTotalItems() > 0 && (
                 <motion.div
                   initial={{ opacity: 0, y: 10, scale: 0.97 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}

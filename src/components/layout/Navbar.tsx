@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { useCartStore } from '../../stores/cartStore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingCart, Ticket, LayoutDashboard, ShieldCheck, ScanLine, LogOut, Menu, X, MailWarning } from 'lucide-react';
+import { ShoppingCart, Ticket, LayoutDashboard, ShieldCheck, ScanLine, LogOut, Menu, X, MailWarning, UserCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import NotificationBell from './NotificationBell';
@@ -86,6 +86,10 @@ export default function Navbar() {
                 <roleConfig.Icon className="w-4 h-4" />
                 {roleConfig.label}
               </Link>
+              <Link to="/compte" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm text-white/50 hover:text-white hover:bg-white/5 transition-all" title="Mon compte">
+                <UserCircle className="w-4 h-4" />
+                Compte
+              </Link>
               <button onClick={handleLogout} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm text-white/40 hover:text-rose-neon hover:bg-rose-neon/5 transition-all" title="Déconnexion">
                 <LogOut className="w-4 h-4" />
                 Déco
@@ -167,6 +171,10 @@ export default function Navbar() {
                 <Link to={roleConfig.path} onClick={close} className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold text-white/70 hover:text-white hover:bg-white/5 transition-all">
                   <roleConfig.Icon className="w-4 h-4" />
                   {roleConfig.label}
+                </Link>
+                <Link to="/compte" onClick={close} className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-white/50 hover:text-white hover:bg-white/5 transition-all">
+                  <UserCircle className="w-4 h-4" />
+                  Mon compte
                 </Link>
                 <button onClick={handleLogout} className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-white/40 hover:text-rose-neon hover:bg-rose-neon/5 transition-all text-left">
                   <LogOut className="w-4 h-4" />

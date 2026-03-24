@@ -52,6 +52,9 @@ export const useOrganizerStats = () =>
 export const useOrganizerPayouts = () =>
   useQuery('organizer-payouts', organizerService.getMyPayouts, { staleTime: 30_000 });
 
+export const useOrganizerPayoutSchedules = () =>
+  useQuery('organizer-payout-schedules', organizerService.getMyPayoutSchedules, { staleTime: 30_000 });
+
 export const useEventBuyers = (eventId: string | null) =>
   useQuery(
     ['organizer-buyers', eventId],
@@ -144,14 +147,14 @@ export const useEventWaitlist = (eventId: string | null) =>
   useQuery(
     ['organizer-waitlist', eventId],
     () => organizerService.getEventWaitlist(eventId!),
-    { enabled: !!eventId, staleTime: 0 }
+    { enabled: !!eventId, staleTime: 30_000 }
   );
 
 export const useEventPromos = (eventId: string | null) =>
   useQuery(
     ['organizer-promos', eventId],
     () => api.get(`/organizer/events/${eventId}/promos`).then(r => r.data.data),
-    { enabled: !!eventId, staleTime: 0 }
+    { enabled: !!eventId, staleTime: 30_000 }
   );
 
 export const useCreatePromoCode = (eventId: string) => {
@@ -168,5 +171,74 @@ export const useDeletePromoCode = (eventId: string) => {
   return useMutation(
     (promoId: string) => api.delete(`/organizer/events/${eventId}/promos/${promoId}`).then(r => r.data),
     { onSuccess: () => qc.invalidateQueries(['organizer-promos', eventId]) }
+  );
+};
+
+export interface OrganizerNotification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+  data?: Record<string, unknown>;
+}
+
+export const useNotifications = () =>
+  useQuery<OrganizerNotification[]>(
+    'organizer-notifications',
+    () => api.get('/notifications').then(r => r.data.data),
+    { staleTime: 30_000 }
+  );
+
+export const useMarkNotificationsRead = () => {
+  const qc = useQueryClient();
+  return useMutation(
+    () => api.patch('/notifications/read-all').then(r => r.data),
+    { onSuccess: () => qc.invalidateQueries('organizer-notifications') }
+  );
+};
+
+export const useUploadEventGallery = () => {
+  const qc = useQueryClient();
+  return useMutation(
+    ({ eventId, photos }: { eventId: string; photos: File[] }) =>
+      organizerService.uploadEventGallery(eventId, photos),
+    {
+      onSuccess: (data, { eventId }) => {
+        qc.setQueryData(['organizer-event', eventId], (prev: Record<string, unknown> | undefined) =>
+          prev ? { ...prev, galleryUrls: data.galleryUrls } : prev
+        );
+      },
+    }
+  );
+};
+
+export const useDeleteEventGalleryPhoto = () => {
+  const qc = useQueryClient();
+  return useMutation(
+    ({ eventId, url }: { eventId: string; url: string }) =>
+      organizerService.deleteEventGalleryPhoto(eventId, url),
+    {
+      onSuccess: (data, { eventId }) => {
+        qc.setQueryData(['organizer-event', eventId], (prev: Record<string, unknown> | undefined) =>
+          prev ? { ...prev, galleryUrls: data.galleryUrls } : prev
+        );
+      },
+    }
+  );
+};
+
+export const useMarkNotificationRead = () => {
+  const qc = useQueryClient();
+  return useMutation(
+    (id: string) => api.patch(`/notifications/${id}`).then(r => r.data),
+    {
+      onSuccess: (_data, id) => {
+        qc.setQueryData<OrganizerNotification[]>('organizer-notifications', (prev) =>
+          prev ? prev.map(n => n.id === id ? { ...n, isRead: true } : n) : prev
+        );
+      },
+    }
   );
 };

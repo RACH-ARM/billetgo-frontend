@@ -1,6 +1,6 @@
-export const formatPrice = (amount: number | string, currency = 'FCFA'): string => {
+export const formatPrice = (amount: number | string, currency = 'FCFA', zeroLabel = 'GRATUIT'): string => {
   const n = Number(amount);
-  if (n === 0) return 'GRATUIT';
+  if (n === 0) return zeroLabel;
   return `${n.toLocaleString('fr-FR')} ${currency}`;
 };
 

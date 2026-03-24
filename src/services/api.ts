@@ -42,9 +42,11 @@ api.interceptors.response.use(
     const original = error.config;
     const status = error.response?.status;
 
-    // Tente un refresh si 401, pas déjà en retry, et pas une route auth
-    const isAuthRoute = original.url?.includes('/auth/');
-    if (status === 401 && !original._retry && !isAuthRoute) {
+    // Tente un refresh si 401, pas déjà en retry, et pas une route qui ne doit pas déclencher de refresh
+    // (refresh lui-même, login, register — mais PAS /auth/me qui est une route protégée)
+    const noRefreshRoutes = ['/auth/refresh', '/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password', '/auth/verify-email'];
+    const isNoRefreshRoute = noRefreshRoutes.some((r) => original.url?.includes(r));
+    if (status === 401 && !original._retry && !isNoRefreshRoute) {
       original._retry = true;
       const token = localStorage.getItem('refreshToken');
       if (token) {
@@ -58,19 +60,23 @@ api.interceptors.response.use(
           });
           original.headers.Authorization = `Bearer ${newAccess}`;
           return api(original);
-        } catch {
-          // Refresh échoué — purger tout et rediriger
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-          localStorage.removeItem('billetgo-auth');
-          window.location.href = '/login';
+        } catch (refreshError) {
+          // Ne pas déconnecter si le refresh a échoué à cause du réseau
+          const isNetworkError = !(refreshError as { response?: unknown }).response;
+          if (isNetworkError) return Promise.reject(refreshError);
+          // Refresh échoué côté serveur (token révoqué, expiré) — purger et rediriger sans reload
+          Promise.all([
+            import('../stores/authStore').then(({ useAuthStore }) => useAuthStore.getState().forceLogout()),
+            import('../router').then(({ router }) => router.navigate('/login', { replace: true })),
+          ]);
           return Promise.reject(error);
         }
       } else {
         // Pas de refresh token — session invalide
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('billetgo-auth');
-        window.location.href = '/login';
+        Promise.all([
+          import('../stores/authStore').then(({ useAuthStore }) => useAuthStore.getState().forceLogout()),
+          import('../router').then(({ router }) => router.navigate('/login', { replace: true })),
+        ]);
         return Promise.reject(error);
       }
     }

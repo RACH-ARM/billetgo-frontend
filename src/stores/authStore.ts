@@ -15,8 +15,10 @@ interface AuthState {
   login: (payload: LoginPayload) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
   logout: () => Promise<void>;
+  forceLogout: () => void;
   setTokens: (accessToken: string, refreshToken: string) => void;
   markEmailVerified: () => void;
+  updateUser: (partial: Partial<User>) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -73,6 +75,14 @@ export const useAuthStore = create<AuthState>()(
         if (refreshToken) api.post('/auth/logout', { refreshToken }).catch(() => {});
       },
 
+      forceLogout: () => {
+        set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false });
+        useCartStore.getState().clearCart();
+        queryClient.clear();
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+      },
+
       setTokens: (accessToken, refreshToken) => {
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
@@ -81,6 +91,10 @@ export const useAuthStore = create<AuthState>()(
 
       markEmailVerified: () => {
         set((state) => state.user ? { user: { ...state.user, isVerified: true } } : {});
+      },
+
+      updateUser: (partial) => {
+        set((state) => state.user ? { user: { ...state.user, ...partial } } : {});
       },
 
     }),

@@ -8,6 +8,7 @@ import {
 import { useCartStore } from '../stores/cartStore';
 import { useAuthStore } from '../stores/authStore';
 import { useCreateOrder, useInitiatePayment } from '../hooks/usePayment';
+import { useEvent } from '../hooks/useEvents';
 import { formatPrice } from '../utils/formatPrice';
 import { formatEventDate } from '../utils/formatDate';
 import Button from '../components/common/Button';
@@ -52,37 +53,62 @@ export default function Checkout() {
   });
   const [provider, setProvider] = useState<'AIRTEL_MONEY' | 'MOOV_MONEY'>('AIRTEL_MONEY');
   const [cgvAccepted, setCgvAccepted] = useState(false);
-  const [paymentPhone, setPaymentPhone] = useState(user?.phone ?? '');
+  const [paymentPhone, setPaymentPhone] = useState('');
   const [promoInput, setPromoInput] = useState('');
   const [promoApplied, setPromoApplied] = useState<{ id: string; code: string; discountType: string; discountValue: number } | null>(null);
   const [promoLoading, setPromoLoading] = useState(false);
   const [isExpired, setIsExpired] = useState(false);
   const createOrder = useCreateOrder();
   const initiatePayment = useInitiatePayment();
+  const { data: freshEvent } = useEvent(event?.id ?? '');
 
-  // Timer 15 min
-  const CART_TTL = 15 * 60; // secondes
-  const [timeLeft, setTimeLeft] = useState(CART_TTL);
+  // Timer 15 min — persiste via sessionStorage pour survivre aux refreshs
+  const CART_TTL = 5 * 60; // secondes
+  const CART_EXPIRY_KEY = 'checkout_expiry';
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const getInitialTimeLeft = () => {
+    const stored = sessionStorage.getItem(CART_EXPIRY_KEY);
+    if (stored) {
+      const remaining = Math.floor((Number(stored) - Date.now()) / 1000);
+      if (remaining > 0) return remaining;
+      return 0;
+    }
+    const expiry = Date.now() + CART_TTL * 1000;
+    sessionStorage.setItem(CART_EXPIRY_KEY, String(expiry));
+    return CART_TTL;
+  };
+
+  const [timeLeft, setTimeLeft] = useState(getInitialTimeLeft);
 
   useEffect(() => {
     if (!event || items.length === 0) {
       navigate('/');
       return;
     }
+    if (timeLeft <= 0) {
+      setIsExpired(true);
+      return;
+    }
     timerRef.current = setInterval(() => {
-      setTimeLeft((t) => {
-        if (t <= 1) {
-          clearInterval(timerRef.current!);
-          setIsExpired(true);
-          return 0;
-        }
-        return t - 1;
-      });
+      const remaining = Math.floor((Number(sessionStorage.getItem(CART_EXPIRY_KEY)) - Date.now()) / 1000);
+      if (remaining <= 0) {
+        clearInterval(timerRef.current!);
+        sessionStorage.removeItem(CART_EXPIRY_KEY);
+        setIsExpired(true);
+        setTimeLeft(0);
+      } else {
+        setTimeLeft(remaining);
+      }
     }, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Rediriger si le panier devient vide après suppression d'un article (pas si session expirée — l'écran d'expiration gère la navigation)
+  useEffect(() => {
+    if (items.length === 0 && !isExpired) navigate('/');
+  }, [items.length, isExpired, navigate]);
 
   const timerMin = String(Math.floor(timeLeft / 60)).padStart(2, '0');
   const timerSec = String(timeLeft % 60).padStart(2, '0');
@@ -104,7 +130,7 @@ export default function Checkout() {
           <div>
             <h2 className="font-bebas text-3xl tracking-wider text-white mb-2">Session expirée</h2>
             <p className="text-white/50 text-sm leading-relaxed">
-              Votre panier est réservé pendant 15 minutes. Ce délai est écoulé et les billets ont été libérés.
+              Votre panier est réservé pendant 5 minutes. Ce délai est écoulé et les billets ont été libérés.
             </p>
           </div>
           <div className="w-full p-4 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">
@@ -119,14 +145,14 @@ export default function Checkout() {
           <div className="flex flex-col gap-3 w-full">
             <Link
               to={`/events/${event.id}`}
-              onClick={() => clearCart()}
+              onClick={() => { clearCart(); sessionStorage.removeItem('checkout_expiry'); }}
               className="neon-button w-full text-center py-3 rounded-xl font-semibold"
             >
               Recommencer l'achat
             </Link>
             <Link
               to="/"
-              onClick={() => clearCart()}
+              onClick={() => { clearCart(); sessionStorage.removeItem('checkout_expiry'); }}
               className="text-white/40 hover:text-white text-sm transition-colors"
             >
               Retour à l'accueil
@@ -145,16 +171,12 @@ export default function Checkout() {
     : 0;
   const finalTotal = Math.max(0, rawTotal - discountAmount);
 
-  // Calcul des frais de service (même logique que le backend)
+  // Frais de traitement pour billets gratuits uniquement (500 FCFA/billet, à la charge de l'acheteur)
   const FREE_TICKET_FEE = 500;
-  const commissionRate: number = event ? Number((event as Record<string, unknown>).commissionRate ?? 0.1) : 0.1;
-  const platformFeeRaw = items.reduce((acc, item) => {
-    const price = item.category.price;
-    const subtotal = price * item.quantity;
-    return acc + (price === 0 ? item.quantity * FREE_TICKET_FEE : subtotal * commissionRate);
+  const freeTicketFee = items.reduce((acc, item) => {
+    return acc + (item.category.price === 0 ? item.quantity * FREE_TICKET_FEE : 0);
   }, 0);
-  const platformFee = finalTotal > 0 ? platformFeeRaw * (finalTotal / rawTotal) : 0;
-  const commissionPct = Math.round(commissionRate * 100);
+  const totalToPay = Math.max(0, finalTotal + freeTicketFee);
 
   const applyPromo = async () => {
     if (!promoInput.trim()) return;
@@ -173,6 +195,17 @@ export default function Checkout() {
       setPromoLoading(false);
     }
   };
+
+  // Validation stock en temps réel via les données fraîches de l'événement
+  const soldOutItems = freshEvent
+    ? items.filter((item) => {
+        const freshCat = freshEvent.ticketCategories.find((c) => c.id === item.category.id);
+        if (!freshCat) return false;
+        const available = freshCat.quantityTotal - freshCat.quantitySold - (freshCat.quantityReserved ?? 0);
+        return available < item.quantity;
+      })
+    : [];
+  const hasStockIssue = soldOutItems.length > 0;
 
   const canProceedStep2 = buyerInfo.name.trim().length >= 2 && buyerInfo.phone.trim().length >= 8;
   const canPay = paymentPhone.trim().length >= 8;
@@ -200,6 +233,7 @@ export default function Checkout() {
         fetch(result.paymentUrl).catch(() => {});
       }
 
+      sessionStorage.removeItem('checkout_expiry');
       navigate(`/confirmation/${order.id}`, {
         replace: true,
         state: {
@@ -219,7 +253,14 @@ export default function Checkout() {
         },
       });
     } catch (err: unknown) {
-      const response = (err as { response?: { data?: { message?: string; code?: string } } })?.response?.data;
+      const axiosErr = err as { response?: { status?: number; data?: { message?: string; code?: string } }; code?: string };
+      const status = axiosErr.response?.status;
+      const isConnectionError = !axiosErr.response || axiosErr.code === 'ERR_NETWORK' || (status != null && status >= 500 && !axiosErr.response.data?.message);
+      if (isConnectionError) {
+        toast.error('Connexion impossible. Vérifiez votre réseau et réessayez.');
+        return;
+      }
+      const response = axiosErr.response!.data;
       if (response?.code === 'ORDER_EXPIRED') {
         setIsExpired(true);
       } else if (response?.code === 'EMAIL_NOT_VERIFIED') {
@@ -320,14 +361,39 @@ export default function Checkout() {
                       </div>
                     </div>
 
+                    {/* Alerte stock insuffisant */}
+                    {hasStockIssue && (
+                      <div className="mb-4 p-3 rounded-xl bg-rose-neon/10 border border-rose-neon/30 flex items-start gap-2">
+                        <X className="w-4 h-4 text-rose-neon flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-rose-neon text-sm font-semibold">Stock insuffisant</p>
+                          <p className="text-white/50 text-xs mt-0.5">
+                            {soldOutItems.map((i) => {
+                              const freshCat = freshEvent?.ticketCategories.find((c) => c.id === i.category.id);
+                              const available = freshCat
+                                ? freshCat.quantityTotal - freshCat.quantitySold - (freshCat.quantityReserved ?? 0)
+                                : 0;
+                              return `${i.category.name} : ${available > 0 ? `plus que ${available} place${available > 1 ? 's' : ''} disponible${available > 1 ? 's' : ''}` : 'COMPLET'}`;
+                            }).join(' · ')}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Items list */}
                     <div className="space-y-1 mb-4">
-                      {items.map((item) => (
-                        <div key={item.category.id} className="flex items-center justify-between py-2.5 border-b border-white/5 last:border-0">
+                      {items.map((item) => {
+                        const freshCat = freshEvent?.ticketCategories.find((c) => c.id === item.category.id);
+                        const available = freshCat
+                          ? freshCat.quantityTotal - freshCat.quantitySold - (freshCat.quantityReserved ?? 0)
+                          : Infinity;
+                        const isItemSoldOut = available < item.quantity;
+                        return (
+                        <div key={item.category.id} className={`flex items-center justify-between py-2.5 border-b border-white/5 last:border-0 ${isItemSoldOut ? 'opacity-60' : ''}`}>
                           <div className="flex items-center gap-3">
-                            <div className="w-1 h-8 rounded-full bg-violet-neon flex-shrink-0" />
+                            <div className={`w-1 h-8 rounded-full flex-shrink-0 ${isItemSoldOut ? 'bg-rose-neon' : 'bg-violet-neon'}`} />
                             <div>
-                              <p className="text-white text-sm font-semibold">{item.category.name}</p>
+                              <p className="text-white text-sm font-semibold">{item.category.name}{isItemSoldOut && <span className="ml-2 text-rose-neon text-xs">COMPLET</span>}</p>
                               <p className="text-white/40 text-xs">× {item.quantity} · {formatPrice(item.category.price)} / billet</p>
                             </div>
                           </div>
@@ -343,7 +409,8 @@ export default function Checkout() {
                             </button>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
 
                     {/* Récapitulatif financier détaillé */}
@@ -358,18 +425,19 @@ export default function Checkout() {
                           <span className="font-mono">- {formatPrice(discountAmount)}</span>
                         </div>
                       )}
-                      <div className="flex justify-between items-center text-sm text-white/40">
-                        <span className="flex items-center gap-1.5">
-                          <Info className="w-3.5 h-3.5" />
-                          Frais de service BilletGo ({commissionPct}%)
-                        </span>
-                        <span className="font-mono">{formatPrice(platformFee)}</span>
-                      </div>
+                      {freeTicketFee > 0 && (
+                        <div className="flex justify-between items-center text-sm text-white/40">
+                          <span className="flex items-center gap-1.5">
+                            <Info className="w-3.5 h-3.5" />
+                            Frais de traitement billets gratuits
+                          </span>
+                          <span className="font-mono">{formatPrice(freeTicketFee)}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between items-center pt-2 border-t border-white/10">
                         <span className="font-semibold text-white">Total à payer</span>
-                        <span className="font-mono text-lg font-bold text-gradient">{formatPrice(finalTotal)}</span>
+                        <span className="font-mono text-lg font-bold text-gradient">{formatPrice(totalToPay)}</span>
                       </div>
-                      <p className="text-xs text-white/20 text-right">dont {formatPrice(platformFee)} de frais inclus</p>
                     </div>
                   </div>
 
@@ -408,7 +476,7 @@ export default function Checkout() {
                     )}
                   </div>
 
-                  <Button variant="primary" size="lg" className="w-full" onClick={() => setStep(2)}>
+                  <Button variant="primary" size="lg" className="w-full" onClick={() => setStep(2)} disabled={hasStockIssue}>
                     Continuer <ArrowRight className="w-4 h-4" />
                   </Button>
                 </motion.div>
@@ -523,9 +591,12 @@ export default function Checkout() {
                     </div>
 
                     <div>
-                      <label className="text-xs text-white/50 uppercase tracking-widest block mb-2">
-                        Numéro {provider === 'AIRTEL_MONEY' ? 'Airtel' : 'Moov'} <span className="text-rose-neon">*</span>
+                      <label className="text-xs text-white/50 uppercase tracking-widest block mb-1">
+                        Numéro {provider === 'AIRTEL_MONEY' ? 'Airtel Money' : 'Moov Money'} <span className="text-rose-neon">*</span>
                       </label>
+                      <p className="text-xs text-rose-neon/80 mb-2">
+                        Renseignez le numéro {provider === 'AIRTEL_MONEY' ? 'Airtel Money' : 'Moov Money'} qui sera débité — ce n'est pas forcément votre numéro d'inscription.
+                      </p>
                       <div className="flex gap-2">
                         <div className="flex items-center gap-2 bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-3 text-white/60 text-sm flex-shrink-0">
                           <span>🇬🇦</span>
@@ -540,7 +611,7 @@ export default function Checkout() {
                         />
                       </div>
                       <p className="text-xs text-white/30 mt-1.5">
-                        Vous recevrez une notification de confirmation sur ce numéro
+                        Une notification de confirmation sera envoyée sur ce numéro.
                       </p>
                     </div>
 
@@ -548,7 +619,7 @@ export default function Checkout() {
                       <CreditCard className="w-4 h-4 text-violet-neon flex-shrink-0 mt-0.5" />
                       <p className="text-xs text-white/50">
                         Paiement sécurisé. Vous recevrez une demande de confirmation sur votre téléphone.
-                        Vos billets seront générés immédiatement après validation.
+                        Après validation, un email de confirmation est envoyé et vos billets sont disponibles dans "Mes billets" — les QR codes ne sont accessibles que sur BilletGo.
                       </p>
                     </div>
                   </div>
@@ -579,7 +650,7 @@ export default function Checkout() {
                       isLoading={createOrder.isLoading || initiatePayment.isLoading}
                       className="flex-1"
                     >
-                      Payer {formatPrice(finalTotal)}
+                      Payer {formatPrice(totalToPay)}
                     </Button>
                   </div>
                 </motion.div>
@@ -621,13 +692,15 @@ export default function Checkout() {
                     <span className="font-mono">- {formatPrice(discountAmount)}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-xs text-white/35">
-                  <span>Frais BilletGo ({commissionPct}%)</span>
-                  <span className="font-mono">{formatPrice(platformFee)}</span>
-                </div>
+                {freeTicketFee > 0 && (
+                  <div className="flex justify-between text-xs text-white/35">
+                    <span>Frais traitement billets gratuits</span>
+                    <span className="font-mono">{formatPrice(freeTicketFee)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center pt-1.5 border-t border-white/5">
                   <span className="text-white font-semibold text-sm">Total</span>
-                  <span className="font-mono font-bold text-cyan-neon">{formatPrice(finalTotal)}</span>
+                  <span className="font-mono font-bold text-cyan-neon">{formatPrice(totalToPay)}</span>
                 </div>
               </div>
             </div>

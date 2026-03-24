@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Phone, MapPin, MessageSquare, Send, CheckCircle } from 'lucide-react';
+import { Mail, Phone, MapPin, MessageSquare, Send, CheckCircle, AlertTriangle } from 'lucide-react';
+import api from '../services/api';
 
 const CONTACT_INFO = [
   { icon: Phone,   label: 'WhatsApp',  value: '+241 62 557 655',         href: 'https://wa.me/24162557655' },
@@ -20,11 +21,22 @@ const SUBJECTS = [
 export default function Contact() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
   const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Brancher sur emailService backend
-    setSent(true);
+    setError(null);
+    setLoading(true);
+    try {
+      await api.post('/contact', form);
+      setSent(true);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg || 'Erreur lors de l\'envoi — réessayez dans quelques instants');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -78,7 +90,7 @@ export default function Contact() {
               <CheckCircle className="w-16 h-16 text-cyan-neon" />
               <h2 className="font-bebas text-3xl text-gradient">Message envoyé !</h2>
               <p className="text-white/60">On te répondra dans les 24 heures. Merci de ta confiance.</p>
-              <button onClick={() => setSent(false)}
+              <button onClick={() => { setSent(false); setForm({ name: '', email: '', phone: '', subject: '', message: '' }); }}
                 className="mt-4 px-6 py-2 rounded-xl border border-white/20 text-white/60 hover:text-white text-sm transition-colors">
                 Envoyer un autre message
               </button>
@@ -125,10 +137,26 @@ export default function Contact() {
                   className="w-full bg-bg-card border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-violet-neon/60 transition-colors resize-none" />
               </div>
 
-              <motion.button type="submit" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                className="neon-button w-full flex items-center justify-center gap-2">
-                <Send className="w-4 h-4" />
-                Envoyer le message
+              {error && (
+                <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20">
+                  <AlertTriangle className="w-4 h-4 text-rose-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-rose-400 text-sm">{error}</p>
+                </div>
+              )}
+
+              <motion.button
+                type="submit"
+                disabled={loading}
+                whileHover={{ scale: loading ? 1 : 1.02 }}
+                whileTap={{ scale: loading ? 1 : 0.98 }}
+                className="neon-button w-full flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
+                {loading ? 'Envoi en cours...' : 'Envoyer le message'}
               </motion.button>
             </form>
           )}

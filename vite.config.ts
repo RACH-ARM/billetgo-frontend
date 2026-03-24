@@ -39,6 +39,13 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:3000',
         changeOrigin: true,
+        secure: false,
+        configure: (proxy) => {
+          // Nécessaire pour que les SSE (Server-Sent Events) passent sans être bufferisés
+          proxy.on('proxyRes', (_proxyRes, _req, res) => {
+            res.setHeader('X-Accel-Buffering', 'no');
+          });
+        },
       },
     },
   },

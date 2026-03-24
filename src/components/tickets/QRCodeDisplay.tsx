@@ -21,12 +21,15 @@ interface Props {
   eventDate?: string;
   venueName?: string;
   coverImageUrl?: string;
+  // Désactivé si billet remboursé / annulé
+  disabled?: boolean;
 }
 
 export default function QRCodeDisplay({
   orderId, usedCount = 0, totalCount = 1,
   ticketId,
   eventTitle, categoryName, eventDate, venueName, coverImageUrl,
+  disabled = false,
 }: Props) {
   const cacheId = orderId ?? ticketId ?? '';
   const apiPath = orderId ? `/orders/${orderId}/qr` : `/tickets/${ticketId}/qr`;
@@ -39,9 +42,17 @@ export default function QRCodeDisplay({
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
+    if (disabled) {
+      // Vider le cache localStorage pour empêcher l'affichage hors-ligne
+      localStorage.removeItem(CACHE_KEY(cacheId));
+      setDataUrl(null);
+      setCached(false);
+      setShow(false);
+      return;
+    }
     const saved = localStorage.getItem(CACHE_KEY(cacheId));
     if (saved) { setDataUrl(saved); setCached(true); }
-  }, [cacheId]);
+  }, [cacheId, disabled]);
 
   const handleToggle = async () => {
     if (show) { setShow(false); return; }
@@ -50,8 +61,13 @@ export default function QRCodeDisplay({
     try {
       const response = await api.get(apiPath, { responseType: 'blob' });
       const base64 = await blobToBase64(new Blob([response.data], { type: 'image/png' }));
-      localStorage.setItem(CACHE_KEY(cacheId), base64);
-      setDataUrl(base64); setCached(true); setShow(true);
+      try {
+        localStorage.setItem(CACHE_KEY(cacheId), base64);
+        setCached(true);
+      } catch {
+        // localStorage plein — on affiche quand même le QR, juste sans cache hors ligne
+      }
+      setDataUrl(base64); setShow(true);
     } catch {
       const saved = localStorage.getItem(CACHE_KEY(cacheId));
       if (saved) {
@@ -69,7 +85,8 @@ export default function QRCodeDisplay({
     if (!dataUrl) return;
     setSaving(true);
     try {
-      const canvas = canvasRef.current!;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
       const displayCategoryName = orderId
         ? `${totalCount} billet${totalCount > 1 ? 's' : ''} — ${categoryName || ''}`
         : categoryName;
@@ -110,6 +127,14 @@ export default function QRCodeDisplay({
     : usedCount === totalCount - 1
     ? 'text-yellow-400 border-yellow-400/30 bg-yellow-400/10'
     : 'text-green-400 border-green-400/30 bg-green-400/10';
+
+  if (disabled) {
+    return (
+      <div className="w-48 h-48 bg-bg-secondary rounded-2xl flex items-center justify-center border border-rose-neon/20">
+        <span className="text-rose-neon/60 text-sm text-center px-4">Billet remboursé</span>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center gap-3">

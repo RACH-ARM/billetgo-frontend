@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from 'react-query';
-import { motion } from 'framer-motion';
-import { ChevronLeft, CalendarDays, MapPin } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronLeft, CalendarDays, MapPin, Images, X } from 'lucide-react';
 import api from '../services/api';
 import EventCard from '../components/events/EventCard';
 import CertifiedBadge from '../components/common/CertifiedBadge';
@@ -20,6 +21,7 @@ interface OrganizerPublicData {
 
 export default function OrganizerPublicPage() {
   const { id } = useParams<{ id: string }>();
+  const [activePhoto, setActivePhoto] = useState<string | null>(null);
 
   const { data, isLoading, isError } = useQuery<OrganizerPublicData>(
     ['organizer-public', id],
@@ -60,6 +62,8 @@ export default function OrganizerPublicPage() {
       </div>
     );
   }
+
+  const allPhotos = data?.events.flatMap((e) => e.galleryUrls ?? []) ?? [];
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -143,6 +147,68 @@ export default function OrganizerPublicPage() {
           </div>
         </>
       )}
+
+      {/* Galerie photos */}
+      {allPhotos.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mt-16"
+        >
+          <h2 className="font-bebas text-2xl tracking-wider text-white mb-5 flex items-center gap-2">
+            <Images className="w-5 h-5 text-violet-neon" />
+            Galerie
+          </h2>
+          <div className="columns-2 sm:columns-3 lg:columns-4 gap-3 space-y-3">
+            {allPhotos.map((url, i) => (
+              <motion.button
+                key={url + i}
+                initial={{ opacity: 0, scale: 0.97 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.03 }}
+                onClick={() => setActivePhoto(url)}
+                className="block w-full overflow-hidden rounded-xl break-inside-avoid group"
+              >
+                <img
+                  src={url}
+                  alt=""
+                  className="w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+              </motion.button>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Lightbox */}
+      <AnimatePresence>
+        {activePhoto && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+            onClick={() => setActivePhoto(null)}
+          >
+            <motion.img
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              src={activePhoto}
+              alt="Galerie"
+              className="max-w-full max-h-full rounded-2xl object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <button
+              className="absolute top-6 right-6 text-white/60 hover:text-white"
+              onClick={() => setActivePhoto(null)}
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

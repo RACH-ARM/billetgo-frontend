@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Flame } from 'lucide-react';
+import { Flame, BanIcon } from 'lucide-react';
 import { useQueryClient } from 'react-query';
 import type { Event } from '../../types/event';
 import { formatEventDate } from '../../utils/formatDate';
@@ -27,6 +27,9 @@ export default function EventCard({ event }: { event: Event }) {
   const totalSold = event.ticketCategories.reduce((a, c) => a + c.quantitySold, 0);
   const totalTickets = event.ticketCategories.reduce((a, c) => a + c.quantityTotal, 0);
   const occupancy = totalTickets > 0 ? Math.round((totalSold / totalTickets) * 100) : 0;
+  const isTotallySoldOut = totalTickets > 0 && event.ticketCategories.every(
+    (c) => c.quantityTotal - c.quantitySold - (c.quantityReserved ?? 0) <= 0
+  );
 
   return (
     <motion.div
@@ -45,9 +48,17 @@ export default function EventCard({ event }: { event: Event }) {
               <span className="text-xs text-white/20 uppercase tracking-widest">{event.category}</span>
             </div>
           )}
-          {event.isHot && (
+          {event.isHot && !isTotallySoldOut && (
             <div className="absolute top-3 left-3">
               <Badge variant="rose"><Flame className="w-3 h-3 inline mr-1" />HOT</Badge>
+            </div>
+          )}
+          {isTotallySoldOut && (
+            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+              <div className="flex flex-col items-center gap-1">
+                <BanIcon className="w-8 h-8 text-white/60" />
+                <span className="font-bebas text-2xl tracking-widest text-white">COMPLET</span>
+              </div>
             </div>
           )}
           <div className="absolute bottom-3 right-3">
@@ -90,9 +101,13 @@ export default function EventCard({ event }: { event: Event }) {
                 {(event.isCertified || event.organizer.isCertified) && <CertifiedBadge />}
               </div>
             )}
-            <span className="font-mono text-cyan-neon font-bold whitespace-nowrap ml-auto">
-              {formatPrice(minPrice)}
-            </span>
+            {isTotallySoldOut ? (
+              <span className="font-mono text-white/30 font-bold whitespace-nowrap ml-auto text-sm">COMPLET</span>
+            ) : (
+              <span className="font-mono text-cyan-neon font-bold whitespace-nowrap ml-auto">
+                {formatPrice(minPrice)}
+              </span>
+            )}
           </div>
         </div>
       </Link>

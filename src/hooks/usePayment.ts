@@ -13,6 +13,8 @@ export const useInitiatePayment = () => {
     {
       onSuccess: () => {
         queryClient.invalidateQueries('my-tickets');
+        queryClient.invalidateQueries('events');
+        queryClient.invalidateQueries('event');
       },
     }
   );

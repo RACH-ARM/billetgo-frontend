@@ -76,6 +76,7 @@ export default function Home() {
   const setSearch = (v: string) => updateParams({ search: v, page: '' });
   const setDateFilter = (v: DateFilter) => updateParams({ date: v, page: '' });
   const eventsSectionRef = useRef<HTMLElement>(null);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const setPage = (v: number) => updateParams({ page: v > 1 ? String(v) : '' });
   const goToPage = (v: number) => {
     setPage(v);
@@ -190,8 +191,8 @@ export default function Home() {
                   const v = e.target.value;
                   setSearchInput(v);
                   // debounce 400ms
-                  clearTimeout((window as unknown as Record<string, ReturnType<typeof setTimeout>>)['_searchTimer']);
-                  (window as unknown as Record<string, ReturnType<typeof setTimeout>>)['_searchTimer'] = setTimeout(() => setSearch(v), 400);
+                  if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+                  searchTimerRef.current = setTimeout(() => setSearch(v), 400);
                 }}
                 className="w-full bg-bg-card border border-violet-neon/20 rounded-2xl pl-11 pr-10 py-3 text-white placeholder-white/30 focus:outline-none focus:border-violet-neon transition-colors text-sm"
               />

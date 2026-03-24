@@ -76,12 +76,39 @@ export interface CreateScannerPayload {
 }
 
 export interface OrganizerProfile {
+  id: string;
   companyName: string;
   description: string | null;
   logoUrl: string | null;
   mobileMoneyNumber: string | null;
   isApproved: boolean;
+  isCertified: boolean;
+  isPremium: boolean;
+  tier: 'NEW' | 'APPROVED' | 'CERTIFIED' | 'PREMIUM';
   rejectionReason: string | null;
+  kycDocumentUrl: string | null;
+  kycSubmittedAt: string | null;
+  commissionRate: number;
+}
+
+export interface PayoutScheduleEntry {
+  id: string;
+  eventId: string;
+  tranche: number;
+  tier: string;
+  percentage: number;
+  scheduledDate: string;
+  status: 'PENDING' | 'RELEASED' | 'CANCELLED';
+  amountReleased: number | null;
+  releasedAt: string | null;
+  isEligible: boolean;
+  trancheAmount: number;
+  totalOrganizerAmount: number;
+  event: { title: string; eventDate: string };
+}
+
+export interface OrganizerPayoutSchedules {
+  schedules: PayoutScheduleEntry[];
 }
 
 export interface OrganizerPayout {
@@ -182,6 +209,11 @@ export const organizerService = {
     return data.data;
   },
 
+  getMyPayoutSchedules: async (): Promise<OrganizerPayoutSchedules> => {
+    const { data } = await api.get('/organizer/payout-schedules');
+    return data.data;
+  },
+
   updateEvent: async (eventId: string, payload: Partial<CreateEventPayload>, coverImage?: File) => {
     const formData = new FormData();
     (Object.keys(payload) as (keyof CreateEventPayload)[]).forEach((key) => {
@@ -196,6 +228,20 @@ export const organizerService = {
     const { data } = await api.patch(`/organizer/events/${eventId}`, formData, {
       headers: { 'Content-Type': undefined },
     });
+    return data.data;
+  },
+
+  uploadEventGallery: async (eventId: string, photos: File[]): Promise<{ galleryUrls: string[] }> => {
+    const formData = new FormData();
+    photos.forEach((f) => formData.append('photos', f));
+    const { data } = await api.post(`/organizer/events/${eventId}/gallery`, formData, {
+      headers: { 'Content-Type': undefined },
+    });
+    return data.data;
+  },
+
+  deleteEventGalleryPhoto: async (eventId: string, url: string): Promise<{ galleryUrls: string[] }> => {
+    const { data } = await api.delete(`/organizer/events/${eventId}/gallery`, { data: { url } });
     return data.data;
   },
 

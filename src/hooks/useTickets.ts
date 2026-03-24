@@ -19,3 +19,12 @@ export const useMyOrders = () => {
     { enabled: isAuthenticated, staleTime: 30_000 }
   );
 };
+
+export const useReceivedTickets = () => {
+  const { isAuthenticated } = useAuthStore();
+  return useQuery(
+    'received-tickets',
+    () => api.get('/tickets/received').then(r => r.data.data),
+    { enabled: isAuthenticated, staleTime: 30_000 }
+  );
+};

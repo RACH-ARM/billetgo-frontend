@@ -4,13 +4,15 @@ import { motion } from 'framer-motion';
 import { CheckCircle, XCircle, Loader } from 'lucide-react';
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
+import { useNavigate } from 'react-router-dom';
 
 export default function VerifyEmail() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
-  const { markEmailVerified } = useAuthStore();
+  const { markEmailVerified, logout } = useAuthStore();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!token) {
@@ -23,6 +25,9 @@ export default function VerifyEmail() {
         setMessage(res.data.message || 'Email vérifié !');
         setStatus('success');
         markEmailVerified();
+        // Déconnecter la session courante pour forcer une connexion avec le bon compte
+        logout();
+        setTimeout(() => navigate('/login'), 2500);
       })
       .catch((err) => {
         setMessage(

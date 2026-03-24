@@ -18,7 +18,7 @@ import { generateTicketCanvas, blobToBase64 } from '../utils/ticketCanvas';
 import api from '../services/api';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
-type ConfirmationState = 'WAITING' | 'SUCCESS' | 'FAILURE' | 'TIMEOUT';
+type ConfirmationState = 'WAITING' | 'SUCCESS' | 'FAILURE' | 'TIMEOUT' | 'UNAUTHORIZED';
 
 interface OrderItem {
   name: string;
@@ -156,9 +156,9 @@ export default function OrderConfirmation() {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // If no navigation state (page refresh), go to TIMEOUT immediately
+  // If no navigation state — accès direct à l'URL sans passer par le checkout
   useEffect(() => {
-    if (!state) setConfirmationState('TIMEOUT');
+    if (!state) setConfirmationState('UNAUTHORIZED');
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Polling loop
@@ -538,6 +538,37 @@ export default function OrderConfirmation() {
                   <MessageCircle className="w-4 h-4" />
                   Contacter le support WhatsApp
                 </a>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
+                  Retour à l'accueil
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ── UNAUTHORIZED ── */}
+          {confirmationState === 'UNAUTHORIZED' && (
+            <motion.div
+              key="unauthorized"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center space-y-6"
+            >
+              <div className="w-24 h-24 mx-auto bg-rose-neon/10 border-2 border-rose-neon/30 rounded-full flex items-center justify-center">
+                <XCircle className="w-11 h-11 text-rose-neon" />
+              </div>
+              <div>
+                <h1 className="font-bebas text-3xl sm:text-4xl tracking-wide text-white mb-2">
+                  Accès refusé
+                </h1>
+                <p className="text-white/55 text-sm max-w-sm mx-auto leading-relaxed">
+                  Cette page de confirmation n'est pas accessible directement. Si vous cherchez vos billets, consultez votre espace personnel.
+                </p>
+              </div>
+              <div className="flex flex-col gap-3">
+                <Button variant="primary" size="lg" onClick={() => navigate('/mes-billets')}>
+                  <Ticket className="w-4 h-4" />
+                  Mes billets
+                </Button>
                 <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
                   Retour à l'accueil
                 </Button>

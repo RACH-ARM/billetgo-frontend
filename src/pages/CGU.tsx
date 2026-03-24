@@ -17,20 +17,24 @@ export default function CGU() {
         </Link>
 
         <h1 className="font-bebas text-5xl tracking-wider text-gradient mb-2">Conditions Générales d'Utilisation</h1>
-        <p className="text-white/30 text-xs mb-10">Dernière mise à jour : 14 mars 2026</p>
+        <p className="text-white/30 text-xs mb-10">Dernière mise à jour : 23 mars 2026</p>
 
         <div className="glass-card p-8 border border-violet-neon/20">
 
           <Section title="1. Présentation de la plateforme">
             <p>
-              BilletGo est une plateforme de billetterie événementielle en ligne conçue et exploitée par
-              {' '}<span className="text-white">Tiamiyou Arèmou</span>,
-              basée à Libreville, Gabon. Elle permet aux utilisateurs d'acheter des billets pour des événements
-              organisés au Gabon, aux organisateurs de créer et gérer leurs événements, et aux scanners de valider
-              les billets à l'entrée.
+              BilletGo est une plateforme de billetterie événementielle en ligne conçue et exploitée par{' '}
+              <span className="text-white">Tiamiyou Arèmou</span>, basée à Libreville, Gabon.
+              Elle permet aux utilisateurs d'acheter des billets pour des événements organisés au Gabon,
+              aux organisateurs de créer et gérer leurs événements, et aux scanners de valider les billets à l'entrée.
             </p>
             <p>
-              L'accès à la plateforme est disponible à l'adresse billetgo.ga et via l'application mobile.
+              BilletGo agit en qualité d'intermédiaire technique et de séquestre (escrow) entre les acheteurs
+              et les organisateurs d'événements. Les fonds collectés auprès des acheteurs sont détenus par
+              BilletGo et reversés progressivement aux organisateurs selon les conditions définies aux présentes.
+            </p>
+            <p>
+              L'accès à la plateforme est disponible à l'adresse billetgo.ga et via l'application web progressive (PWA).
             </p>
           </Section>
 
@@ -40,8 +44,9 @@ export default function CGU() {
               d'Utilisation. Toute personne qui ne les accepte pas doit s'abstenir d'utiliser la plateforme.
             </p>
             <p>
-              En cochant la case prévue à cet effet lors de l'inscription, l'utilisateur reconnaît avoir lu,
-              compris et accepté les présentes CGU.
+              En cochant la case prévue à cet effet lors de l'inscription ou en acceptant les conditions lors de
+              la création d'un événement, l'utilisateur reconnaît avoir lu, compris et accepté les présentes CGU
+              ainsi que les Conditions Générales de Vente (CGV).
             </p>
           </Section>
 
@@ -50,14 +55,12 @@ export default function CGU() {
               L'inscription est ouverte à toute personne physique âgée de 18 ans ou plus. L'utilisateur s'engage à
               fournir des informations exactes, complètes et à jour lors de la création de son compte.
             </p>
-            <p>
-              Quatre types de comptes existent sur la plateforme :
-            </p>
+            <p>Quatre types de comptes existent sur la plateforme :</p>
             <ul className="list-disc list-inside space-y-1 pl-2">
-              <li><span className="text-white">Acheteur (BUYER)</span> — peut acheter des billets et accéder à ses commandes.</li>
-              <li><span className="text-white">Organisateur (ORGANIZER)</span> — peut créer des événements après validation par l'équipe BilletGo.</li>
-              <li><span className="text-white">Scanner</span> — peut valider les billets à l'entrée des événements auxquels il est assigné.</li>
-              <li><span className="text-white">Administrateur (ADMIN)</span> — gère la plateforme (usage interne uniquement).</li>
+              <li><span className="text-white">Acheteur (BUYER)</span> — peut acheter des billets, accéder à ses commandes, demander des remboursements ou transférer ses billets.</li>
+              <li><span className="text-white">Organisateur (ORGANIZER)</span> — peut créer des événements après validation KYC et approbation par l'équipe BilletGo.</li>
+              <li><span className="text-white">Scanner</span> — peut valider les billets à l'entrée des événements auxquels il est assigné par un organisateur ou un administrateur.</li>
+              <li><span className="text-white">Administrateur (ADMIN)</span> — gère la plateforme, valide les événements, traite les remboursements et libère les versements (usage interne uniquement).</li>
             </ul>
             <p>
               Chaque utilisateur est responsable de la confidentialité de ses identifiants. Tout accès effectué
@@ -70,14 +73,112 @@ export default function CGU() {
             <ul className="list-disc list-inside space-y-1 pl-2">
               <li>La revente de billets à des prix supérieurs au prix d'achat (scalping).</li>
               <li>La création de comptes fictifs ou l'utilisation d'identités usurpées.</li>
-              <li>Toute tentative de falsification ou de duplication des QR codes.</li>
+              <li>Toute tentative de falsification, duplication ou contrefaçon des QR codes sécurisés.</li>
               <li>Le contournement des mécanismes de sécurité de la plateforme.</li>
               <li>L'utilisation automatisée (bots, scripts) sans autorisation écrite préalable.</li>
               <li>La diffusion de contenus illicites, diffamatoires ou portant atteinte aux droits des tiers.</li>
+              <li>Toute tentative de fraude au paiement ou de remboursement abusif.</li>
             </ul>
           </Section>
 
-          <Section title="5. Propriété intellectuelle">
+          <Section title="5. Conditions spécifiques aux organisateurs">
+            <p>
+              Pour devenir organisateur sur BilletGo, toute personne physique ou morale doit :
+            </p>
+            <ul className="list-disc list-inside space-y-1 pl-2">
+              <li>Soumettre un document d'identité valide (CNI, passeport ou RCCM) via la procédure KYC de la plateforme.</li>
+              <li>Fournir un numéro Mobile Money valide (Airtel ou Moov) pour la réception des versements.</li>
+              <li>Accepter les présentes CGU et les CGV, y compris les conditions de versement progressif.</li>
+            </ul>
+            <p>
+              Tout compte organisateur est soumis à validation par l'équipe BilletGo avant d'être autorisé à publier
+              des événements. BilletGo se réserve le droit de refuser ou de suspendre tout compte organisateur
+              sans justification préalable, notamment en cas de suspicion de fraude ou de non-conformité.
+            </p>
+            <p>
+              L'organisateur est seul responsable du contenu, de l'exactitude des informations de son événement,
+              de son organisation, de son déroulement et du respect de la réglementation en vigueur (autorisations
+              administratives, sécurité, etc.).
+            </p>
+          </Section>
+
+          <Section title="6. Validation et publication des événements">
+            <p>
+              Tout événement créé sur BilletGo est soumis à une procédure de validation avant publication :
+            </p>
+            <ol className="list-decimal list-inside space-y-1 pl-2">
+              <li>L'organisateur soumet l'événement (statut : En révision).</li>
+              <li>L'équipe BilletGo examine l'événement dans un délai de 24 à 72 heures.</li>
+              <li>L'événement est approuvé, publié ou retourné pour modifications.</li>
+            </ol>
+            <p>
+              BilletGo se réserve le droit de refuser tout événement contraire aux lois gabonaises,
+              aux bonnes mœurs, ou aux présentes CGU. La publication différée (date programmée) est disponible
+              pour les organisateurs approuvés.
+            </p>
+          </Section>
+
+          <Section title="7. Séquestre et versements progressifs">
+            <p>
+              BilletGo collecte l'intégralité des fonds des acheteurs et les conserve en qualité de séquestre
+              (escrow) jusqu'au reversement à l'organisateur selon un calendrier progressif défini par le
+              niveau de confiance (tier) de l'organisateur :
+            </p>
+            <ul className="list-disc list-inside space-y-1 pl-2">
+              <li><span className="text-white">Nouveau</span> — jusqu'à 70% à J-3, solde à J+7.</li>
+              <li><span className="text-white">Approuvé</span> — jusqu'à 40% à J-14, 80% à J-3, 100% à J+7.</li>
+              <li><span className="text-white">Certifié</span> — jusqu'à 60% à J-14, 90% à J-3, 100% à J+7.</li>
+              <li><span className="text-white">Premium</span> — jusqu'à 80% à J-14, 95% à J-3, 100% à J+7.</li>
+            </ul>
+            <p>
+              Les montants de chaque versement sont calculés sur la base des ventes réelles au moment
+              du versement, déduction faite des tranches précédemment versées. BilletGo se réserve le droit
+              de retarder ou de suspendre un versement en cas de litige, de demandes de remboursement en cours,
+              ou de suspicion de fraude.
+            </p>
+            <p>
+              En cas d'annulation d'un événement par l'organisateur après qu'une ou plusieurs tranches ont
+              été versées, l'organisateur s'engage à rembourser BilletGo des sommes nécessaires à l'indemnisation
+              complète des acheteurs. BilletGo se réserve le droit de poursuivre l'organisateur par toute voie
+              de droit pour recouvrer les sommes dues, conformément au droit OHADA.
+            </p>
+          </Section>
+
+          <Section title="8. Remboursements et transferts de billets">
+            <p>
+              Les acheteurs peuvent, selon les conditions définies aux CGV :
+            </p>
+            <ul className="list-disc list-inside space-y-1 pl-2">
+              <li>Soumettre une demande de remboursement volontaire, soumise à approbation par BilletGo.</li>
+              <li>Transférer un billet à une autre personne via la fonctionnalité de transfert de la plateforme.</li>
+            </ul>
+            <p>
+              En cas d'annulation officielle d'un événement par l'organisateur, BilletGo procède au remboursement
+              intégral du prix d'achat à tous les acheteurs concernés, dans la limite des fonds retenus en séquestre.
+              Les notifications d'annulation et de remboursement sont envoyées automatiquement par email,
+              SMS et notification in-app.
+            </p>
+          </Section>
+
+          <Section title="9. Liste d'attente">
+            <p>
+              Pour les événements complets (sold-out), les utilisateurs peuvent s'inscrire sur une liste d'attente
+              en fournissant leur email et/ou numéro de téléphone. En cas de libération d'une place, les personnes
+              inscrites sur la liste d'attente sont notifiées par ordre d'inscription (FIFO). BilletGo ne garantit
+              pas l'obtention d'un billet aux inscrits sur liste d'attente.
+            </p>
+          </Section>
+
+          <Section title="10. QR Codes et sécurité des billets">
+            <p>
+              Chaque billet généré sur BilletGo est associé à un QR Code unique, signé cryptographiquement
+              par un algorithme HMAC-SHA256. Tout QR Code falsifié, dupliqué ou altéré sera détecté lors du
+              scan à l'entrée et le billet correspondant sera invalide. BilletGo ne saurait être tenu responsable
+              de l'accès refusé résultant d'un billet frauduleux ou partagé à des tiers.
+            </p>
+          </Section>
+
+          <Section title="11. Propriété intellectuelle">
             <p>
               L'ensemble des éléments de la plateforme BilletGo (logo, design, textes, code source, base de données)
               est la propriété exclusive de Tiamiyou Arèmou, concepteur et exploitant de BilletGo.
@@ -85,7 +186,7 @@ export default function CGU() {
             </p>
           </Section>
 
-          <Section title="6. Disponibilité du service">
+          <Section title="12. Disponibilité du service">
             <p>
               BilletGo s'efforce d'assurer la disponibilité de la plateforme 24h/24 et 7j/7. Toutefois,
               des interruptions pour maintenance ou pour des raisons techniques peuvent survenir. BilletGo ne
@@ -93,33 +194,37 @@ export default function CGU() {
             </p>
           </Section>
 
-          <Section title="7. Responsabilité">
+          <Section title="13. Responsabilité">
             <p>
-              BilletGo agit en tant qu'intermédiaire technique entre les acheteurs et les organisateurs.
+              BilletGo agit en tant qu'intermédiaire technique et séquestre entre les acheteurs et les organisateurs.
               BilletGo ne saurait être tenu responsable du contenu des événements, des annulations décidées
-              par les organisateurs, ni des problèmes survenant lors des événements eux-mêmes.
+              par les organisateurs, ni des problèmes survenant lors des événements eux-mêmes (incidents,
+              blessures, force majeure, etc.).
             </p>
             <p>
-              La responsabilité de BilletGo est limitée au montant des frais de service perçus sur la commande concernée.
+              En cas d'annulation d'événement imputable à un organisateur, la responsabilité financière
+              de BilletGo est limitée aux fonds effectivement retenus en séquestre au moment de l'annulation.
+              Pour toute somme excédentaire, la responsabilité incombe exclusivement à l'organisateur.
             </p>
           </Section>
 
-          <Section title="8. Modifications des CGU">
+          <Section title="14. Modifications des CGU">
             <p>
               BilletGo se réserve le droit de modifier les présentes CGU à tout moment. Les utilisateurs seront
-              informés de toute modification significative. La poursuite de l'utilisation de la plateforme après
-              notification vaut acceptation des nouvelles conditions.
+              informés de toute modification significative par notification sur la plateforme ou par email.
+              La poursuite de l'utilisation de la plateforme après notification vaut acceptation des nouvelles conditions.
             </p>
           </Section>
 
-          <Section title="9. Droit applicable">
+          <Section title="15. Droit applicable et juridiction">
             <p>
-              Les présentes CGU sont soumises au droit gabonais. Tout litige relatif à leur interprétation ou
-              exécution sera soumis aux tribunaux compétents de Libreville, Gabon.
+              Les présentes CGU sont soumises au droit gabonais et, le cas échéant, au droit OHADA
+              (Organisation pour l'Harmonisation en Afrique du Droit des Affaires). Tout litige relatif
+              à leur interprétation ou exécution sera soumis aux tribunaux compétents de Libreville, Gabon.
             </p>
           </Section>
 
-          <Section title="10. Contact">
+          <Section title="16. Contact">
             <p>
               Pour toute question relative aux présentes CGU :{' '}
               <a href="mailto:contact@billetgo.ga" className="text-violet-neon hover:underline">contact@billetgo.ga</a>

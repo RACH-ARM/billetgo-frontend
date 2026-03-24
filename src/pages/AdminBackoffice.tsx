@@ -6,7 +6,7 @@ import {
   Users, CalendarDays, TrendingUp, Clock, CheckCircle, XCircle,
   ShieldAlert, LayoutDashboard, ListChecks, X, LogOut, Banknote, Phone,
   Star, Flame, Ban, Sparkles, ScanLine, Plus, Eye, EyeOff, Pencil, MessageSquare, FileSearch, RotateCcw, ScrollText, Settings,
-  Square, CheckSquare, BadgeCheck,
+  Square, CheckSquare, BadgeCheck, Award, Zap, Shield,
 } from 'lucide-react';
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
@@ -53,6 +53,29 @@ interface AdminPayoutOrganizer {
   totalPaid: number;
   balanceDue: number;
   payoutHistory: PayoutHistoryEntry[];
+  isApproved?: boolean;
+  isCertified?: boolean;
+  isPremium?: boolean;
+}
+
+interface AdminPayoutSchedule {
+  id: string;
+  tranche: number;
+  tier: string;
+  percentage: number;
+  scheduledDate: string;
+  status: 'PENDING' | 'RELEASED' | 'CANCELLED';
+  amountReleased: number | null;
+  isEligible: boolean;
+  trancheAmount: number;
+  totalOrganizerAmount: number;
+  event: { id: string; title: string; eventDate: string };
+  organizer: {
+    id: string;
+    companyName: string;
+    mobileMoneyNumber: string | null;
+    user: { firstName: string; lastName: string; email: string };
+  };
 }
 
 // ── Role badge ────────────────────────────────────────────────
@@ -389,6 +412,44 @@ export default function AdminBackoffice() {
         toast.success('Virement enregistré — notification envoyée à l\'organisateur');
       },
       onError: () => toast.error('Erreur lors de l\'enregistrement'),
+    }
+  );
+
+  const { data: payoutSchedules, refetch: refetchSchedules } = useQuery(
+    'admin-payout-schedules',
+    async () => {
+      const { data } = await api.get('/admin/payout-schedules');
+      return data.data as AdminPayoutSchedule[];
+    },
+    { enabled: tab === 'payouts', staleTime: 0 }
+  );
+
+  const releaseSchedule = useMutation(
+    async ({ scheduleId, transactionRef }: { scheduleId: string; transactionRef?: string }) => {
+      await api.post(`/admin/payout-schedules/${scheduleId}/release`, { transactionRef });
+    },
+    {
+      onSuccess: () => {
+        refetchSchedules();
+        refetchPayouts();
+        toast.success('Tranche libérée — notification envoyée à l\'organisateur');
+      },
+      onError: (err: { response?: { data?: { message?: string } } }) =>
+        toast.error(err?.response?.data?.message ?? 'Erreur lors de la libération'),
+    }
+  );
+
+  const updateOrgTier = useMutation(
+    async ({ organizerId, ...flags }: { organizerId: string; isApproved?: boolean; isCertified?: boolean; isPremium?: boolean }) => {
+      const { data } = await api.patch(`/admin/organizers/${organizerId}/tier`, flags);
+      return data;
+    },
+    {
+      onSuccess: (data) => {
+        refetchPayouts();
+        toast.success(data.message ?? 'Tier mis à jour');
+      },
+      onError: () => toast.error('Erreur lors de la mise à jour du tier'),
     }
   );
 
@@ -731,8 +792,8 @@ export default function AdminBackoffice() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <KpiCard title="Commandes complètes" value={(dashboard?.totalOrders ?? 0).toLocaleString('fr-FR')} Icon={CheckCircle} color="green" />
-            <KpiCard title="Revenus plateforme" value={formatPrice(dashboard?.platformRevenue ?? 0)} subtitle="Commission BilletGo" Icon={TrendingUp} color="rose" />
-            <KpiCard title="Volume transactions" value={formatPrice(dashboard?.totalTransactionVolume ?? 0)} subtitle="Total brut" Icon={TrendingUp} color="cyan" />
+            <KpiCard title="Revenus plateforme" value={formatPrice(dashboard?.platformRevenue ?? 0, 'FCFA', '0 FCFA')} subtitle="Commission BilletGo" Icon={TrendingUp} color="rose" />
+            <KpiCard title="Volume transactions" value={formatPrice(dashboard?.totalTransactionVolume ?? 0, 'FCFA', '0 FCFA')} subtitle="Total brut" Icon={TrendingUp} color="cyan" />
           </div>
         </div>
       )}
@@ -782,6 +843,12 @@ export default function AdminBackoffice() {
                       <CalendarDays className="w-3 h-3" />
                       {formatEventDate(event.eventDate as string)}
                     </span>
+                    {(event.scheduledPublishAt as string) && (
+                      <span className="flex items-center gap-1 text-cyan-neon">
+                        <Clock className="w-3 h-3" />
+                        Publication programmée : {new Date(event.scheduledPublishAt as string).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    )}
                     <span>Par : <span className="text-white/60">{orgUser.firstName as string} {orgUser.lastName as string}</span></span>
                     <span className="text-violet-neon">{orgUser.email as string}</span>
                     {event.offer && (
@@ -812,10 +879,10 @@ export default function AdminBackoffice() {
                     variant="primary"
                     size="sm"
                     className="flex-1 md:flex-none flex items-center gap-1.5"
-                    onClick={() => updateStatus.mutate({ id: event.id as string, status: 'PUBLISHED' })}
+                    onClick={() => updateStatus.mutate({ id: event.id as string, status: 'APPROVED' })}
                     isLoading={updateStatus.isLoading}
                   >
-                    <CheckCircle className="w-4 h-4" /> Publier
+                    <CheckCircle className="w-4 h-4" /> Approuver
                   </Button>
                   <Button
                     variant="secondary"
@@ -1189,6 +1256,53 @@ export default function AdminBackoffice() {
             {[1,2,3].map((i) => <SkeletonCard key={i} lines={5} />)}
           </div>
         ) :
+        <div className="space-y-6">
+          {/* ── Planning de versements éligibles ── */}
+          {(payoutSchedules ?? []).filter((s) => s.isEligible && s.status === 'PENDING').length > 0 && (
+            <div className="space-y-3">
+              <h2 className="font-bebas text-2xl tracking-wider text-yellow-400 flex items-center gap-2">
+                <Clock className="w-5 h-5" /> Tranches éligibles au versement
+              </h2>
+              {(payoutSchedules ?? []).filter((s) => s.isEligible && s.status === 'PENDING').map((s) => (
+                <motion.div
+                  key={s.id}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="glass-card p-4 border border-yellow-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                >
+                  <div className="min-w-0">
+                    <p className="text-xs text-white/40 truncate">{s.organizer.companyName}</p>
+                    <p className="text-sm font-semibold text-white">
+                      {s.event.title} — Tranche {s.tranche} (jusqu'à {Math.round(s.percentage * 100)}% des ventes)
+                    </p>
+                    <p className="text-xs text-white/30 mt-0.5 font-mono">
+                      Prévu : {new Date(s.scheduledDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      {s.organizer.mobileMoneyNumber && <> · {s.organizer.mobileMoneyNumber}</>}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    {s.totalOrganizerAmount > 0 ? (
+                      <p className="font-mono font-bold text-yellow-400 text-base">{formatPrice(s.trancheAmount, 'FCFA')}</p>
+                    ) : (
+                      <p className="text-xs text-white/30">Aucune vente</p>
+                    )}
+                    {s.totalOrganizerAmount > 0 && (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        isLoading={releaseSchedule.isLoading}
+                        onClick={() => releaseSchedule.mutate({ scheduleId: s.id })}
+                      >
+                        <CheckCircle className="w-4 h-4" /> Libérer
+                      </Button>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+
+          {/* ── Organisateurs ── */}
         <div className="space-y-4">
           {!payoutsData?.length ? (
             <div className="glass-card p-16 text-center">
@@ -1205,7 +1319,29 @@ export default function AdminBackoffice() {
               {/* En-tête organisateur */}
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 p-5">
                 <div className="min-w-0">
-                  <h3 className="font-bebas text-xl tracking-wide text-white">{org.companyName}</h3>
+                  <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                    <h3 className="font-bebas text-xl tracking-wide text-white">{org.companyName}</h3>
+                    {/* Tier badge */}
+                    {(() => {
+                      const tierMap: Record<string, { label: string; color: string; Icon: React.ComponentType<{ className?: string }> }> = {
+                        NEW:       { label: 'Nouveau',  color: 'text-white/40',    Icon: Star   },
+                        APPROVED:  { label: 'Approuvé', color: 'text-cyan-neon',   Icon: Shield },
+                        CERTIFIED: { label: 'Certifié', color: 'text-violet-neon', Icon: Award  },
+                        PREMIUM:   { label: 'Premium',  color: 'text-yellow-400',  Icon: Zap    },
+                      };
+                      const isPremium   = org.isPremium;
+                      const isCertified = org.isCertified;
+                      const isApproved  = org.isApproved;
+                      const tier = isPremium ? 'PREMIUM' : isCertified ? 'CERTIFIED' : isApproved ? 'APPROVED' : 'NEW';
+                      const meta = tierMap[tier];
+                      const { Icon } = meta;
+                      return (
+                        <span className={`flex items-center gap-1 text-xs font-semibold ${meta.color}`}>
+                          <Icon className="w-3 h-3" /> {meta.label}
+                        </span>
+                      );
+                    })()}
+                  </div>
                   <p className="text-white/40 text-xs mt-0.5">
                     {org.user.firstName} {org.user.lastName}
                     {org.user.phone && <span className="ml-2 font-mono text-cyan-neon/70">{org.user.phone}</span>}
@@ -1214,14 +1350,35 @@ export default function AdminBackoffice() {
                     ? <p className="flex items-center gap-1 text-xs text-cyan-neon mt-1"><Phone className="w-3 h-3" /> {org.mobileMoneyNumber}</p>
                     : <p className="text-xs text-rose-neon/60 mt-1">Numéro Mobile Money non renseigné</p>
                   }
+                  {/* Tier selector */}
+                  <div className="flex items-center gap-1.5 mt-2">
+                    <p className="text-xs text-white/30">Tier :</p>
+                    {[
+                      { key: 'APPROVED',  label: 'Approuvé', flags: { isApproved: true,  isCertified: false, isPremium: false } },
+                      { key: 'CERTIFIED', label: 'Certifié', flags: { isApproved: true,  isCertified: true,  isPremium: false } },
+                      { key: 'PREMIUM',   label: 'Premium',  flags: { isApproved: true,  isCertified: true,  isPremium: true  } },
+                    ].map((t) => {
+                      const currentTier = org.isPremium ? 'PREMIUM' : org.isCertified ? 'CERTIFIED' : org.isApproved ? 'APPROVED' : 'NEW';
+                      const isActive = currentTier === t.key;
+                      return (
+                        <button
+                          key={t.key}
+                          onClick={() => !isActive && updateOrgTier.mutate({ organizerId: org.organizerId, ...t.flags })}
+                          className={`text-xs px-2.5 py-1 rounded-lg font-semibold transition-all ${isActive ? 'bg-violet-neon/20 text-violet-neon border border-violet-neon/30' : 'text-white/30 hover:text-white hover:bg-white/5 border border-transparent'}`}
+                        >
+                          {t.label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
                 {/* Soldes */}
                 <div className="flex flex-wrap sm:flex-nowrap gap-3 flex-shrink-0">
                   {[
-                    { label: 'Collecté', val: formatPrice(org.totalCollected), color: 'text-white/70' },
-                    { label: 'Net org.', val: formatPrice(org.totalNetAmount), color: 'text-cyan-neon' },
-                    { label: 'Déjà viré', val: formatPrice(org.totalPaid), color: 'text-green-400' },
-                    { label: 'Restant', val: formatPrice(org.balanceDue), color: org.balanceDue > 0 ? 'text-yellow-400' : 'text-white/30' },
+                    { label: 'Collecté', val: formatPrice(org.totalCollected, 'FCFA', '0 FCFA'), color: 'text-white/70' },
+                    { label: 'Net org.', val: formatPrice(org.totalNetAmount, 'FCFA', '0 FCFA'), color: 'text-cyan-neon' },
+                    { label: 'Déjà viré', val: formatPrice(org.totalPaid, 'FCFA', '0 FCFA'), color: 'text-green-400' },
+                    { label: 'Restant', val: formatPrice(org.balanceDue, 'FCFA', '0 FCFA'), color: org.balanceDue > 0 ? 'text-yellow-400' : 'text-white/30' },
                   ].map((s) => (
                     <div key={s.label} className="text-center bg-white/[0.04] rounded-xl px-3 py-2 min-w-[80px]">
                       <p className="text-xs text-white/30 uppercase tracking-widest mb-0.5">{s.label}</p>
@@ -1347,6 +1504,7 @@ export default function AdminBackoffice() {
               </div>
             </motion.div>
           ))}
+        </div>
         </div>
       )}
 
