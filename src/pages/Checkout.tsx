@@ -11,6 +11,7 @@ import { useCreateOrder, useInitiatePayment } from '../hooks/usePayment';
 import { useEvent } from '../hooks/useEvents';
 import { formatPrice } from '../utils/formatPrice';
 import { formatEventDate } from '../utils/formatDate';
+import { normalizeGabonPhone, isValidGabonPhone } from '../utils/phone';
 import Button from '../components/common/Button';
 import toast from 'react-hot-toast';
 
@@ -207,7 +208,8 @@ export default function Checkout() {
     : [];
   const hasStockIssue = soldOutItems.length > 0;
 
-  const canProceedStep2 = buyerInfo.name.trim().length >= 2 && buyerInfo.phone.trim().length >= 8;
+  const phoneValid = isValidGabonPhone(buyerInfo.phone);
+  const canProceedStep2 = buyerInfo.name.trim().length >= 2 && phoneValid;
   const canPay = paymentPhone.trim().length >= 8;
 
   const handlePayment = async () => {
@@ -217,7 +219,7 @@ export default function Checkout() {
         items: items.map((i) => ({ categoryId: i.category.id, quantity: i.quantity })),
         buyerName: buyerInfo.name,
         buyerEmail: buyerInfo.email || undefined,
-        buyerPhone: buyerInfo.phone,
+        buyerPhone: normalizeGabonPhone(buyerInfo.phone) ?? buyerInfo.phone,
         cgvAcceptedAt: new Date().toISOString(),
         ...(promoApplied && { promoCode: promoApplied.code }),
       });
@@ -521,7 +523,7 @@ export default function Checkout() {
 
                     <div>
                       <label className="text-xs text-white/50 uppercase tracking-widest block mb-2">
-                        Téléphone <span className="text-rose-neon">*</span>
+                        Numéro WhatsApp <span className="text-rose-neon">*</span>
                       </label>
                       <div className="flex gap-2">
                         <div className="flex items-center gap-2 bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-3 text-white/60 text-sm flex-shrink-0">
@@ -532,10 +534,23 @@ export default function Checkout() {
                           value={buyerInfo.phone}
                           onChange={(e) => setBuyerInfo((b) => ({ ...b, phone: e.target.value }))}
                           type="tel"
-                          placeholder="01 00 00 00"
-                          className="flex-1 bg-bg-secondary border border-violet-neon/20 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors"
+                          placeholder="62 55 76 55"
+                          className={`flex-1 bg-bg-secondary border rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none transition-colors ${
+                            buyerInfo.phone && !phoneValid
+                              ? 'border-rose-neon focus:border-rose-neon'
+                              : 'border-violet-neon/20 focus:border-violet-neon'
+                          }`}
                         />
                       </div>
+                      {buyerInfo.phone && !phoneValid ? (
+                        <p className="text-rose-neon text-xs mt-1.5">
+                          Numéro invalide — ex : 62 55 76 55 (8 chiffres après +241)
+                        </p>
+                      ) : (
+                        <p className="text-white/30 text-xs mt-1.5">
+                          Votre QR Code sera envoyé sur ce numéro WhatsApp
+                        </p>
+                      )}
                     </div>
                   </div>
 

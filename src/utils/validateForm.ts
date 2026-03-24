@@ -1,4 +1,15 @@
 import { z } from 'zod';
+import { isValidGabonPhone } from './phone';
+
+const gabonPhone = z
+  .string()
+  .min(1, 'Numéro requis')
+  .refine(isValidGabonPhone, 'Numéro invalide — ex : 62 55 76 55 (8 chiffres après +241)');
+
+const gabonPhoneOptional = z.preprocess(
+  (v) => (v === '' ? undefined : v),
+  z.string().refine(isValidGabonPhone, 'Numéro invalide — ex : 62 55 76 55').optional()
+);
 
 export const loginSchema = z.object({
   email: z.string().email('Email invalide').optional().or(z.literal('')),
@@ -12,7 +23,7 @@ export const registerSchema = z.object({
   firstName: z.string().min(2, 'Prénom requis'),
   lastName: z.string().min(2, 'Nom requis'),
   email: z.string().email('Email invalide'),
-  phone: z.preprocess((v) => (v === '' ? undefined : v), z.string().min(8, 'Numéro invalide').optional()),
+  phone: gabonPhoneOptional,
   password: z.string().min(8, 'Mot de passe trop court (8 caractères minimum)'),
   confirmPassword: z.string().min(1, 'Confirmation requise'),
   role: z.enum(['BUYER', 'ORGANIZER']).default('BUYER'),
@@ -25,7 +36,7 @@ export const registerSchema = z.object({
 export const checkoutSchema = z.object({
   buyerName: z.string().min(2, 'Nom requis'),
   buyerEmail: z.string().email('Email invalide').optional().or(z.literal('')),
-  buyerPhone: z.string().min(8, 'Numéro de téléphone requis'),
+  buyerPhone: gabonPhone,
   provider: z.enum(['AIRTEL_MONEY', 'MOOV_MONEY']),
   paymentPhone: z.string().min(8, 'Numéro de paiement requis'),
 });

@@ -85,9 +85,13 @@ export default function Register() {
             {errors.email && <p className="text-rose-neon text-xs mt-1">{errors.email.message}</p>}
           </div>
           <div>
-            <label className={labelClass}>Téléphone <span className="text-white/30 font-normal normal-case">(optionnel)</span></label>
-            <input {...register('phone')} type="tel" placeholder="+241 01 00 00 00" className={inputClass} />
-            {errors.phone && <p className="text-rose-neon text-xs mt-1">{errors.phone.message}</p>}
+            <label className={labelClass}>Numéro WhatsApp <span className="text-white/30 font-normal normal-case">(optionnel)</span></label>
+            <input {...register('phone')} type="tel" placeholder="+241 62 55 76 55" className={inputClass} />
+            {errors.phone ? (
+              <p className="text-rose-neon text-xs mt-1">{errors.phone.message}</p>
+            ) : (
+              <p className="text-white/30 text-xs mt-1">Votre QR Code sera envoyé ici après achat</p>
+            )}
           </div>
           {role === 'ORGANIZER' && (
             <div>
