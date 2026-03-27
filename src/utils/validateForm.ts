@@ -4,11 +4,11 @@ import { isValidGabonPhone } from './phone';
 const gabonPhone = z
   .string()
   .min(1, 'Numéro requis')
-  .refine(isValidGabonPhone, 'Numéro invalide — ex : 62 55 76 55 (8 chiffres après +241)');
+  .refine(isValidGabonPhone, 'Numéro invalide — ex : 060 000 000');
 
 const gabonPhoneOptional = z.preprocess(
   (v) => (v === '' ? undefined : v),
-  z.string().refine(isValidGabonPhone, 'Numéro invalide — ex : 62 55 76 55').optional()
+  z.string().refine(isValidGabonPhone, 'Numéro invalide — ex : 060 000 000').optional()
 );
 
 export const loginSchema = z.object({

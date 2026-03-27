@@ -63,7 +63,7 @@ const ORDER_STATUS_COLOR: Record<string, string> = {
 // ── Composant champ formulaire ────────────────────────────────
 
 function Field({
-  label, value, onChange, type = 'text', placeholder, optional,
+  label, value, onChange, type = 'text', placeholder, optional, hint,
 }: {
   label: string;
   value: string;
@@ -71,6 +71,7 @@ function Field({
   type?: string;
   placeholder?: string;
   optional?: boolean;
+  hint?: string;
 }) {
   return (
     <div>
@@ -84,18 +85,20 @@ function Field({
         placeholder={placeholder}
         className="w-full bg-bg-secondary border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-violet-neon/50 transition-colors placeholder:text-white/20"
       />
+      {hint && <p className="text-xs text-white/30 mt-1">{hint}</p>}
     </div>
   );
 }
 
 function TextArea({
-  label, value, onChange, placeholder, rows = 3,
+  label, value, onChange, placeholder, rows = 3, hint,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   rows?: number;
+  hint?: string;
 }) {
   return (
     <div>
@@ -107,6 +110,7 @@ function TextArea({
         rows={rows}
         className="w-full bg-bg-secondary border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-violet-neon/50 transition-colors placeholder:text-white/20 resize-none"
       />
+      {hint && <p className="text-xs text-white/30 mt-1">{hint}</p>}
     </div>
   );
 }
@@ -211,12 +215,12 @@ function TabProfil() {
       {/* Formulaire */}
       <div className="glass-card p-6 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Prénom" value={firstName} onChange={handleChange(setFirstName)} placeholder="Votre prénom" />
-          <Field label="Nom" value={lastName} onChange={handleChange(setLastName)} placeholder="Votre nom" />
+          <Field label="Prénom" value={firstName} onChange={handleChange(setFirstName)} placeholder="Votre prénom" hint="Affiché sur vos billets" />
+          <Field label="Nom" value={lastName} onChange={handleChange(setLastName)} placeholder="Votre nom" hint="Affiché sur vos billets" />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Email" type="email" value={email} onChange={handleChange(setEmail)} placeholder="votre@email.com" optional />
-          <Field label="Téléphone" value={phone} onChange={handleChange(setPhone)} placeholder="+241 xx xxx xxx" optional />
+          <Field label="Email" type="email" value={email} onChange={handleChange(setEmail)} placeholder="votre@email.com" optional hint="Pour recevoir vos confirmations d'achat" />
+          <Field label="Téléphone" value={phone} onChange={handleChange(setPhone)} placeholder="+241 xx xxx xxx" optional hint="Votre numéro WhatsApp pour recevoir vos billets" />
         </div>
 
         {dirty && (
@@ -348,11 +352,11 @@ function TabOrganisateur() {
 
       {/* Formulaire */}
       <div className="glass-card p-6 space-y-4">
-        <Field label="Nom de l'organisation" value={companyName} onChange={handleChange(setCompanyName)} placeholder="Nom de votre structure" />
-        <TextArea label="Description" value={description} onChange={handleChange(setDescription)} placeholder="Décrivez votre organisation..." rows={4} />
+        <Field label="Nom de l'organisation" value={companyName} onChange={handleChange(setCompanyName)} placeholder="Nom de votre structure" hint="Nom affiché publiquement sur vos événements" />
+        <TextArea label="Description" value={description} onChange={handleChange(setDescription)} placeholder="Décrivez votre organisation..." rows={4} hint="Visible sur votre page publique d'organisateur" />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Site web" value={website} onChange={handleChange(setWebsite)} placeholder="https://monsite.com" optional />
-          <Field label="Numéro Mobile Money" value={mobileMoney} onChange={handleChange(setMobileMoney)} placeholder="ex: 074123456" />
+          <Field label="Site web" value={website} onChange={handleChange(setWebsite)} placeholder="https://monsite.com" optional hint="URL complète de votre site (ex: https://monsite.com)" />
+          <Field label="Numéro Mobile Money" value={mobileMoney} onChange={handleChange(setMobileMoney)} placeholder="ex: 074123456" hint="Numéro sur lequel vous recevez vos reversements" />
         </div>
 
         {dirty && (
@@ -667,6 +671,7 @@ function TabSecurite() {
           value={currentPwd}
           onChange={setCurrentPwd}
           placeholder="Votre mot de passe actuel"
+          hint="Entrez votre mot de passe actuel pour autoriser le changement"
         />
         <div>
           <PasswordField
@@ -684,6 +689,7 @@ function TabSecurite() {
             value={confirmPwd}
             onChange={(v) => { setConfirmPwd(v); setPwdError(null); }}
             placeholder="Répétez le nouveau mot de passe"
+            hint="Doit être identique au nouveau mot de passe ci-dessus"
           />
           {mismatch && (
             <p className="text-rose-neon text-xs mt-1">Les mots de passe ne correspondent pas</p>

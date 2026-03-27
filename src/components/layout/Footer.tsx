@@ -6,7 +6,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           <div>
-            <span className="font-bebas text-3xl tracking-widest text-gradient">BILLETGO</span>
+            <img src="/logo.svg" alt="BilletGo" className="h-10 w-auto" />
             <p className="mt-2 text-sm text-white/50">Ton événement. Ton ticket. Maintenant.</p>
             <p className="mt-1 text-xs text-white/30">Libreville, Gabon</p>
           </div>
@@ -29,7 +29,6 @@ export default function Footer() {
               <span className="bg-bg-card border border-violet-neon/20 rounded-lg px-3 py-2 text-xs font-mono text-cyan-neon">Airtel Money</span>
               <span className="bg-bg-card border border-violet-neon/20 rounded-lg px-3 py-2 text-xs font-mono text-rose-neon">Moov Money</span>
             </div>
-            <p className="mt-4 text-xs text-white/30">Powered by DISICK Man Show</p>
           </div>
         </div>
         <div className="border-t border-violet-neon/10 mt-10 pt-6 text-center text-xs text-white/30">

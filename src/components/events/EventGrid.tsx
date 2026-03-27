@@ -4,7 +4,7 @@ import EventCard from './EventCard';
 function SkeletonEventCard() {
   return (
     <div className="glass-card overflow-hidden animate-pulse">
-      <div className="h-48 bg-white/[0.07]" />
+      <div className="aspect-[3/4] bg-white/[0.07]" />
       <div className="p-4 space-y-3">
         <div className="h-4 bg-white/[0.07] rounded-lg w-3/4" />
         <div className="h-3 bg-white/[0.05] rounded-lg w-1/2" />
@@ -33,7 +33,7 @@ interface EventGridProps {
 export default function EventGrid({ events, isLoading }: EventGridProps) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-start">
         {Array.from({ length: 8 }).map((_, i) => <SkeletonEventCard key={i} />)}
       </div>
     );
@@ -49,7 +49,7 @@ export default function EventGrid({ events, isLoading }: EventGridProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-start">
       {events.map((event) => (
         <EventCard key={event.id} event={event} />
       ))}

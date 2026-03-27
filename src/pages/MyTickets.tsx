@@ -1,9 +1,10 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, HelpCircle, ImageDown, Trash2, CheckCircle2, Clock, FileDown, RotateCcw, X, ArrowRightLeft, ArrowDownToLine } from 'lucide-react';
-import { useState } from 'react';
+import { ChevronLeft, HelpCircle, ImageDown, Trash2, CheckCircle2, Clock, RotateCcw, X, ArrowRightLeft, ArrowDownToLine, ChevronDown, ChevronUp, MailWarning, CalendarCheck } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { useQueryClient } from 'react-query';
 import { useMyOrders, useReceivedTickets } from '../hooks/useTickets';
-import { formatEventDate } from '../utils/formatDate';
+import { formatEventDate, formatReceiptDate } from '../utils/formatDate';
 import { formatPrice } from '../utils/formatPrice';
 import QRCodeDisplay from '../components/tickets/QRCodeDisplay';
 import Badge from '../components/common/Badge';
@@ -55,12 +56,22 @@ const ORDER_STATUS_LABEL: Record<string, string> = {
 
 export default function MyTickets() {
   const { data: orders, isLoading } = useMyOrders();
+
+  // Bloquer le retour arrière — l'utilisateur ne peut quitter que via "Retour à l'accueil"
+  useEffect(() => {
+    window.history.pushState(null, '', window.location.href);
+    const onPopState = () => {
+      window.history.pushState(null, '', window.location.href);
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
   const { data: receivedTickets } = useReceivedTickets();
   const { logout, user } = useAuthStore();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null);
   const [refundModal, setRefundModal] = useState<{ type: 'order' | 'ticket'; id: string; eventTitle: string } | null>(null);
   const [refundReason, setRefundReason] = useState('');
   const [refundLoading, setRefundLoading] = useState(false);
@@ -68,6 +79,28 @@ export default function MyTickets() {
   const [transferInput, setTransferInput] = useState('');
   const [transferLoading, setTransferLoading] = useState(false);
   const [transferSuccess, setTransferSuccess] = useState<string | null>(null);
+  const [expandedTickets, setExpandedTickets] = useState<Set<string>>(new Set());
+
+  // Liste fusionnée commandes + billets reçus, triée par date de réception desc
+  const feedEntries = useMemo(() => {
+    const entries: Array<{ type: 'order' | 'received'; data: any; receivedAt: Date }> = [];
+    (orders ?? []).forEach((o: any) => {
+      entries.push({ type: 'order', data: o, receivedAt: new Date(o.createdAt) });
+    });
+    (receivedTickets ?? []).forEach((t: any) => {
+      entries.push({ type: 'received', data: t, receivedAt: new Date(t.updatedAt) });
+    });
+    return entries.sort((a, b) => b.receivedAt.getTime() - a.receivedAt.getTime());
+  }, [orders, receivedTickets]);
+
+  const toggleTickets = (orderId: string) => {
+    setExpandedTickets((prev) => {
+      const next = new Set(prev);
+      if (next.has(orderId)) next.delete(orderId);
+      else next.add(orderId);
+      return next;
+    });
+  };
 
   const handleRequestRefund = async () => {
     if (!refundModal) return;
@@ -102,6 +135,8 @@ export default function MyTickets() {
       setTransferSuccess(data.data.recipientName);
       setTransferInput('');
       toast.success(`Billet transféré à ${data.data.recipientName}`);
+      queryClient.invalidateQueries('my-orders');
+      queryClient.invalidateQueries('received-tickets');
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
       toast.error(e?.response?.data?.message || 'Impossible de transférer le billet');
@@ -110,28 +145,6 @@ export default function MyTickets() {
     }
   };
 
-  const handleDownloadPDF = async (orderId: string, tickets: { id: string; status: string }[], eventTitle: string) => {
-    const unused = tickets.filter((t) => t.status !== 'CANCELLED');
-    if (unused.length === 0) return;
-    setDownloadingPdf(orderId);
-    try {
-      // Télécharger chaque billet PDF individuellement
-      for (const ticket of unused) {
-        const response = await api.get(`/tickets/${ticket.id}/pdf`, { responseType: 'blob' });
-        const url = URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `billet-${eventTitle.replace(/\s+/g, '-')}-${ticket.id.slice(0, 8)}.pdf`;
-        a.click();
-        URL.revokeObjectURL(url);
-      }
-      toast.success(`${unused.length} billet(s) téléchargé(s)`);
-    } catch {
-      toast.error('Erreur lors du téléchargement');
-    } finally {
-      setDownloadingPdf(null);
-    }
-  };
   const handleDeleteAccount = async () => {
     setDeleting(true);
     try {
@@ -163,14 +176,25 @@ export default function MyTickets() {
         </Link>
       </div>
 
+      {user?.email && !user.isVerified && (
+        <div className="mb-4 flex items-start gap-3 glass-card p-4 border border-yellow-400/20 bg-yellow-400/5">
+          <MailWarning className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm text-white/80 font-medium">Vérifiez votre email</p>
+            <p className="text-xs text-white/40 mt-0.5">
+              Un email vous a été envoyé à <span className="text-yellow-400/80">{user.email}</span>. Vérifiez votre boîte pour recevoir vos billets par email.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="mb-6">
         <div className="flex items-start gap-3 glass-card p-4 border border-cyan-neon/20 bg-cyan-neon/5">
           <ImageDown className="w-5 h-5 text-cyan-neon flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm text-white/80 font-medium">Enregistrez votre billet dans votre galerie</p>
+            <p className="text-sm text-white/80 font-medium">Enregistrez votre billet en image</p>
             <p className="text-xs text-white/40 mt-0.5">
-              Appuyez sur "Afficher le QR code" puis sur "Enregistrer" — votre billet est généré en image
-              et envoyé dans votre galerie photo. Retrouvez-le à tout moment, même sans connexion.
+              Affichez le QR code puis appuyez sur "Enregistrer" — disponible dans votre galerie, même sans connexion.
             </p>
           </div>
         </div>
@@ -182,7 +206,7 @@ export default function MyTickets() {
         </div>
       )}
 
-      {!isLoading && (!orders || orders.length === 0) && (
+      {!isLoading && feedEntries.length === 0 && (
         <div className="glass-card p-12 text-center">
           <p className="text-white/40 text-lg">Vous n'avez pas encore de billets</p>
           <p className="text-white/20 text-sm mt-2">Explorez les événements et achetez votre premier ticket !</p>
@@ -190,11 +214,87 @@ export default function MyTickets() {
       )}
 
       <div className="space-y-4">
-        {orders?.map((order: any, i: number) => {
+        {feedEntries.map((entry, i) => {
+          if (entry.type === 'received') {
+            const ticket = entry.data;
+            return (
+              <motion.div
+                key={`received-${ticket.id}`}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.04 }}
+                className="glass-card p-5 border border-cyan-neon/20"
+              >
+                {/* Badge réception */}
+                <div className="flex items-center gap-1.5 text-xs text-cyan-neon/70 mb-3">
+                  <ArrowDownToLine className="w-3.5 h-3.5" />
+                  <span>Billet reçu par transfert</span>
+                  <span className="text-white/20 mx-1">·</span>
+                  <CalendarCheck className="w-3.5 h-3.5" />
+                  <span>{formatReceiptDate(ticket.updatedAt)}</span>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  {ticket.category.event.coverImageUrl && (
+                    <img
+                      src={ticket.category.event.coverImageUrl}
+                      alt=""
+                      className="w-full sm:w-24 h-20 object-cover rounded-xl opacity-70 flex-shrink-0"
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bebas text-lg tracking-wide text-white">{ticket.category.event.title}</h3>
+                    <p className="text-xs text-white/50">{formatEventDate(ticket.category.event.eventDate)}</p>
+                    <p className="text-xs text-white/40">{ticket.category.event.venueName}</p>
+                    <span className="inline-block mt-2 bg-cyan-neon/20 text-cyan-neon text-xs px-3 py-1 rounded-full border border-cyan-neon/30">
+                      {ticket.category.name}
+                    </span>
+                    <div className="mt-2">
+                      {ticket.status === 'USED' ? (
+                        <span className="flex items-center gap-1.5 text-xs text-rose-neon">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Billet déjà utilisé
+                        </span>
+                      ) : ticket.status === 'REFUNDED' || ticket.status === 'CANCELLED' ? (
+                        <span className="flex items-center gap-1.5 text-xs text-white/30">
+                          <X className="w-3.5 h-3.5" />
+                          Billet annulé
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1.5 text-xs text-green-400">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          1 entrée disponible
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <QRCodeDisplay
+                    ticketId={ticket.id}
+                    usedCount={ticket.status === 'USED' ? 1 : 0}
+                    totalCount={1}
+                    eventTitle={ticket.category.event.title}
+                    categoryName={ticket.category.name}
+                    eventDate={ticket.category.event.eventDate}
+                    venueName={ticket.category.event.venueName}
+                    coverImageUrl={ticket.category.event.coverImageUrl}
+                    buyerName={user ? `${user.firstName} ${user.lastName}` : undefined}
+                    buyerEmail={user?.email ?? undefined}
+                    price={ticket.category.price}
+                    disabled={ticket.status === 'REFUNDED' || ticket.status === 'CANCELLED'}
+                  />
+                </div>
+              </motion.div>
+            );
+          }
+
+          const order = entry.data;
           const totalTickets: number = order.tickets?.length ?? 0;
-          const activeTickets: number = order.tickets?.filter((t: any) => t.status !== 'REFUNDED' && t.status !== 'CANCELLED').length ?? 0;
-          const usedTickets: number = order.tickets?.filter((t: any) => t.status === 'USED').length ?? 0;
-          const availableTickets: number = order.tickets?.filter((t: any) => t.status === 'UNUSED').length ?? 0;
+          // Exclure les billets transférés (buyerId !== user.id) des compteurs de l'envoyeur
+          const myTickets = (order.tickets ?? []).filter((t: any) => t.buyerId === user?.id);
+          const activeTickets: number = myTickets.filter((t: any) => t.status !== 'REFUNDED' && t.status !== 'CANCELLED').length;
+          const usedTickets: number = myTickets.filter((t: any) => t.status === 'USED').length;
+          const availableTickets: number = myTickets.filter((t: any) => t.status === 'UNUSED').length;
           const totalItems: string = order.orderItems
             .map((item: any) => `${item.quantity}× ${item.category.name}`)
             .join(', ');
@@ -205,12 +305,12 @@ export default function MyTickets() {
               key={order.id}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="glass-card overflow-hidden"
+              transition={{ delay: i * 0.04 }}
+              className="glass-card"
             >
               <div className="flex flex-col md:flex-row">
                 {/* Event cover */}
-                <div className="md:w-32 h-32 md:h-auto flex-shrink-0 bg-bg-secondary">
+                <div className="md:w-24 h-24 md:h-auto flex-shrink-0 bg-bg-secondary overflow-hidden rounded-t-2xl md:rounded-t-none md:rounded-l-2xl">
                   {order.event.coverImageUrl ? (
                     <img src={order.event.coverImageUrl} alt="" className="w-full h-full object-cover opacity-70" />
                   ) : (
@@ -219,12 +319,17 @@ export default function MyTickets() {
                 </div>
 
                 {/* Order info */}
-                <div className="flex-1 p-5">
+                <div className="flex-1 p-4">
+                  {/* Badge date de réception */}
+                  <div className="flex items-center gap-1.5 text-xs text-white/30 mb-2">
+                    <CalendarCheck className="w-3 h-3" />
+                    <span>Reçu le {formatReceiptDate(order.createdAt)}</span>
+                  </div>
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h3 className="font-bebas text-xl tracking-wide text-white">{order.event.title}</h3>
+                      <h3 className="font-bebas text-lg tracking-wide text-white">{order.event.title}</h3>
                       <p className="text-xs text-white/50">{formatEventDate(order.event.eventDate)}</p>
-                      <p className="text-xs text-white/40 mt-0.5">{order.event.venueName}</p>
+                      <p className="text-xs text-white/40">{order.event.venueName}</p>
                     </div>
                     <Badge variant={ORDER_STATUS_VARIANT[order.status] || 'gray'}>
                       {ORDER_STATUS_LABEL[order.status] || order.status}
@@ -232,7 +337,7 @@ export default function MyTickets() {
                   </div>
 
                   {/* Détail billets */}
-                  <div className="flex items-center gap-3 mt-3 flex-wrap">
+                  <div className="flex items-center gap-3 mt-2 flex-wrap">
                     <span
                       className="bg-violet-neon/20 text-violet-neon text-xs px-3 py-1 rounded-full border border-violet-neon/30 min-w-0 max-w-[220px] truncate inline-block"
                       title={totalItems}
@@ -245,54 +350,62 @@ export default function MyTickets() {
                   </div>
 
                   {/* Statut utilisation */}
-                  {isCompleted && activeTickets > 0 && (
-                    <div className="flex items-center gap-2 mt-2">
-                      {availableTickets === 0 && usedTickets > 0 ? (
+                  {isCompleted && (
+                    <div className="flex items-center gap-2 mt-1.5">
+                      {myTickets.length === 0 && (order.tickets?.length ?? 0) > 0 ? (
+                        <span className="flex items-center gap-1.5 text-xs text-white/40">
+                          <ArrowRightLeft className="w-3.5 h-3.5" />
+                          Tous les billets ont été transférés
+                        </span>
+                      ) : availableTickets === 0 && usedTickets > 0 ? (
                         <span className="flex items-center gap-1.5 text-xs text-rose-neon">
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           Tous les billets ont été utilisés
                         </span>
-                      ) : usedTickets === 0 ? (
+                      ) : activeTickets > 0 && usedTickets === 0 ? (
                         <span className="flex items-center gap-1.5 text-xs text-green-400">
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           {availableTickets} entrée{availableTickets > 1 ? 's' : ''} disponible{availableTickets > 1 ? 's' : ''}
                         </span>
-                      ) : (
+                      ) : activeTickets > 0 ? (
                         <span className="flex items-center gap-1.5 text-xs text-yellow-400">
                           <Clock className="w-3.5 h-3.5" />
-                          {usedTickets}/{activeTickets} utilisé{usedTickets > 1 ? 's' : ''}
+                          {availableTickets} restant{availableTickets > 1 ? 's' : ''} sur {activeTickets}
                         </span>
-                      )}
+                      ) : null}
                     </div>
                   )}
 
-                  {/* QR Code groupe */}
-                  {totalTickets > 0 ? (
-                    <div className="mt-4 space-y-3">
-                      <QRCodeDisplay
-                        orderId={order.id}
-                        usedCount={usedTickets}
-                        totalCount={activeTickets}
-                        eventTitle={order.event.title}
-                        categoryName={order.orderItems[0]?.category?.name}
-                        eventDate={order.event.eventDate}
-                        venueName={order.event.venueName}
-                        coverImageUrl={order.event.coverImageUrl}
-                        disabled={
-                          order.status === 'REFUNDED' ||
-                          (order.tickets ?? []).length > 0 &&
-                          (order.tickets ?? []).every(t => t.status === 'REFUNDED' || t.status === 'CANCELLED')
-                        }
-                      />
-                      <button
-                        onClick={() => handleDownloadPDF(order.id, order.tickets ?? [], order.event.title)}
-                        disabled={downloadingPdf === order.id}
-                        className="flex items-center gap-2 text-xs px-4 py-2 rounded-xl bg-violet-neon/10 border border-violet-neon/30 text-violet-neon hover:bg-violet-neon/20 transition-colors disabled:opacity-40"
-                      >
-                        <FileDown className="w-3.5 h-3.5" />
-                        {downloadingPdf === order.id ? 'Téléchargement...' : `Télécharger ${totalTickets > 1 ? `les ${totalTickets} billets` : 'le billet'} (PDF)`}
-                      </button>
-                    </div>
+                  {/* QR Code commande (1 QR pour tout le groupe) */}
+                  {(order.tickets?.length ?? 0) > 0 ? (
+                    myTickets.length === 0 ? (
+                      <div className="mt-3 p-4 rounded-xl border border-white/10 bg-white/[0.03] text-center">
+                        <ArrowRightLeft className="w-5 h-5 text-white/20 mx-auto mb-1.5" />
+                        <p className="text-xs text-white/30">
+                          Tous les billets de cette commande ont été transférés.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="mt-3 space-y-3">
+                        <QRCodeDisplay
+                          orderId={order.id}
+                          usedCount={usedTickets}
+                          totalCount={activeTickets}
+                          eventTitle={order.event.title}
+                          categoryName={order.orderItems.map((item: any) => `${item.quantity}× ${item.category.name}`).join(', ')}
+                          eventDate={order.event.eventDate}
+                          venueName={order.event.venueName}
+                          coverImageUrl={order.event.coverImageUrl}
+                          buyerName={user ? `${user.firstName} ${user.lastName}` : undefined}
+                          buyerEmail={user?.email ?? undefined}
+                          price={order.totalAmount}
+                          disabled={
+                            order.status === 'REFUNDED' ||
+                            (order.tickets ?? []).every((t: any) => t.status === 'REFUNDED' || t.status === 'CANCELLED')
+                          }
+                        />
+                      </div>
+                    )
                   ) : (
                     <p className="text-xs text-white/30 mt-3 italic">
                       Le QR Code sera disponible après confirmation du paiement.
@@ -301,81 +414,100 @@ export default function MyTickets() {
 
                   {/* Remboursement — commande entière (si remboursement déjà traité au niveau commande) */}
                   {order.status === 'REFUNDED' && (
-                    <p className="mt-3 text-xs flex items-center gap-1.5 text-green-400">
+                    <p className="mt-2 text-xs flex items-center gap-1.5 text-green-400">
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       Commande remboursée
                     </p>
                   )}
                   {order.refundStatus === 'REQUESTED' && (
-                    <p className="mt-3 text-xs flex items-center gap-1.5 text-yellow-400">
+                    <p className="mt-2 text-xs flex items-center gap-1.5 text-yellow-400">
                       <RotateCcw className="w-3.5 h-3.5" />
                       Remboursement total en cours d'examen
                     </p>
                   )}
 
                   {/* Remboursement partiel — billet par billet */}
-                  {isCompleted && order.status !== 'REFUNDED' && order.refundStatus === 'NONE' && new Date(order.event.eventDate) > new Date() && order.tickets && order.tickets.length > 0 && (
-                    <div className="mt-4 border-t border-white/5 pt-3 space-y-1.5">
-                      <p className="text-xs text-white/30 uppercase tracking-wider mb-2">Billets</p>
-                      {order.tickets.map((ticket: any, idx: number) => {
-                        const tRefund = ticket.refundStatus ?? 'NONE';
-                        return (
-                          <div key={ticket.id} className="flex items-center justify-between gap-2">
-                            <span className="text-xs text-white/50">
-                              Billet {String(idx + 1).padStart(2, '0')}
-                              {ticket.category?.name && (
-                                <span className="ml-1.5 text-violet-neon/70 font-medium">{ticket.category.name}</span>
-                              )}
-                              <span className="font-mono text-white/20 ml-1.5">{ticket.id.slice(0, 8)}</span>
-                            </span>
-                            {ticket.buyerId && ticket.buyerId !== user?.id ? (
-                              <span className="text-xs text-cyan-neon flex items-center gap-1">
-                                <ArrowRightLeft className="w-3 h-3" /> Transféré
-                              </span>
-                            ) : ticket.status === 'USED' ? (
-                              <span className="text-xs text-white/20">Utilisé</span>
-                            ) : ticket.status === 'REFUNDED' ? (
-                              <span className="text-xs text-green-400 flex items-center gap-1">
-                                <CheckCircle2 className="w-3 h-3" /> Remboursé
-                              </span>
-                            ) : tRefund === 'REQUESTED' ? (
-                              <span className="text-xs text-yellow-400 flex items-center gap-1">
-                                <RotateCcw className="w-3 h-3" /> En examen
-                              </span>
-                            ) : tRefund === 'APPROVED' ? (
-                              <span className="text-xs text-green-400 flex items-center gap-1">
-                                <CheckCircle2 className="w-3 h-3" /> Approuvé
-                              </span>
-                            ) : (
-                              <div className="flex items-center gap-2">
-                                {tRefund === 'REJECTED' && (
-                                  <>
-                                    <span className="text-xs text-white/30 flex items-center gap-1">
-                                      <X className="w-3 h-3" /> Refusé
-                                    </span>
-                                    <span className="text-white/10">·</span>
-                                  </>
+                  {isCompleted && order.status !== 'REFUNDED' && order.refundStatus === 'NONE' && new Date(order.event.eventDate) > new Date() && order.tickets && order.tickets.length > 0 && (() => {
+                    const tickets = order.tickets;
+                    const isExpanded = expandedTickets.has(order.id);
+                    const SHOW = 3;
+                    const visibleTickets = isExpanded ? tickets : tickets.slice(0, SHOW);
+                    const hiddenCount = tickets.length - SHOW;
+                    return (
+                      <div className="mt-3 border-t border-white/5 pt-2.5 space-y-1.5">
+                        <p className="text-xs text-white/30 uppercase tracking-wider mb-2">Billets</p>
+                        {visibleTickets.map((ticket: any, idx: number) => {
+                          const tRefund = ticket.refundStatus ?? 'NONE';
+                          return (
+                            <div key={ticket.id} className="flex items-center justify-between gap-2">
+                              <span className="text-xs text-white/50">
+                                Billet {String(idx + 1).padStart(2, '0')}
+                                {ticket.category?.name && (
+                                  <span className="ml-1.5 text-violet-neon/70 font-medium">{ticket.category.name}</span>
                                 )}
-                                <button
-                                  onClick={() => { setTransferModal({ ticketId: ticket.id, ticketNum: idx + 1, eventTitle: order.event.title }); setTransferSuccess(null); setTransferInput(''); }}
-                                  className="text-xs text-white/25 hover:text-cyan-neon transition-colors flex items-center gap-1"
-                                >
-                                  <ArrowRightLeft className="w-3 h-3" /> Transférer
-                                </button>
-                                <span className="text-white/10">·</span>
-                                <button
-                                  onClick={() => setRefundModal({ type: 'ticket', id: ticket.id, eventTitle: order.event.title })}
-                                  className="text-xs text-white/25 hover:text-rose-neon transition-colors flex items-center gap-1"
-                                >
-                                  <RotateCcw className="w-3 h-3" /> Rembourser
-                                </button>
-                              </div>
+                                <span className="font-mono text-white/20 ml-1.5">{ticket.id.slice(0, 8)}</span>
+                              </span>
+                              {ticket.buyerId && ticket.buyerId !== user?.id ? (
+                                <span className="text-xs text-cyan-neon flex items-center gap-1">
+                                  <ArrowRightLeft className="w-3 h-3" /> Transféré
+                                </span>
+                              ) : ticket.status === 'USED' ? (
+                                <span className="text-xs text-white/20">Utilisé</span>
+                              ) : ticket.status === 'REFUNDED' ? (
+                                <span className="text-xs text-green-400 flex items-center gap-1">
+                                  <CheckCircle2 className="w-3 h-3" /> Remboursé
+                                </span>
+                              ) : tRefund === 'REQUESTED' ? (
+                                <span className="text-xs text-yellow-400 flex items-center gap-1">
+                                  <RotateCcw className="w-3 h-3" /> En examen
+                                </span>
+                              ) : tRefund === 'APPROVED' ? (
+                                <span className="text-xs text-green-400 flex items-center gap-1">
+                                  <CheckCircle2 className="w-3 h-3" /> Approuvé
+                                </span>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  {tRefund === 'REJECTED' && (
+                                    <>
+                                      <span className="text-xs text-white/30 flex items-center gap-1">
+                                        <X className="w-3 h-3" /> Refusé
+                                      </span>
+                                      <span className="text-white/10">·</span>
+                                    </>
+                                  )}
+                                  <button
+                                    onClick={() => { setTransferModal({ ticketId: ticket.id, ticketNum: idx + 1, eventTitle: order.event.title }); setTransferSuccess(null); setTransferInput(''); }}
+                                    className="text-xs text-white/25 hover:text-cyan-neon transition-colors flex items-center gap-1"
+                                  >
+                                    <ArrowRightLeft className="w-3 h-3" /> Transférer
+                                  </button>
+                                  <span className="text-white/10">·</span>
+                                  <button
+                                    onClick={() => setRefundModal({ type: 'ticket', id: ticket.id, eventTitle: order.event.title })}
+                                    className="text-xs text-white/25 hover:text-rose-neon transition-colors flex items-center gap-1"
+                                  >
+                                    <RotateCcw className="w-3 h-3" /> Rembourser
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {tickets.length > SHOW && (
+                          <button
+                            onClick={() => toggleTickets(order.id)}
+                            className="mt-1.5 flex items-center gap-1.5 text-xs text-violet-neon/60 hover:text-violet-neon transition-colors"
+                          >
+                            {isExpanded ? (
+                              <><ChevronUp className="w-3.5 h-3.5" /> Réduire</>
+                            ) : (
+                              <><ChevronDown className="w-3.5 h-3.5" /> Voir les {hiddenCount} autre{hiddenCount > 1 ? 's' : ''} billet{hiddenCount > 1 ? 's' : ''}</>
                             )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </motion.div>
@@ -449,7 +581,7 @@ export default function MyTickets() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
-            onClick={() => { setTransferModal(null); setTransferSuccess(null); }}
+            onClick={() => { if (!transferSuccess) { setTransferModal(null); setTransferSuccess(null); } }}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
@@ -479,7 +611,7 @@ export default function MyTickets() {
                     Votre QR Code a été invalidé. Le destinataire a reçu une notification.
                   </p>
                   <button
-                    onClick={() => { setTransferModal(null); setTransferSuccess(null); window.location.reload(); }}
+                    onClick={() => { setTransferModal(null); setTransferSuccess(null); }}
                     className="mt-5 px-6 py-2.5 rounded-xl bg-cyan-neon/10 border border-cyan-neon/30 text-cyan-neon text-sm font-semibold hover:bg-cyan-neon/20 transition-colors"
                   >
                     Fermer
@@ -508,7 +640,7 @@ export default function MyTickets() {
                   </div>
                   <div className="flex gap-3">
                     <button
-                      onClick={() => { setTransferModal(null); setTransferSuccess(null); }}
+                      onClick={() => { setTransferModal(null); setTransferInput(''); }}
                       className="flex-1 py-2.5 rounded-xl border border-white/10 text-white/50 hover:text-white text-sm transition-colors"
                     >
                       Annuler
@@ -527,60 +659,6 @@ export default function MyTickets() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Billets reçus par transfert */}
-      {receivedTickets && receivedTickets.length > 0 && (
-        <div className="mt-12">
-          <div className="flex items-center gap-2 mb-4">
-            <ArrowDownToLine className="w-5 h-5 text-cyan-neon" />
-            <h2 className="font-bebas text-2xl tracking-wider text-cyan-neon">BILLETS REÇUS</h2>
-          </div>
-          <div className="space-y-3">
-            {receivedTickets.map((ticket: any) => (
-              <div key={ticket.id} className="glass-card p-5 border border-cyan-neon/20">
-                <div className="flex flex-col sm:flex-row gap-4">
-                  {ticket.category.event.coverImageUrl && (
-                    <img
-                      src={ticket.category.event.coverImageUrl}
-                      alt=""
-                      className="w-full sm:w-24 h-20 object-cover rounded-xl opacity-70 flex-shrink-0"
-                    />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bebas text-lg tracking-wide text-white">{ticket.category.event.title}</h3>
-                    <p className="text-xs text-white/50">{formatEventDate(ticket.category.event.eventDate)}</p>
-                    <p className="text-xs text-white/40">{ticket.category.event.venueName}</p>
-                    <span className="inline-block mt-2 bg-cyan-neon/20 text-cyan-neon text-xs px-3 py-1 rounded-full border border-cyan-neon/30">
-                      {ticket.category.name}
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-4 flex gap-3 flex-wrap">
-                  <QRCodeDisplay
-                    ticketId={ticket.id}
-                    usedCount={ticket.status === 'USED' ? 1 : 0}
-                    totalCount={1}
-                    eventTitle={ticket.category.event.title}
-                    categoryName={ticket.category.name}
-                    eventDate={ticket.category.event.eventDate}
-                    venueName={ticket.category.event.venueName}
-                    coverImageUrl={ticket.category.event.coverImageUrl}
-                    disabled={ticket.status === 'REFUNDED' || ticket.status === 'CANCELLED'}
-                  />
-                  <button
-                    onClick={() => handleDownloadPDF(ticket.orderId, [ticket], ticket.category.event.title)}
-                    disabled={downloadingPdf === ticket.id}
-                    className="flex items-center gap-2 text-xs px-4 py-2 rounded-xl bg-violet-neon/10 border border-violet-neon/30 text-violet-neon hover:bg-violet-neon/20 transition-colors disabled:opacity-40"
-                  >
-                    <FileDown className="w-3.5 h-3.5" />
-                    {downloadingPdf === ticket.orderId ? 'Téléchargement...' : 'Télécharger (PDF)'}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Zone données personnelles */}
       <div className="mt-16 pt-8 border-t border-white/5">

@@ -54,6 +54,7 @@ api.interceptors.response.use(
           const { accessToken: newAccess, refreshToken: newRefresh } = await doRefresh(token);
           localStorage.setItem('accessToken', newAccess);
           localStorage.setItem('refreshToken', newRefresh);
+          window.dispatchEvent(new CustomEvent('token-refreshed'));
           // Sync le store Zustand (import dynamique pour éviter la dépendance circulaire)
           import('../stores/authStore').then(({ useAuthStore }) => {
             useAuthStore.getState().setTokens(newAccess, newRefresh);
@@ -68,7 +69,7 @@ api.interceptors.response.use(
           Promise.all([
             import('../stores/authStore').then(({ useAuthStore }) => useAuthStore.getState().forceLogout()),
             import('../router').then(({ router }) => router.navigate('/login', { replace: true })),
-          ]);
+          ]).catch(() => {});
           return Promise.reject(error);
         }
       } else {
@@ -76,7 +77,7 @@ api.interceptors.response.use(
         Promise.all([
           import('../stores/authStore').then(({ useAuthStore }) => useAuthStore.getState().forceLogout()),
           import('../router').then(({ router }) => router.navigate('/login', { replace: true })),
-        ]);
+        ]).catch(() => {});
         return Promise.reject(error);
       }
     }

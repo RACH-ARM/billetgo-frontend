@@ -15,6 +15,10 @@ export const formatTimeUntil = (date: string | Date): string => {
   return formatDistance(d, new Date(), { locale: fr, addSuffix: true });
 };
 
+export const formatReceiptDate = (date: string | Date): string => {
+  return format(new Date(date), "d MMM yyyy 'à' HH'h'mm", { locale: fr });
+};
+
 export const getCountdownParts = (date: string | Date): { days: number; hours: number; minutes: number; seconds: number } | null => {
   const target = new Date(date).getTime();
   const now = Date.now();

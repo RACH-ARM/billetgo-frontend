@@ -191,8 +191,7 @@ export default function Confidentialite() {
             <p>
               Pour toute question relative à la protection de vos données personnelles :{' '}
               <a href="mailto:contact@billetgo.ga" className="text-violet-neon hover:underline">contact@billetgo.ga</a>
-              {' '}ou par WhatsApp au{' '}
-              <a href="https://wa.me/24162557655" className="text-violet-neon hover:underline">+241 62 557 655</a>.
+              {' '}ou par téléphone au +241 62 557 655.
             </p>
           </Section>
 

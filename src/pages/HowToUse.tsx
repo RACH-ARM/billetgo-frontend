@@ -153,7 +153,7 @@ const STEPS: Omit<StepCardProps, 'stepNumber'>[] = [
     title: 'Enregistrer votre billet en image',
     Icon: ImageDown,
     description:
-      'Dans "Mes billets", affichez votre QR code puis appuyez sur "Enregistrer". Une image de votre billet (avec la photo de l\'événement, la date, le lieu et le QR code) est générée et envoyée directement dans votre galerie photo.',
+      'Dans "Mes billets", affichez votre QR code puis appuyez sur "Enregistrer". Votre billet est sauvegardé directement dans votre galerie photo — accessible même sans connexion.',
     cta: { label: 'Mes billets', to: '/mes-billets' },
   },
   {

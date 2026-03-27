@@ -49,10 +49,8 @@ export default function About() {
                 et surtout aucun moyen de payer en ligne sans carte bancaire.
               </p>
               <p>
-                En partenariat avec <span className="text-rose-neon font-semibold">DISICK Man Show</span>,
-                l'une des structures événementielles les plus actives du Gabon, nous avons développé
-                une solution 100% locale : paiement Airtel Money et Moov Money, billets QR Code sécurisés,
-                et une interface pensée pour les smartphones africains.
+                Nous avons développé une solution 100% locale : paiement Airtel Money et Moov Money,
+                billets QR Code sécurisés, et une interface pensée pour les smartphones africains.
               </p>
               <p>
                 Aujourd'hui, BilletGo accompagne les organisateurs dans la gestion complète de leurs événements :
@@ -98,19 +96,6 @@ export default function About() {
       </section>
 
       {/* Partenaire */}
-      <section className="py-16 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="glass-card rounded-2xl p-8 border border-rose-neon/20 text-center">
-            <h2 className="font-bebas text-3xl tracking-wider text-rose-neon mb-3">Partenaire fondateur</h2>
-            <p className="text-white/60 mb-2">
-              <span className="text-white font-semibold">DISICK Man Show</span> — Structure événementielle gabonaise partenaire depuis la création de BilletGo.
-            </p>
-            <p className="text-white/40 text-sm">
-              Ensemble, on organise les plus grandes soirées de Libreville.
-            </p>
-          </div>
-        </div>
-      </section>
 
       {/* CTA */}
       <section className="py-16 px-4 text-center">

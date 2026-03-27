@@ -77,7 +77,7 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.closePath();
 }
 
-// ─── Main generator ───────────────────────────────────────────────────────────
+// ─── Interface ────────────────────────────────────────────────────────────────
 
 export interface TicketCanvasOpts {
   ticketId: string;
@@ -86,16 +86,23 @@ export interface TicketCanvasOpts {
   eventDate?: string;
   venueName?: string;
   coverImageUrl?: string;
+  buyerName?: string;
+  buyerEmail?: string;
+  price?: number;
 }
+
+// ─── Main generator ───────────────────────────────────────────────────────────
 
 export async function generateTicketCanvas(
   canvas: HTMLCanvasElement,
   qrDataUrl: string,
   opts: TicketCanvasOpts
 ) {
-  const { ticketId, eventTitle, categoryName, eventDate, venueName, coverImageUrl } = opts;
+  const { ticketId, eventTitle, categoryName, eventDate, venueName, coverImageUrl, buyerName, buyerEmail, price } = opts;
+
+  const hasBuyer = buyerName || buyerEmail || price !== undefined;
   const W = 640;
-  const H = 1100;
+  const H = hasBuyer ? 1220 : 1100;
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext('2d')!;
@@ -142,7 +149,7 @@ export async function generateTicketCanvas(
       const scale = Math.max(W / cover.width, coverH / cover.height);
       const sw = cover.width * scale;
       const sh = cover.height * scale;
-      ctx.drawImage(cover, (W - sw) / 2, (coverH - sh) / 2, sw, sh);
+      ctx.drawImage(cover, (W - sw) / 2, 0, sw, sh);
     } catch {
       const fb = ctx.createLinearGradient(0, 0, W, coverH);
       fb.addColorStop(0, '#2D1060'); fb.addColorStop(1, '#003060');
@@ -175,7 +182,7 @@ export async function generateTicketCanvas(
   ctx.fillStyle = bridge;
   ctx.fillRect(0, coverH - 10, W, 70);
 
-  // 5. Sparkles
+  // 5. Sparkles photo
   drawSparkle(ctx, 58, 44, 9, '#ffffff', 0.75);
   drawSparkle(ctx, 540, 28, 6, '#00E5FF', 0.65);
   drawSparkle(ctx, 590, 120, 4, '#E040FB', 0.55);
@@ -186,7 +193,7 @@ export async function generateTicketCanvas(
   drawDot(ctx, 320, 100, 40, '#E040FB', 0.06);
   drawDot(ctx, 200, 200, 30, '#00E5FF', 0.07);
 
-  // 7. Titre
+  // 6. Titre (centré)
   const title = (eventTitle || 'MON BILLET').toUpperCase();
   let fz = 42;
   ctx.font = `bold ${fz}px Arial, sans-serif`;
@@ -198,11 +205,11 @@ export async function generateTicketCanvas(
   ctx.shadowBlur = 20;
   ctx.shadowOffsetY = 3;
   ctx.fillStyle = '#ffffff';
-  ctx.textAlign = 'left';
-  ctx.fillText(title, 24, coverH - 16);
+  ctx.textAlign = 'center';
+  ctx.fillText(title, W / 2, coverH - 16);
   ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
 
-  // 8. Séparateur
+  // 7. Perforation (ADMIT ONE)
   const sepY = coverH + 46;
   const sepBand = ctx.createLinearGradient(0, coverH, 0, coverH + 90);
   sepBand.addColorStop(0, 'rgba(123,47,190,0.15)');
@@ -230,30 +237,27 @@ export async function generateTicketCanvas(
   ctx.textAlign = 'center';
   ctx.fillText('✦  ADMIT ONE  ✦', W / 2, sepY + 4);
 
-  // 9. Infos événement
+  // 8. Infos événement (centrées)
   let infoY = sepY + 44;
 
   if (categoryName) {
     ctx.font = 'bold 13px Arial, sans-serif';
     const catW = Math.min(ctx.measureText(categoryName.toUpperCase()).width + 40, W - 48);
+    const catX = (W - catW) / 2;
     ctx.save();
     ctx.shadowColor = '#7B2FBE';
     ctx.shadowBlur = 12;
     ctx.fillStyle = 'rgba(123,47,190,0.35)';
-    roundRect(ctx, 24, infoY, catW, 30, 15);
+    roundRect(ctx, catX, infoY, catW, 30, 15);
     ctx.fill();
     ctx.strokeStyle = 'rgba(192,132,252,0.6)';
     ctx.lineWidth = 1;
-    roundRect(ctx, 24, infoY, catW, 30, 15);
+    roundRect(ctx, catX, infoY, catW, 30, 15);
     ctx.stroke();
     ctx.shadowBlur = 0;
     ctx.fillStyle = '#C084FC';
-    ctx.textAlign = 'left';
-    ctx.save();
-    ctx.rect(24, infoY, catW, 30);
-    ctx.clip();
-    ctx.fillText(categoryName.toUpperCase(), 44, infoY + 20);
-    ctx.restore();
+    ctx.textAlign = 'center';
+    ctx.fillText(categoryName.toUpperCase(), W / 2, infoY + 20);
     ctx.restore();
     infoY += 50;
   }
@@ -262,29 +266,88 @@ export async function generateTicketCanvas(
     const d = new Date(eventDate);
     const dateStr = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     const timeStr = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-    ctx.textAlign = 'left';
+    ctx.textAlign = 'center';
     ctx.fillStyle = 'rgba(0,229,255,0.45)';
     ctx.font = '11px Arial, sans-serif';
-    ctx.fillText('DATE & HEURE', 24, infoY);
+    ctx.fillText('DATE & HEURE', W / 2, infoY);
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 15px Arial, sans-serif';
-    ctx.fillText(`${dateStr}  ·  ${timeStr}`, 24, infoY + 19);
+    ctx.fillText(`${dateStr}  ·  ${timeStr}`, W / 2, infoY + 19);
     ctx.fillStyle = 'rgba(0,229,255,0.2)';
     ctx.fillRect(24, infoY + 28, W - 48, 1);
     infoY += 52;
   }
 
   if (venueName) {
-    ctx.textAlign = 'left';
+    ctx.textAlign = 'center';
     ctx.fillStyle = 'rgba(224,64,251,0.45)';
     ctx.font = '11px Arial, sans-serif';
-    ctx.fillText('LIEU', 24, infoY);
+    ctx.fillText('LIEU', W / 2, infoY);
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 15px Arial, sans-serif';
-    ctx.fillText(venueName, 24, infoY + 19);
+    let vText = venueName;
+    while (ctx.measureText(vText).width > W - 48 && vText.length > 10) {
+      vText = vText.slice(0, -3) + '…';
+    }
+    ctx.fillText(vText, W / 2, infoY + 19);
     ctx.fillStyle = 'rgba(224,64,251,0.2)';
     ctx.fillRect(24, infoY + 28, W - 48, 1);
     infoY += 52;
+  }
+
+  // 9. Bloc acheteur (ajout — centré)
+  if (hasBuyer) {
+    const BH = 100;
+    const BY = infoY + 10;
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,0.04)';
+    roundRect(ctx, 24, BY, W - 48, BH, 14);
+    ctx.fill();
+    const topAccent = ctx.createLinearGradient(24, BY, W - 24, BY);
+    topAccent.addColorStop(0, 'rgba(123,47,190,0.7)');
+    topAccent.addColorStop(1, 'rgba(224,64,251,0.7)');
+    ctx.strokeStyle = topAccent;
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, 24, BY, W - 48, BH, 14);
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(192,132,252,0.65)';
+    ctx.font = '10px Arial, sans-serif';
+    ctx.fillText('TITULAIRE', W / 2, BY + 20);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 17px Arial, sans-serif';
+    ctx.fillText(buyerName || 'Acheteur', W / 2, BY + 42);
+
+    if (buyerEmail) {
+      ctx.fillStyle = 'rgba(255,255,255,0.38)';
+      ctx.font = '12px Arial, sans-serif';
+      ctx.fillText(buyerEmail, W / 2, BY + 60);
+    }
+
+    // Ligne basse : catégorie gauche, prix droite
+    const lineY = BY + BH - 16;
+    ctx.fillStyle = 'rgba(255,255,255,0.10)';
+    ctx.fillRect(38, lineY - 10, W - 76, 1);
+
+    if (categoryName) {
+      ctx.fillStyle = 'rgba(192,132,252,0.65)';
+      ctx.font = '11px Arial, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(categoryName, 38, lineY + 2);
+    }
+    if (price !== undefined) {
+      const priceStr = new Intl.NumberFormat('fr-FR').format(price) + ' FCFA';
+      ctx.fillStyle = '#00E5FF';
+      ctx.font = 'bold 12px Arial, sans-serif';
+      ctx.textAlign = 'right';
+      ctx.fillText(priceStr, W - 38, lineY + 2);
+    }
+
+    infoY = BY + BH + 10;
   }
 
   // 10. Zone QR code

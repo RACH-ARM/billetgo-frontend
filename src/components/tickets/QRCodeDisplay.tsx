@@ -21,6 +21,10 @@ interface Props {
   eventDate?: string;
   venueName?: string;
   coverImageUrl?: string;
+  // Infos acheteur
+  buyerName?: string;
+  buyerEmail?: string;
+  price?: number;
   // Désactivé si billet remboursé / annulé
   disabled?: boolean;
 }
@@ -29,6 +33,7 @@ export default function QRCodeDisplay({
   orderId, usedCount = 0, totalCount = 1,
   ticketId,
   eventTitle, categoryName, eventDate, venueName, coverImageUrl,
+  buyerName, buyerEmail, price,
   disabled = false,
 }: Props) {
   const cacheId = orderId ?? ticketId ?? '';
@@ -97,20 +102,30 @@ export default function QRCodeDisplay({
         eventDate,
         venueName,
         coverImageUrl,
+        buyerName,
+        buyerEmail,
+        price,
       });
 
       const blob: Blob = await new Promise(res => canvas.toBlob(b => res(b!), 'image/png'));
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       const file = new File([blob], 'billet-billetgo.png', { type: 'image/png' });
 
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: `Mon billet – ${eventTitle || 'BilletGo'}` });
+      if (isIOS && navigator.share && navigator.canShare?.({ files: [file] })) {
+        // iOS : feuille de partage native → l'utilisateur tape "Enregistrer l'image"
+        await navigator.share({ files: [file], title: 'Mon billet BilletGo' });
+        toast.success('Billet enregistré dans votre galerie', { duration: 3000 });
       } else {
+        // Android + Desktop : téléchargement direct
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url; a.download = 'billet-billetgo.png'; a.target = '_blank';
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        a.href = url;
+        a.download = 'billet-billetgo.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
         setTimeout(() => URL.revokeObjectURL(url), 2000);
-        toast.success('Image téléchargée');
+        toast.success('Billet enregistré dans votre galerie', { duration: 3000 });
       }
     } catch (err) {
       if (err instanceof Error && err.name !== 'AbortError') {
@@ -188,6 +203,7 @@ export default function QRCodeDisplay({
           Disponible hors ligne
         </p>
       )}
+
     </div>
   );
 }

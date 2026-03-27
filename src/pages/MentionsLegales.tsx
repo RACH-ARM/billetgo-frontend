@@ -36,7 +36,7 @@ export default function MentionsLegales() {
             <Row label="Siège social" value="Libreville, Gabon" />
             <Row label="Directeur de publication" value="Tiamiyou Arèmou" />
             <Row label="Email de contact" value={<a href="mailto:contact@billetgo.ga" className="text-violet-neon hover:underline">contact@billetgo.ga</a>} />
-            <Row label="WhatsApp" value={<a href="https://wa.me/24162557655" className="text-violet-neon hover:underline">+241 62 557 655</a>} />
+            <Row label="Téléphone" value="+241 62 557 655" />
           </Section>
 
           <Section title="Hébergement du site">
@@ -87,7 +87,6 @@ export default function MentionsLegales() {
           <Section title="Communications">
             <Row label="Email transactionnel" value="Nodemailer / SMTP (confirmations, billets, notifications)" />
             <Row label="SMS" value="Via opérateurs gabonais (notifications critiques)" />
-            <Row label="WhatsApp" value="Via WhatsApp Business API (support et notifications)" />
             <p>
               Les communications envoyées par BilletGo sont exclusivement transactionnelles (confirmations
               d'achat, billets, notifications de remboursement, annulations d'événements). Aucun message

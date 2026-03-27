@@ -58,7 +58,7 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
     <div className="flex flex-col h-full">
       <div className="px-5 py-6 border-b border-white/5 flex-shrink-0">
         <Link to="/dashboard" onClick={onClose}>
-          <span className="font-bebas text-2xl text-gradient tracking-wider">BILLETGO</span>
+          <img src="/logo.svg" alt="BilletGo" className="h-8 w-auto" />
         </Link>
       </div>
 
@@ -140,7 +140,7 @@ export default function OrganizerLayout() {
         </button>
 
         <Link to="/dashboard">
-          <span className="font-bebas text-xl text-gradient tracking-wider">BILLETGO</span>
+          <img src="/logo.svg" alt="BilletGo" className="h-7 w-auto" />
         </Link>
 
         <Link

@@ -388,6 +388,48 @@ export default function AdminBackoffice() {
     return data.data;
   }, { enabled: tab === 'events' });
 
+  const { data: approvedEventsData, isLoading: approvedEventsLoading } = useQuery('admin-events-approved', async () => {
+    const { data } = await api.get('/admin/events?status=APPROVED');
+    return data.data;
+  }, { enabled: tab === 'events', staleTime: 0 });
+
+  const { data: pendingChangesData, isLoading: pendingChangesLoading } = useQuery('admin-events-pending-changes', async () => {
+    const { data } = await api.get('/admin/events?pendingStatus=PENDING');
+    return data.data;
+  }, { enabled: tab === 'events', staleTime: 0 });
+
+  const { data: completedEventsData, isLoading: completedEventsLoading } = useQuery('admin-events-completed', async () => {
+    const { data } = await api.get('/admin/events?status=COMPLETED&limit=50');
+    return data.data;
+  }, { enabled: tab === 'events', staleTime: 0 });
+
+  const approveEventChanges = useMutation(
+    async (eventId: string) => { await api.patch(`/admin/events/${eventId}/approve-changes`); },
+    {
+      onSuccess: () => {
+        qc.invalidateQueries('admin-events-pending-changes');
+        qc.invalidateQueries('admin-dashboard');
+        toast.success('Modifications approuvées et appliquées');
+      },
+      onError: () => toast.error('Erreur lors de l\'approbation'),
+    }
+  );
+
+  const rejectEventChanges = useMutation(
+    async ({ eventId, adminNote }: { eventId: string; adminNote?: string }) => {
+      await api.patch(`/admin/events/${eventId}/reject-changes`, { adminNote });
+    },
+    {
+      onSuccess: () => {
+        qc.invalidateQueries('admin-events-pending-changes');
+        toast.success('Modifications refusées');
+      },
+      onError: () => toast.error('Erreur lors du refus'),
+    }
+  );
+
+  const [rejectChangesTarget, setRejectChangesTarget] = useState<{ id: string; title: string } | null>(null);
+
   const { data: payoutsData, isLoading: payoutsLoading, refetch: refetchPayouts } = useQuery(
     'admin-payouts',
     async () => {
@@ -467,7 +509,7 @@ export default function AdminBackoffice() {
       await api.patch(`/admin/events/${id}/status`, { status, rejectionReason: reason, adminNote });
     },
     {
-      onSuccess: () => { qc.invalidateQueries('admin-events'); qc.invalidateQueries('admin-dashboard'); toast.success('Statut mis à jour'); },
+      onSuccess: () => { qc.invalidateQueries('admin-events'); qc.invalidateQueries('admin-events-completed'); qc.invalidateQueries('admin-dashboard'); toast.success('Statut mis à jour'); },
       onError: () => toast.error('Erreur lors de la mise à jour'),
     }
   );
@@ -767,8 +809,8 @@ export default function AdminBackoffice() {
             <Icon className="w-4 h-4" />
             {label}
             {(badge ?? 0) > 0 && (
-              <span className="w-5 h-5 bg-rose-neon rounded-full text-xs flex items-center justify-center text-white font-bold">
-                {badge}
+              <span className="min-w-5 h-5 px-1 bg-rose-neon rounded-full text-xs flex items-center justify-center text-white font-bold">
+                {(badge ?? 0) > 99 ? '99+' : badge}
               </span>
             )}
           </button>
@@ -800,18 +842,95 @@ export default function AdminBackoffice() {
 
       {/* ── Events validation tab ── */}
       {tab === 'events' && (
-        eventsLoading ? (
-          <div className="space-y-4">
-            {[1,2,3].map((i) => <SkeletonCard key={i} lines={4} />)}
+        <div className="space-y-8">
+
+          {/* ── File d'attente : APPROVED (publication programmée) ── */}
+          <div>
+            <h2 className="font-bebas text-xl tracking-wider text-white mb-4 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-cyan-neon" />
+              Publication programmée
+              {(approvedEventsData?.events?.length ?? 0) > 0 && (
+                <span className="min-w-5 h-5 px-1 bg-cyan-neon/20 text-cyan-neon rounded-full text-xs flex items-center justify-center font-bold border border-cyan-neon/30">
+                  {approvedEventsData.events.length}
+                </span>
+              )}
+            </h2>
+            {approvedEventsLoading ? (
+              <SkeletonCard lines={3} />
+            ) : !approvedEventsData?.events?.length ? (
+              <div className="glass-card p-8 text-center border border-white/5">
+                <p className="text-white/30 text-sm">Aucun événement approuvé en attente de publication</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {approvedEventsData.events.map((event: Record<string, unknown>) => (
+                  <motion.div
+                    key={event.id as string}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="glass-card p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center border border-cyan-neon/10"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <h3 className="font-bebas text-lg tracking-wide text-white">{event.title as string}</h3>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-neon/20 text-cyan-neon font-semibold border border-cyan-neon/30">APPROUVÉ</span>
+                      </div>
+                      <div className="flex flex-wrap gap-4 text-xs text-white/40">
+                        <span className="flex items-center gap-1"><CalendarDays className="w-3 h-3" />{formatEventDate(event.eventDate as string)}</span>
+                        {(event.scheduledPublishAt as string) && (
+                          <span className="flex items-center gap-1 text-cyan-neon">
+                            <Clock className="w-3 h-3" />
+                            Publication le {new Date(event.scheduledPublishAt as string).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-2 flex-shrink-0">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => updateStatus.mutate({ id: event.id as string, status: 'PUBLISHED' })}
+                        isLoading={updateStatus.isLoading}
+                      >
+                        <CheckCircle className="w-4 h-4" /> Publier maintenant
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => setRejectTarget({ id: event.id as string, title: event.title as string })}
+                      >
+                        <XCircle className="w-4 h-4" /> Annuler
+                      </Button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
           </div>
-        ) :
-        <div className="space-y-4">
-          {!eventsData?.events?.length ? (
-            <div className="glass-card p-16 text-center">
-              <CheckCircle className="w-12 h-12 text-green-400/40 mx-auto mb-3" />
-              <p className="text-white/40">Aucun événement en attente de validation</p>
-            </div>
-          ) : eventsData.events.map((event: Record<string, unknown>) => {
+
+          {/* ── En attente de validation : PENDING_REVIEW ── */}
+          <div>
+            <h2 className="font-bebas text-xl tracking-wider text-white mb-4 flex items-center gap-2">
+              <ListChecks className="w-5 h-5 text-yellow-400" />
+              En attente de validation
+              {(eventsData?.events?.length ?? 0) > 0 && (
+                <span className="min-w-5 h-5 px-1 bg-yellow-400/20 text-yellow-400 rounded-full text-xs flex items-center justify-center font-bold border border-yellow-400/30">
+                  {eventsData.events.length}
+                </span>
+              )}
+            </h2>
+            {eventsLoading ? (
+              <div className="space-y-4">
+                {[1,2,3].map((i) => <SkeletonCard key={i} lines={4} />)}
+              </div>
+            ) : !eventsData?.events?.length ? (
+              <div className="glass-card p-16 text-center">
+                <CheckCircle className="w-12 h-12 text-green-400/40 mx-auto mb-3" />
+                <p className="text-white/40">Aucun événement en attente de validation</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+          {eventsData.events.map((event: Record<string, unknown>) => {
             const org = event.organizer as Record<string, unknown>;
             const orgUser = (org?.user as Record<string, unknown>) ?? {};
             return (
@@ -904,6 +1023,203 @@ export default function AdminBackoffice() {
               </motion.div>
             );
           })}
+              </div>
+            )}
+          </div>
+
+          {/* ── Modifications en attente ── */}
+          <div>
+            <h2 className="font-bebas text-xl tracking-wider text-white mb-4 flex items-center gap-2">
+              <Pencil className="w-5 h-5 text-violet-neon" />
+              Modifications en attente
+              {(pendingChangesData?.events?.length ?? 0) > 0 && (
+                <span className="min-w-5 h-5 px-1 bg-violet-neon/20 text-violet-neon rounded-full text-xs flex items-center justify-center font-bold border border-violet-neon/30">
+                  {pendingChangesData.events.length}
+                </span>
+              )}
+            </h2>
+            {pendingChangesLoading ? (
+              <div className="space-y-4">{[1,2].map((i) => <SkeletonCard key={i} lines={4} />)}</div>
+            ) : !pendingChangesData?.events?.length ? (
+              <div className="glass-card p-10 text-center">
+                <CheckCircle className="w-10 h-10 text-green-400/30 mx-auto mb-3" />
+                <p className="text-white/30 text-sm">Aucune modification en attente</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {pendingChangesData.events.map((event: Record<string, unknown>) => {
+                  const pending = event.pendingChanges as Record<string, unknown> | null;
+                  const org = event.organizer as Record<string, unknown>;
+                  const orgUser = (org?.user as Record<string, unknown>) ?? {};
+                  const cats = event.ticketCategories as Array<{id:string;name:string;price:number;quantityTotal:number;quantitySold:number}>;
+
+                  // Champs qui ont changé
+                  const LABELS: Record<string, string> = {
+                    title: 'Titre', subtitle: 'Sous-titre', description: 'Description',
+                    category: 'Catégorie', eventDate: 'Date', doorsOpenAt: 'Ouverture',
+                    endDate: 'Fin', venueName: 'Lieu', venueAddress: 'Adresse',
+                    venueCity: 'Ville', maxTicketsPerOrder: 'Max billets/commande',
+                    coverImageUrl: 'Affiche',
+                  };
+                  const changes = pending ? Object.entries(pending).filter(([k]) => k !== 'ticketCategories') : [];
+
+                  return (
+                    <motion.div
+                      key={event.id as string}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="glass-card p-5 border border-violet-neon/20"
+                    >
+                      <div className="flex flex-wrap items-center gap-2 mb-3">
+                        <h3 className="font-bebas text-xl tracking-wide text-white">{event.title as string}</h3>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-violet-neon/20 text-violet-neon font-semibold border border-violet-neon/30">
+                          MODIFICATIONS EN ATTENTE
+                        </span>
+                        <span className="text-xs text-white/40">
+                          Par {orgUser.firstName as string} {orgUser.lastName as string} · {orgUser.email as string}
+                        </span>
+                      </div>
+
+                      {/* Diff des champs modifiés */}
+                      {changes.length > 0 && (
+                        <div className="mb-3 space-y-1.5">
+                          <p className="text-xs text-white/30 uppercase tracking-widest mb-2">Modifications proposées</p>
+                          {changes.map(([key, newVal]) => {
+                            const oldVal = event[key];
+                            const label = LABELS[key] || key;
+                            const fmt = (v: unknown) => {
+                              if (v === null || v === undefined || v === '') return <span className="text-white/20 italic">vide</span>;
+                              if (key.toLowerCase().includes('date')) return new Date(v as string).toLocaleString('fr-FR');
+                              return String(v);
+                            };
+                            return (
+                              <div key={key} className="flex items-start gap-2 text-xs">
+                                <span className="text-white/40 w-28 flex-shrink-0">{label}</span>
+                                <span className="text-rose-neon/70 line-through">{fmt(oldVal)}</span>
+                                <span className="text-white/20">→</span>
+                                <span className="text-green-400">{fmt(newVal)}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Catégories modifiées */}
+                      {Array.isArray(pending?.ticketCategories) && (
+                        <div className="mb-3">
+                          <p className="text-xs text-white/30 uppercase tracking-widest mb-2">Catégories proposées</p>
+                          <div className="flex flex-wrap gap-2">
+                            {(pending!.ticketCategories as Array<{id?:string;name:string;price:number;quantityTotal:number}>).map((cat, i) => {
+                              const existing = cats?.find(c => c.id === cat.id);
+                              return (
+                                <span key={i} className={`text-xs px-2.5 py-1 rounded-lg border ${existing ? 'bg-yellow-400/5 border-yellow-400/20 text-yellow-400' : 'bg-green-500/10 border-green-500/20 text-green-400'}`}>
+                                  {cat.name} · {formatPrice(cat.price)} · {cat.quantityTotal} places
+                                  {existing ? ' (modif.)' : ' (nouveau)'}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex gap-2 mt-4 pt-3 border-t border-white/5">
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          className="flex items-center gap-1.5"
+                          onClick={() => approveEventChanges.mutate(event.id as string)}
+                          isLoading={approveEventChanges.isLoading}
+                        >
+                          <CheckCircle className="w-4 h-4" /> Approuver les modifications
+                        </Button>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          className="flex items-center gap-1.5"
+                          onClick={() => setRejectChangesTarget({ id: event.id as string, title: event.title as string })}
+                        >
+                          <XCircle className="w-4 h-4" /> Refuser
+                        </Button>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* ── Événements terminés ── */}
+          <div>
+            <h2 className="font-bebas text-xl tracking-wider text-white mb-4 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-white/30" />
+              Terminés
+              {(completedEventsData?.events?.length ?? 0) > 0 && (
+                <span className="min-w-5 h-5 px-1 bg-white/10 text-white/50 rounded-full text-xs flex items-center justify-center font-bold border border-white/10">
+                  {completedEventsData.events.length}
+                </span>
+              )}
+            </h2>
+            {completedEventsLoading ? (
+              <div className="space-y-3">{[1,2,3].map((i) => <SkeletonCard key={i} lines={3} />)}</div>
+            ) : !completedEventsData?.events?.length ? (
+              <div className="glass-card p-10 text-center">
+                <p className="text-white/20">Aucun événement terminé</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {completedEventsData.events.map((event: Record<string, unknown>) => {
+                  const org = event.organizer as Record<string, unknown>;
+                  const orgUser = (org?.user as Record<string, unknown>) ?? {};
+                  const cats = (event.ticketCategories as { quantityTotal: number; quantitySold: number }[]) ?? [];
+                  const totalSold = cats.reduce((s, c) => s + c.quantitySold, 0);
+                  const totalQty = cats.reduce((s, c) => s + c.quantityTotal, 0);
+                  return (
+                    <motion.div
+                      key={event.id as string}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="glass-card p-4 flex flex-col md:flex-row gap-4 border border-white/5 opacity-70 hover:opacity-100 transition-opacity"
+                    >
+                      {(event.coverImageUrl as string) ? (
+                        <img src={event.coverImageUrl as string} alt="" className="w-full md:w-20 h-16 object-cover rounded-lg flex-shrink-0" />
+                      ) : (
+                        <div className="w-full md:w-20 h-16 rounded-lg flex-shrink-0 bg-white/5 flex items-center justify-center">
+                          <span className="text-white/20 text-xs">—</span>
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <h3 className="font-bebas text-lg tracking-wide text-white/80">{event.title as string}</h3>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-white/40">TERMINÉ</span>
+                          <span className="text-xs text-white/30">{event.category as string}</span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-4 text-xs text-white/30">
+                          <span className="flex items-center gap-1">
+                            <CalendarDays className="w-3 h-3" />
+                            {formatEventDate(event.eventDate as string)}
+                          </span>
+                          <span>{(orgUser.firstName as string) ?? ''} {(orgUser.lastName as string) ?? ''}</span>
+                          <span>{totalSold}/{totalQty} billets vendus</span>
+                        </div>
+                        <div className="mt-2 pt-2 border-t border-white/5">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-cyan-neon border border-cyan-neon/20 hover:bg-cyan-neon/10"
+                            onClick={() => updateStatus.mutate({ id: event.id as string, status: 'PUBLISHED' })}
+                            isLoading={updateStatus.isLoading && updateStatus.variables?.id === event.id}
+                          >
+                            Republier
+                          </Button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
         </div>
       )}
 
@@ -2118,6 +2434,20 @@ export default function AdminBackoffice() {
               setRejectTarget(null);
             }}
             onCancel={() => setRejectTarget(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Reject changes modal */}
+      <AnimatePresence>
+        {rejectChangesTarget && (
+          <RejectModal
+            eventTitle={rejectChangesTarget.title}
+            onConfirm={(adminNote) => {
+              rejectEventChanges.mutate({ eventId: rejectChangesTarget.id, adminNote });
+              setRejectChangesTarget(null);
+            }}
+            onCancel={() => setRejectChangesTarget(null)}
           />
         )}
       </AnimatePresence>

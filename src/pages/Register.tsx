@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { registerSchema, type RegisterFormData } from '../utils/validateForm';
+import { normalizeGabonPhone } from '../utils/phone';
 import Button from '../components/common/Button';
 import toast from 'react-hot-toast';
 
@@ -21,12 +22,13 @@ export default function Register() {
 
   const { register, handleSubmit, formState: { errors } } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { role: 'BUYER' },
+    defaultValues: { role: defaultRole },
   });
 
   const onSubmit = async (data: RegisterFormData) => {
     try {
-      await registerUser({ ...data, role, cguAcceptedAt: new Date().toISOString() });
+      const phone = data.phone ? (normalizeGabonPhone(data.phone) ?? undefined) : undefined;
+      await registerUser({ ...data, phone, role, cguAcceptedAt: new Date().toISOString() });
       if (data.email) {
         toast.success('Compte créé ! Vérifiez votre email pour activer votre compte.', { duration: 5000 });
       } else {
@@ -34,7 +36,8 @@ export default function Register() {
       }
       navigate(role === 'ORGANIZER' ? '/dashboard' : '/');
     } catch (err: unknown) {
-      const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Erreur lors de l\'inscription';
+      const res = (err as { response?: { data?: { message?: string; errors?: { message: string }[] } } })?.response?.data;
+      const message = res?.errors?.[0]?.message || res?.message || 'Erreur lors de l\'inscription';
       toast.error(message);
     }
   };
@@ -70,33 +73,32 @@ export default function Register() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelClass}>Prénom</label>
-              <input {...register('firstName')} placeholder="Jean" className={inputClass} />
+              <input {...register('firstName')} placeholder="Votre prénom" className={inputClass} />
               {errors.firstName && <p className="text-rose-neon text-xs mt-1">{errors.firstName.message}</p>}
+              <p className="text-xs text-white/30 mt-1">Affiché sur vos billets</p>
             </div>
             <div>
               <label className={labelClass}>Nom</label>
-              <input {...register('lastName')} placeholder="Dupont" className={inputClass} />
+              <input {...register('lastName')} placeholder="Votre nom" className={inputClass} />
               {errors.lastName && <p className="text-rose-neon text-xs mt-1">{errors.lastName.message}</p>}
+              <p className="text-xs text-white/30 mt-1">Affiché sur vos billets</p>
             </div>
           </div>
           <div>
             <label className={labelClass}>Email <span className="text-rose-neon">*</span></label>
             <input {...register('email')} type="email" placeholder="ton@email.com" className={inputClass} />
             {errors.email && <p className="text-rose-neon text-xs mt-1">{errors.email.message}</p>}
+            <p className="text-xs text-white/30 mt-1">Pour recevoir vos confirmations d'achat</p>
           </div>
           <div>
-            <label className={labelClass}>Numéro WhatsApp <span className="text-white/30 font-normal normal-case">(optionnel)</span></label>
-            <input {...register('phone')} type="tel" placeholder="+241 62 55 76 55" className={inputClass} />
-            {errors.phone ? (
-              <p className="text-rose-neon text-xs mt-1">{errors.phone.message}</p>
-            ) : (
-              <p className="text-white/30 text-xs mt-1">Votre QR Code sera envoyé ici après achat</p>
-            )}
+            <label className={labelClass}>Numéro de téléphone <span className="text-white/30 font-normal normal-case">(optionnel)</span></label>
+            <input {...register('phone')} type="tel" placeholder="+241 06X XXX XXX" className={inputClass} />
+            {errors.phone && <p className="text-rose-neon text-xs mt-1">{errors.phone.message}</p>}
           </div>
           {role === 'ORGANIZER' && (
             <div>
               <label className={labelClass}>Nom de la société / Structure</label>
-              <input {...register('companyName')} placeholder="DISICK Events" className={inputClass} />
+              <input {...register('companyName')} placeholder="Nom de votre structure" className={inputClass} />
             </div>
           )}
           <div>
@@ -117,6 +119,7 @@ export default function Register() {
               </button>
             </div>
             {errors.password && <p className="text-rose-neon text-xs mt-1">{errors.password.message}</p>}
+            <p className="text-xs text-white/30 mt-1">Minimum 8 caractères</p>
           </div>
           <div>
             <label className={labelClass}>Confirmer le mot de passe</label>
@@ -136,6 +139,7 @@ export default function Register() {
               </button>
             </div>
             {errors.confirmPassword && <p className="text-rose-neon text-xs mt-1">{errors.confirmPassword.message}</p>}
+            <p className="text-xs text-white/30 mt-1">Doit être identique au mot de passe ci-dessus</p>
           </div>
 
           <label className="flex items-start gap-3 cursor-pointer">

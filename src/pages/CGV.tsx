@@ -89,9 +89,8 @@ export default function CGV() {
               cryptographiquement (HMAC-SHA256), permettant sa validation à l'entrée de l'événement.
             </p>
             <p>
-              Vos billets peuvent être enregistrés dans la galerie de votre téléphone pour un accès hors
-              connexion, ou téléchargés en PDF. La version numérique est acceptée à l'entrée de tous les
-              événements BilletGo — l'impression n'est pas requise.
+              Vos billets peuvent être enregistrés dans votre galerie photo pour un accès hors connexion.
+              La version numérique est acceptée à l'entrée — l'impression n'est pas requise.
             </p>
             <p>
               Une confirmation de commande est également envoyée par email et/ou SMS selon les coordonnées
@@ -181,8 +180,7 @@ export default function CGV() {
             <p>
               Pour toute réclamation relative à un achat :{' '}
               <a href="mailto:contact@billetgo.ga" className="text-violet-neon hover:underline">contact@billetgo.ga</a>
-              {' '}ou par WhatsApp au{' '}
-              <a href="https://wa.me/24162557655" className="text-violet-neon hover:underline">+241 62 557 655</a>.
+              {' '}ou par téléphone au +241 62 557 655.
             </p>
             <p>Nos équipes vous répondent du lundi au samedi de 08h00 à 20h00 (heure de Libreville).</p>
           </Section>

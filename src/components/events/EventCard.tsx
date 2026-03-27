@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Flame, BanIcon } from 'lucide-react';
@@ -10,8 +11,66 @@ import Badge from '../common/Badge';
 import CertifiedBadge from '../common/CertifiedBadge';
 import CountdownTimer from './CountdownTimer';
 
+export function isEventLive(eventDate: string, doorsOpenAt: string | null, endDate: string | null): boolean {
+  const now = Date.now();
+  const start = doorsOpenAt ? new Date(doorsOpenAt).getTime() : new Date(eventDate).getTime();
+  const end = endDate
+    ? new Date(endDate).getTime()
+    : start + 4 * 60 * 60 * 1000;
+  return now >= start && now <= end;
+}
+
+export function isEventComingSoon(eventDate: string, doorsOpenAt: string | null): boolean {
+  if (!doorsOpenAt) return false;
+  const now = Date.now();
+  const eventStart = new Date(eventDate).getTime();
+  const doors = new Date(doorsOpenAt).getTime();
+  // Gap entre la fin du compte à rebours (eventDate) et l'ouverture des portes
+  return now >= eventStart && now < doors;
+}
+
+function LiveRemaining({ endDate, eventDate, doorsOpenAt }: { eventDate: string; doorsOpenAt: string | null; endDate: string | null }) {
+  const compute = () => {
+    const startMs = doorsOpenAt ? new Date(doorsOpenAt).getTime() : new Date(eventDate).getTime();
+    const endMs = endDate
+      ? new Date(endDate).getTime()
+      : startMs + 4 * 60 * 60 * 1000;
+    const diff = endMs - Date.now();
+    if (diff <= 0) return '';
+    const h = Math.floor(diff / 3_600_000);
+    const m = Math.floor((diff % 3_600_000) / 60_000);
+    return h > 0 ? `${h}h ${m}min` : `${m}min`;
+  };
+
+  const [remaining, setRemaining] = useState(compute);
+
+  useEffect(() => {
+    const t = setInterval(() => setRemaining(compute()), 60_000);
+    return () => clearInterval(t);
+  }, [eventDate, endDate]);
+
+  if (!remaining) return null;
+  return (
+    <span className="text-xs font-semibold text-rose-neon">
+      Se termine dans {remaining}
+    </span>
+  );
+}
+
 export default function EventCard({ event }: { event: Event }) {
   const queryClient = useQueryClient();
+  const [isLive, setIsLive] = useState(() => isEventLive(event.eventDate, event.doorsOpenAt, event.endDate));
+  const [isComingSoon, setIsComingSoon] = useState(() => isEventComingSoon(event.eventDate, event.doorsOpenAt));
+
+  useEffect(() => {
+    const tick = () => {
+      setIsLive(isEventLive(event.eventDate, event.doorsOpenAt, event.endDate));
+      setIsComingSoon(isEventComingSoon(event.eventDate, event.doorsOpenAt));
+    };
+    const t = setInterval(tick, 60_000);
+    return () => clearInterval(t);
+  }, [event.eventDate, event.doorsOpenAt, event.endDate]);
+
   const minPrice = event.ticketCategories.length > 0
     ? Math.min(...event.ticketCategories.map((c) => c.price))
     : 0;
@@ -34,25 +93,50 @@ export default function EventCard({ event }: { event: Event }) {
   return (
     <motion.div
       whileHover={{ y: -4 }}
-      className="glass-card overflow-hidden group cursor-pointer"
+      className={`glass-card overflow-hidden group cursor-pointer${isLive ? ' live-card' : ''}`}
       onHoverStart={prefetchEvent}
     >
       <Link to={`/events/${event.id}`}>
-        {/* Cover */}
-        <div className="relative h-48 overflow-hidden bg-bg-secondary">
+        {/* Cover — hauteur dictée par l'image */}
+        <div className="relative overflow-hidden bg-bg-secondary">
           {event.coverImageUrl ? (
-            <img src={event.coverImageUrl} alt={event.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80" />
+            <img src={event.coverImageUrl} alt={event.title} className="w-full h-auto block group-hover:scale-105 transition-transform duration-500 opacity-80" />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center gap-2" style={{ background: 'linear-gradient(135deg, #2D1060 0%, #0D0D1A 60%, #003060 100%)' }}>
+            <div className="w-full aspect-[3/4] flex flex-col items-center justify-center gap-2" style={{ background: 'linear-gradient(135deg, #2D1060 0%, #0D0D1A 60%, #003060 100%)' }}>
               <span className="font-bebas text-2xl tracking-widest text-white/30 px-3 text-center line-clamp-2">{event.title}</span>
               <span className="text-xs text-white/20 uppercase tracking-widest">{event.category}</span>
             </div>
           )}
-          {event.isHot && !isTotallySoldOut && (
+
+          {/* Badge EN COURS */}
+          {isLive && (
+            <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/70 backdrop-blur-sm px-2.5 py-1 rounded-full border border-rose-neon/50">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-neon opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-neon" />
+              </span>
+              <span className="text-xs font-bold text-rose-neon tracking-wider">EN COURS</span>
+            </div>
+          )}
+
+          {/* Badge À VENIR — entre la fin du compte à rebours et l'ouverture des portes */}
+          {!isLive && isComingSoon && (
+            <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/70 backdrop-blur-sm px-2.5 py-1 rounded-full border border-cyan-neon/50">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-neon opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-neon" />
+              </span>
+              <span className="text-xs font-bold text-cyan-neon tracking-wider">À VENIR</span>
+            </div>
+          )}
+
+          {/* Badge HOT — affiché seulement si pas live ni coming soon */}
+          {!isLive && !isComingSoon && event.isHot && !isTotallySoldOut && (
             <div className="absolute top-3 left-3">
               <Badge variant="rose"><Flame className="w-3 h-3 inline mr-1" />HOT</Badge>
             </div>
           )}
+
           {isTotallySoldOut && (
             <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
               <div className="flex flex-col items-center gap-1">
@@ -74,21 +158,35 @@ export default function EventCard({ event }: { event: Event }) {
           <p className="text-xs text-white/50 mt-1">{formatEventDate(event.eventDate)}</p>
           <p className="text-xs text-white/40 mt-0.5 truncate">{event.venueName} — {event.venueCity}</p>
 
-          {/* Countdown */}
+          {/* Countdown / À VENIR / durée restante */}
           <div className="mt-3">
-            <CountdownTimer date={event.eventDate} />
+            {isLive
+              ? <LiveRemaining eventDate={event.eventDate} doorsOpenAt={event.doorsOpenAt} endDate={event.endDate} />
+              : isComingSoon
+                ? <span className="text-xs font-semibold text-cyan-neon">Ouverture des portes dans quelques instants</span>
+                : <CountdownTimer date={event.eventDate} />
+            }
           </div>
 
           {/* Progress bar */}
           <div className="mt-3">
-            <div className="flex justify-between text-xs text-white/40 mb-1">
-              <span>{occupancy}% vendus</span>
-              <span>{totalSold}/{totalTickets}</span>
+            <div className="flex justify-between text-xs mb-1">
+              <span className={occupancy >= 85 ? 'text-rose-neon font-semibold' : 'text-white/40'}>
+                {occupancy}% vendus
+              </span>
+              <span className="text-white/30">{totalSold}/{totalTickets}</span>
             </div>
             <div className="h-1.5 bg-bg-secondary rounded-full overflow-hidden">
               <div
-                className="h-full bg-neon-gradient rounded-full transition-all duration-500"
-                style={{ width: `${occupancy}%` }}
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${occupancy}%`,
+                  background: occupancy >= 90
+                    ? 'linear-gradient(90deg, #E040FB, #ff4466)'
+                    : occupancy >= 70
+                    ? 'linear-gradient(90deg, #f59e0b, #E040FB)'
+                    : 'linear-gradient(135deg, #7B2FBE, #E040FB)',
+                }}
               />
             </div>
           </div>

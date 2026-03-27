@@ -43,6 +43,7 @@ export interface ScannerEntry {
 }
 
 export interface CreateEventTicketCategory {
+  id?: string;
   name: string;
   description?: string;
   price: number;

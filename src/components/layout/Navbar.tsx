@@ -54,8 +54,8 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
 
         {/* Logo */}
-        <Link to="/" onClick={close} className="font-bebas text-2xl tracking-widest text-gradient flex-shrink-0">
-          BILLETGO
+        <Link to="/" onClick={close} className="flex-shrink-0">
+          <img src="/logo.svg" alt="BilletGo" className="h-9 w-auto" />
         </Link>
 
         {/* Desktop nav */}
@@ -92,7 +92,7 @@ export default function Navbar() {
               </Link>
               <button onClick={handleLogout} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm text-white/40 hover:text-rose-neon hover:bg-rose-neon/5 transition-all" title="Déconnexion">
                 <LogOut className="w-4 h-4" />
-                Déco
+                Se déconnecter
               </button>
             </>
           ) : !isAuthenticated ? (

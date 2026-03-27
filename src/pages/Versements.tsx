@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Banknote, Phone, Check, X, MessageCircle, AlertTriangle,
+  Banknote, Phone, Check, X, Mail, AlertTriangle,
   TrendingUp, TrendingDown, Clock, CheckCheck, Star, Award, Shield, Zap,
 } from 'lucide-react';
 import { useOrganizerPayouts, useOrganizerProfile, useUpdateProfile, useOrganizerPayoutSchedules, useOrganizerStats } from '../hooks/useOrganizer';
@@ -15,9 +15,6 @@ import toast from 'react-hot-toast';
 type _Summary = OrganizerPayoutSummary;
 type _Payout = OrganizerPayout;
 type _Schedule = PayoutScheduleEntry;
-
-const SUPPORT_WHATSAPP =
-  (import.meta as { env: Record<string, string> }).env.VITE_SUPPORT_WHATSAPP || '24177000000';
 
 // ── KPI card ──────────────────────────────────────────────────
 interface KpiCardProps {
@@ -539,20 +536,18 @@ export default function Versements() {
         className="glass-card p-4 border border-white/5"
       >
         <div className="flex items-start gap-3">
-          <div className="w-9 h-9 rounded-xl bg-green-500/10 flex items-center justify-center flex-shrink-0">
-            <MessageCircle className="w-4 h-4 text-green-400" />
+          <div className="w-9 h-9 rounded-xl bg-violet-neon/10 flex items-center justify-center flex-shrink-0">
+            <Mail className="w-4 h-4 text-violet-neon" />
           </div>
           <div>
             <p className="text-sm font-semibold text-white mb-1">
               Une question sur vos versements ?
             </p>
             <a
-              href={`https://wa.me/${SUPPORT_WHATSAPP}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-green-400 hover:text-green-300 underline underline-offset-2 transition-colors"
+              href="mailto:support@billetgo.ga"
+              className="text-xs text-violet-neon hover:text-violet-neon/80 underline underline-offset-2 transition-colors"
             >
-              Contacter le support via WhatsApp
+              support@billetgo.ga
             </a>
           </div>
         </div>

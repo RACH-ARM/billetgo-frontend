@@ -3,6 +3,11 @@ import toast from 'react-hot-toast';
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
 
+// Retourne le token courant depuis localStorage
+function getToken(): string | null {
+  return localStorage.getItem('accessToken');
+}
+
 export interface AppNotification {
   id?: string;
   type: string;
@@ -20,7 +25,16 @@ export function useNotifications() {
   const { isAuthenticated, user } = useAuthStore();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [tokenVersion, setTokenVersion] = useState(0);
   const esRef = useRef<EventSource | null>(null);
+
+  // Détecter le refresh du token JWT pour reconnecter le SSE
+  // L'intercepteur Axios dispatche 'token-refreshed' après chaque refresh (même onglet)
+  useEffect(() => {
+    const onTokenRefreshed = () => setTokenVersion((v) => v + 1);
+    window.addEventListener('token-refreshed', onTokenRefreshed);
+    return () => window.removeEventListener('token-refreshed', onTokenRefreshed);
+  }, []);
 
   // Charger l'historique initial depuis la DB
   useEffect(() => {
@@ -40,11 +54,11 @@ export function useNotifications() {
     }).catch(() => {});
   }, [isAuthenticated]);
 
-  // Connexion SSE
+  // Connexion SSE — se reconnecte automatiquement quand le token change
   useEffect(() => {
     if (!isAuthenticated || !user) return;
 
-    const token = localStorage.getItem('accessToken');
+    const token = getToken();
     if (!token) return;
 
     const baseUrl = (import.meta.env.VITE_API_URL as string | undefined) || '/api/v1';
@@ -75,14 +89,17 @@ export function useNotifications() {
     };
 
     es.onerror = () => {
-      // EventSource reconnecter automatiquement — pas d'action nécessaire
+      // Le token a peut-être expiré — fermer pour déclencher une reconnexion propre
+      // via le listener storage quand l'intercepteur Axios refreshera le token
+      es.close();
+      esRef.current = null;
     };
 
     return () => {
       es.close();
       esRef.current = null;
     };
-  }, [isAuthenticated, user?.id]);
+  }, [isAuthenticated, user?.id, tokenVersion]);
 
   const markAllRead = useCallback(async () => {
     if (unreadCount === 0) return;

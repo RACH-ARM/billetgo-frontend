@@ -93,6 +93,7 @@ export default function ResetPassword() {
               </button>
             </div>
             {errors.password && <p className="text-rose-neon text-xs mt-1">{errors.password}</p>}
+            <p className="text-xs text-white/30 mt-1">Minimum 8 caractères</p>
           </div>
 
           <div>
@@ -108,6 +109,7 @@ export default function ResetPassword() {
               />
             </div>
             {errors.confirm && <p className="text-rose-neon text-xs mt-1">{errors.confirm}</p>}
+            <p className="text-xs text-white/30 mt-1">Doit être identique au nouveau mot de passe</p>
           </div>
 
           <Button type="submit" variant="primary" size="lg" isLoading={isLoading} className="w-full mt-2">

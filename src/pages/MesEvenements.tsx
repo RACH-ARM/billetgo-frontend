@@ -4,15 +4,16 @@ import {
   CalendarDays, Ticket, Download, Search,
   ChevronRight, ArrowLeft, Phone, Mail, CreditCard,
   Plus, Trash2, Flame, Star, AlertTriangle, Check,
-  Pencil, Clock, Ban, Tag, X, Banknote, Images, ImagePlus,
+  Pencil, Clock, Ban, Tag, X, Banknote, Images, ImagePlus, MapPin,
 } from 'lucide-react';
-import { useOrganizerStats, useEventBuyers, useCreateEvent, useUpdateEvent, useResubmitEvent, useCancelEvent, useEventPromos, useCreatePromoCode, useDeletePromoCode, useOrganizerProfile, useEventDetails, useEventWaitlist, usePlatformRates, useUploadEventGallery, useDeleteEventGalleryPhoto, type PlatformRates } from '../hooks/useOrganizer';
+import { useOrganizerStats, useEventBuyers, useCreateEvent, useUpdateEvent, useProposeChanges, useResubmitEvent, useCancelEvent, useEventPromos, useCreatePromoCode, useDeletePromoCode, useOrganizerProfile, useEventDetails, useEventWaitlist, usePlatformRates, useUploadEventGallery, useDeleteEventGalleryPhoto, type PlatformRates } from '../hooks/useOrganizer';
 import { organizerService, type OrganizerEventStat, type CreateEventTicketCategory } from '../services/organizerService';
 import { formatPrice } from '../utils/formatPrice';
 import { formatEventDate } from '../utils/formatDate';
 import Spinner from '../components/common/Spinner';
 import Button from '../components/common/Button';
 import toast from 'react-hot-toast';
+import api from '../services/api';
 
 // ── Confirm modal ─────────────────────────────────────────────
 function ConfirmModal({
@@ -102,7 +103,17 @@ function StatusBadge({ status }: { status: string }) {
 const inputCls = 'w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-4 py-3 text-white text-sm placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors';
 const labelCls = 'text-xs text-white/40 uppercase tracking-widest block mb-1.5';
 
-const EMPTY_CATEGORY: CreateEventTicketCategory = { name: '', price: 0, quantityTotal: 0, maxPerOrder: 10 };
+const EMPTY_CATEGORY: CreateEventTicketCategory = { name: '', price: 0, quantityTotal: 0, maxPerOrder: 20 };
+
+function parseMapsCoords(url: string): { lat: number; lng: number } | null {
+  let m = url.match(/@(-?\d+\.?\d+),(-?\d+\.?\d+)/);
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+  m = url.match(/[?&]q=(-?\d+\.?\d+),(-?\d+\.?\d+)/);
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+  m = url.match(/[?&]ll=(-?\d+\.?\d+),(-?\d+\.?\d+)/);
+  if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+  return null;
+}
 
 // ── Payout planning helpers ────────────────────────────────────
 const TIER_SCHEDULES: Record<string, { dayOffset: number; cumPct: number }[]> = {
@@ -132,6 +143,7 @@ const EVENT_CATEGORIES = [
   { value: 'CONCERT', label: 'Concert' },
   { value: 'SPORT', label: 'Sport' },
   { value: 'CULTUREL', label: 'Culturel' },
+  { value: 'RANDONNEE', label: 'Randonnée' },
   { value: 'AUTRE', label: 'Autre' },
 ];
 
@@ -165,14 +177,13 @@ function buildOffers(rates: PlatformRates) {
       value: 'INTERMEDIAIRE',
       label: 'Intermédiaire',
       commission: fmt(rates.intermediateCommission),
-      tagline: 'Visibilité + Promotion DISICK',
+      tagline: 'Visibilité + Promotion active',
       perks: [
         'Tout Standard inclus',
         'Badge HOT + section Tendances',
-        'WhatsApp Broadcast DISICK',
-        'Story Instagram + TikTok DISICK',
+        'Promotion réseaux sociaux',
         'Rapport analytique post-événement',
-        'Support prioritaire WhatsApp',
+        'Support prioritaire',
       ],
       example: ex(rates.intermediateCommission),
       color: 'border-white/15 hover:border-rose-neon/40',
@@ -669,12 +680,39 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
     offer: 'STANDARD',
     eventDate: '', doorsOpenAt: '', endDate: '', scheduledPublishAt: '',
     venueName: '', venueAddress: '', venueCity: 'Libreville',
-    maxTicketsPerOrder: 10,
+    venueLatitude: '' as string | number,
+    venueLongitude: '' as string | number,
+    maxTicketsPerOrder: 20,
   });
+  const [mapsUrl, setMapsUrl] = useState('');
+  const [mapsLoading, setMapsLoading] = useState(false);
   const [categories, setCategories] = useState<CreateEventTicketCategory[]>([{ ...EMPTY_CATEGORY }]);
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [removeCatIndex, setRemoveCatIndex] = useState<number | null>(null);
+
+  const handleMapsUrl = async (url: string) => {
+    setMapsUrl(url);
+    if (!url.trim()) {
+      setForm((f) => ({ ...f, venueLatitude: '', venueLongitude: '' }));
+      return;
+    }
+    const directCoords = parseMapsCoords(url);
+    if (directCoords) {
+      setForm((f) => ({ ...f, venueLatitude: directCoords.lat, venueLongitude: directCoords.lng }));
+      return;
+    }
+    // Lien court ou lien sans coordonnées visibles — résolution via backend
+    setMapsLoading(true);
+    try {
+      const { data } = await api.get(`/utils/resolve-maps?url=${encodeURIComponent(url)}`);
+      setForm((f) => ({ ...f, venueLatitude: data.data.lat, venueLongitude: data.data.lng }));
+    } catch {
+      setForm((f) => ({ ...f, venueLatitude: '', venueLongitude: '' }));
+    } finally {
+      setMapsLoading(false);
+    }
+  };
 
   const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -696,6 +734,18 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
     e.preventDefault();
     if (!form.title || !form.description || !form.eventDate || !form.venueName || !form.venueAddress) {
       toast.error('Remplissez tous les champs obligatoires');
+      return;
+    }
+    if (!form.endDate) {
+      toast.error('La date de fin est obligatoire');
+      return;
+    }
+    if (new Date(form.endDate) <= new Date(form.eventDate)) {
+      toast.error("L'heure de fin doit être après le début de l'événement");
+      return;
+    }
+    if (form.doorsOpenAt && new Date(form.endDate) <= new Date(form.doorsOpenAt)) {
+      toast.error("L'heure de fin doit être après l'ouverture des portes");
       return;
     }
     if (categories.some((c) => !c.name || c.price < 0 || c.quantityTotal <= 0)) {
@@ -765,11 +815,13 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
               <label className={labelCls}>Titre <span className="text-rose-neon">*</span></label>
-              <input value={form.title} onChange={(e) => setField('title', e.target.value)} placeholder="Ex: DISICK Man Show Vol.3" className={inputCls} />
+              <input value={form.title} onChange={(e) => setField('title', e.target.value)} placeholder="Ex: Soirée Libreville Vol.3" className={inputCls} />
+              <p className="text-xs text-white/30 mt-1">Nom principal affiché sur la page de l'événement et dans les billets.</p>
             </div>
             <div className="sm:col-span-2">
               <label className={labelCls}>Sous-titre</label>
               <input value={form.subtitle} onChange={(e) => setField('subtitle', e.target.value)} placeholder="Ex: La nuit la plus chaude de Libreville" className={inputCls} />
+              <p className="text-xs text-white/30 mt-1">Phrase d'accroche affichée sous le titre. Optionnel.</p>
             </div>
             <div className="sm:col-span-2">
               <label className={labelCls}>Description <span className="text-rose-neon">*</span></label>
@@ -780,16 +832,19 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
                 rows={4}
                 className={inputCls + ' resize-none'}
               />
+              <p className="text-xs text-white/30 mt-1">Décrivez l'ambiance, les artistes, le programme. Minimum 20 caractères.</p>
             </div>
             <div>
               <label className={labelCls}>Catégorie</label>
               <select value={form.category} onChange={(e) => setField('category', e.target.value)} className={inputCls}>
                 {EVENT_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
               </select>
+              <p className="text-xs text-white/30 mt-1">Permet aux acheteurs de filtrer les événements par type.</p>
             </div>
             <div>
               <label className={labelCls}>Max billets / commande</label>
-              <input type="number" min={1} max={50} value={form.maxTicketsPerOrder} onChange={(e) => setField('maxTicketsPerOrder', Number(e.target.value))} className={inputCls} />
+              <input type="number" min={1} max={500} value={form.maxTicketsPerOrder} onChange={(e) => setField('maxTicketsPerOrder', Number(e.target.value))} className={inputCls} />
+              <p className="text-xs text-white/30 mt-1">Nombre total de billets qu'un seul acheteur peut commander en une fois, toutes catégories confondues.</p>
             </div>
           </div>
         </div>
@@ -838,14 +893,17 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
             <div>
               <label className={labelCls}>Date & heure de début <span className="text-rose-neon">*</span></label>
               <input type="datetime-local" value={form.eventDate} onChange={(e) => setField('eventDate', e.target.value)} className={inputCls} />
+              <p className="text-xs text-white/30 mt-1">Heure à laquelle l'événement commence officiellement.</p>
             </div>
             <div>
               <label className={labelCls}>Ouverture des portes</label>
               <input type="datetime-local" value={form.doorsOpenAt} onChange={(e) => setField('doorsOpenAt', e.target.value)} className={inputCls} />
+              <p className="text-xs text-white/30 mt-1">Heure à partir de laquelle les acheteurs peuvent entrer. Affiché sur le billet.</p>
             </div>
             <div>
-              <label className={labelCls}>Date & heure de fin</label>
+              <label className={labelCls}>Date & heure de fin <span className="text-rose-neon">*</span></label>
               <input type="datetime-local" value={form.endDate} onChange={(e) => setField('endDate', e.target.value)} className={inputCls} />
+              <p className="text-xs text-white/30 mt-1">Heure de fermeture de l'événement. Détermine quand l'indicateur "EN COURS" s'éteint sur la carte.</p>
             </div>
             <div>
               <label className={labelCls}>Publication programmée <span className="text-white/30 font-normal">(optionnel)</span></label>
@@ -862,14 +920,50 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
             <div>
               <label className={labelCls}>Nom du lieu <span className="text-rose-neon">*</span></label>
               <input value={form.venueName} onChange={(e) => setField('venueName', e.target.value)} placeholder="Ex: Club Empire" className={inputCls} />
+              <p className="text-xs text-white/30 mt-1">Nom de la salle, du club ou de l'espace. Affiché sur le billet.</p>
             </div>
             <div>
               <label className={labelCls}>Ville</label>
               <input value={form.venueCity} onChange={(e) => setField('venueCity', e.target.value)} placeholder="Libreville" className={inputCls} />
+              <p className="text-xs text-white/30 mt-1">Ville où se déroule l'événement.</p>
             </div>
             <div className="sm:col-span-2">
               <label className={labelCls}>Adresse <span className="text-rose-neon">*</span></label>
               <input value={form.venueAddress} onChange={(e) => setField('venueAddress', e.target.value)} placeholder="Ex: Boulevard Triomphal, Libreville" className={inputCls} />
+              <p className="text-xs text-white/30 mt-1">Adresse complète affichée sur le billet et la page de l'événement.</p>
+            </div>
+            <div className="sm:col-span-2">
+              <div className="flex items-start gap-2 bg-cyan-neon/5 border border-cyan-neon/20 rounded-xl px-4 py-3 mb-3">
+                <MapPin className="w-4 h-4 text-cyan-neon flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-white/60 leading-relaxed">
+                  Ajoutez le lien de votre lieu sur Google Maps — les acheteurs verront un bouton
+                  <span className="text-cyan-neon font-semibold"> "Voir sur Google Maps" </span>
+                  sur la page de l'événement pour s'y rendre facilement.
+                </p>
+              </div>
+              <label className={labelCls}>Lien Google Maps <span className="text-white/30 font-normal">(optionnel)</span></label>
+              <input
+                type="url"
+                value={mapsUrl}
+                onChange={(e) => handleMapsUrl(e.target.value)}
+                placeholder="https://maps.app.goo.gl/... ou https://www.google.com/maps/..."
+                className={inputCls}
+              />
+              {mapsLoading ? (
+                <p className="text-xs text-white/40 mt-1 flex items-center gap-1">
+                  <span className="inline-block w-3 h-3 border border-white/30 border-t-white/80 rounded-full animate-spin" /> Résolution du lien en cours…
+                </p>
+              ) : mapsUrl && form.venueLatitude !== '' ? (
+                <p className="text-xs text-green-400 mt-1 flex items-center gap-1">
+                  <Check className="w-3 h-3" /> Coordonnées extraites — le lien Maps sera précis sur la page événement
+                </p>
+              ) : mapsUrl ? (
+                <p className="text-xs text-yellow-400 mt-1">Lien non reconnu — le nom + adresse sera utilisé pour Maps</p>
+              ) : (
+                <p className="text-xs text-white/30 mt-1">
+                  Optionnel. Sur Google Maps : cherchez votre lieu → appuyez sur "Partager" → "Copier le lien".
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -896,22 +990,27 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
                 <div className="col-span-2">
                   <label className={labelCls}>Nom <span className="text-rose-neon">*</span></label>
                   <input value={cat.name} onChange={(e) => setCategoryField(i, 'name', e.target.value)} placeholder="Ex: Standard, VIP, Carré Or" className={inputCls} />
+                  <p className="text-xs text-white/30 mt-1">Nom affiché sur le billet et dans le récapitulatif de commande.</p>
                 </div>
                 <div>
                   <label className={labelCls}>Prix (FCFA) <span className="text-rose-neon">*</span></label>
                   <input type="number" min={0} value={cat.price} onChange={(e) => setCategoryField(i, 'price', Number(e.target.value))} placeholder="5000" className={inputCls} />
+                  <p className="text-xs text-white/30 mt-1">Mettre 0 pour un billet gratuit (frais fixes de 500 FCFA appliqués).</p>
                 </div>
                 <div>
                   <label className={labelCls}>Quantité <span className="text-rose-neon">*</span></label>
                   <input type="number" min={1} value={cat.quantityTotal} onChange={(e) => setCategoryField(i, 'quantityTotal', Number(e.target.value))} placeholder="100" className={inputCls} />
+                  <p className="text-xs text-white/30 mt-1">Nombre total de billets disponibles pour cette catégorie.</p>
                 </div>
                 <div className="col-span-2">
                   <label className={labelCls}>Description</label>
                   <input value={cat.description ?? ''} onChange={(e) => setCategoryField(i, 'description', e.target.value)} placeholder="Ex: Accès dancefloor" className={inputCls} />
+                  <p className="text-xs text-white/30 mt-1">Avantages ou accès inclus dans cette catégorie. Optionnel.</p>
                 </div>
                 <div>
                   <label className={labelCls}>Max / commande</label>
-                  <input type="number" min={1} max={50} value={cat.maxPerOrder ?? 10} onChange={(e) => setCategoryField(i, 'maxPerOrder', Number(e.target.value))} className={inputCls} />
+                  <input type="number" min={1} max={200} value={cat.maxPerOrder ?? 20} onChange={(e) => setCategoryField(i, 'maxPerOrder', Number(e.target.value))} className={inputCls} />
+                  <p className="text-xs text-white/30 mt-1">Limite de billets pour cette catégorie spécifique par acheteur.</p>
                 </div>
               </div>
             </div>
@@ -978,22 +1077,50 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
 }) {
   const { data: eventData, isLoading: loadingEvent } = useEventDetails(eventId);
   const updateEvent = useUpdateEvent();
+  const proposeChanges = useProposeChanges();
   const resubmitEvent = useResubmitEvent();
   const uploadGallery = useUploadEventGallery();
   const deleteGalleryPhoto = useDeleteEventGalleryPhoto();
   const isDraft = eventStatus === 'DRAFT';
+  const isPropose = ['PUBLISHED', 'APPROVED'].includes(eventStatus);
   const [initialized, setInitialized] = useState(false);
   const [form, setForm] = useState({
     title: '', subtitle: '', description: '', category: 'AUTRE',
     eventDate: '', doorsOpenAt: '', endDate: '', scheduledPublishAt: '',
     venueName: '', venueAddress: '', venueCity: 'Libreville',
-    maxTicketsPerOrder: 10,
+    venueLatitude: '' as string | number,
+    venueLongitude: '' as string | number,
+    maxTicketsPerOrder: 20,
   });
+  const [mapsUrl, setMapsUrl] = useState('');
+  const [mapsLoading, setMapsLoading] = useState(false);
   const [categories, setCategories] = useState<CreateEventTicketCategory[]>([{ ...EMPTY_CATEGORY }]);
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [removeCatIndex, setRemoveCatIndex] = useState<number | null>(null);
   const [galleryUrls, setGalleryUrls] = useState<string[]>([]);
+
+  const handleMapsUrl = async (url: string) => {
+    setMapsUrl(url);
+    if (!url.trim()) {
+      setForm((f) => ({ ...f, venueLatitude: '', venueLongitude: '' }));
+      return;
+    }
+    const directCoords = parseMapsCoords(url);
+    if (directCoords) {
+      setForm((f) => ({ ...f, venueLatitude: directCoords.lat, venueLongitude: directCoords.lng }));
+      return;
+    }
+    setMapsLoading(true);
+    try {
+      const { data } = await api.get(`/utils/resolve-maps?url=${encodeURIComponent(url)}`);
+      setForm((f) => ({ ...f, venueLatitude: data.data.lat, venueLongitude: data.data.lng }));
+    } catch {
+      setForm((f) => ({ ...f, venueLatitude: '', venueLongitude: '' }));
+    } finally {
+      setMapsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (eventData && !initialized) {
@@ -1011,11 +1138,13 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
         venueName: (ed.venueName as string) ?? '',
         venueAddress: (ed.venueAddress as string) ?? '',
         venueCity: (ed.venueCity as string) ?? 'Libreville',
+        venueLatitude: (ed.venueLatitude as number | null) ?? '',
+        venueLongitude: (ed.venueLongitude as number | null) ?? '',
         maxTicketsPerOrder: (ed.maxTicketsPerOrder as number) ?? 10,
       });
-      const cats = ed.ticketCategories as Array<{ name: string; price: number; quantityTotal: number; maxPerOrder?: number }>;
+      const cats = ed.ticketCategories as Array<{ id?: string; name: string; description?: string; price: number; quantityTotal: number; maxPerOrder?: number }>;
       if (Array.isArray(cats) && cats.length > 0) {
-        setCategories(cats.map((c) => ({ name: c.name, price: c.price, quantityTotal: c.quantityTotal, maxPerOrder: c.maxPerOrder ?? 10 })));
+        setCategories(cats.map((c) => ({ id: c.id, name: c.name, description: c.description, price: c.price, quantityTotal: c.quantityTotal, maxPerOrder: c.maxPerOrder ?? 10 })));
       }
       if (ed.coverImageUrl) setCoverPreview(ed.coverImageUrl as string);
       setInitialized(true);
@@ -1045,27 +1174,44 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
       toast.error('Remplissez tous les champs obligatoires');
       return;
     }
+    if (!form.endDate) {
+      toast.error('La date de fin est obligatoire');
+      return;
+    }
+    if (new Date(form.endDate) <= new Date(form.eventDate)) {
+      toast.error("L'heure de fin doit être après le début de l'événement");
+      return;
+    }
+    if (form.doorsOpenAt && new Date(form.endDate) <= new Date(form.doorsOpenAt)) {
+      toast.error("L'heure de fin doit être après l'ouverture des portes");
+      return;
+    }
     if (categories.some((c) => !c.name || c.price < 0 || c.quantityTotal <= 0)) {
       toast.error('Vérifiez les catégories de billets');
       return;
     }
     try {
-      await updateEvent.mutateAsync({
-        eventId,
-        payload: {
-          ...form,
-          doorsOpenAt: form.doorsOpenAt || undefined,
-          endDate: form.endDate || undefined,
-          scheduledPublishAt: form.scheduledPublishAt || undefined,
-          ticketCategories: categories,
-        },
-        coverImage: coverImage ?? undefined,
-      });
-      if (!isDraft) {
-        await resubmitEvent.mutateAsync(eventId);
-        toast.success('Événement mis à jour et republié pour validation');
+      const payload = {
+        ...form,
+        doorsOpenAt: form.doorsOpenAt || undefined,
+        endDate: form.endDate || undefined,
+        scheduledPublishAt: form.scheduledPublishAt || undefined,
+        ticketCategories: categories,
+      };
+
+      if (isPropose) {
+        // Événement publié/approuvé : soumettre une proposition de modifications
+        await proposeChanges.mutateAsync({ eventId, payload, coverImage: coverImage ?? undefined });
+        toast.success('Modifications soumises — en attente d\'approbation par l\'administrateur');
       } else {
-        toast.success('Brouillon sauvegardé');
+        // Brouillon ou en révision : mise à jour directe
+        await updateEvent.mutateAsync({ eventId, payload, coverImage: coverImage ?? undefined });
+        if (!isDraft) {
+          await resubmitEvent.mutateAsync(eventId);
+          toast.success('Événement mis à jour et republié pour validation');
+        } else {
+          toast.success('Brouillon sauvegardé');
+        }
       }
       onSuccess();
     } catch (err: unknown) {
@@ -1112,8 +1258,20 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
         <button onClick={onClose} className="flex items-center gap-1.5 text-white/50 hover:text-white transition-colors text-sm">
           <ArrowLeft className="w-4 h-4" /> Retour
         </button>
-        <h2 className="font-bebas text-3xl tracking-wider text-gradient">MODIFIER L'ÉVÉNEMENT</h2>
+        <h2 className="font-bebas text-3xl tracking-wider text-gradient">
+          {isPropose ? 'PROPOSER DES MODIFICATIONS' : 'MODIFIER L\'ÉVÉNEMENT'}
+        </h2>
       </div>
+
+      {isPropose && (
+        <div className="mb-6 p-4 glass-card border border-violet-neon/30 rounded-xl flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-violet-neon flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-xs text-violet-neon/70 uppercase tracking-widest mb-1">Événement publié — modifications soumises à validation</p>
+            <p className="text-white/60 text-sm">Vos modifications ne seront appliquées qu'après approbation par l'administrateur. L'événement reste en ligne tel quel en attendant.</p>
+          </div>
+        </div>
+      )}
 
       {adminNote && (
         <div className="mb-6 p-4 glass-card border border-yellow-400/30 rounded-xl flex items-start gap-3">
@@ -1224,7 +1382,7 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
             </div>
             <div>
               <label className={labelCls}>Max billets / commande</label>
-              <input type="number" min={1} max={50} value={form.maxTicketsPerOrder} onChange={(e) => setField('maxTicketsPerOrder', Number(e.target.value))} className={inputCls} />
+              <input type="number" min={1} max={500} value={form.maxTicketsPerOrder} onChange={(e) => setField('maxTicketsPerOrder', Number(e.target.value))} className={inputCls} />
             </div>
           </div>
         </div>
@@ -1242,14 +1400,16 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
               <input type="datetime-local" value={form.doorsOpenAt} onChange={(e) => setField('doorsOpenAt', e.target.value)} className={inputCls} />
             </div>
             <div>
-              <label className={labelCls}>Fin de l'événement</label>
+              <label className={labelCls}>Fin de l'événement <span className="text-rose-neon">*</span></label>
               <input type="datetime-local" value={form.endDate} onChange={(e) => setField('endDate', e.target.value)} className={inputCls} />
             </div>
-            <div>
-              <label className={labelCls}>Publication programmée <span className="text-white/30 font-normal">(optionnel)</span></label>
-              <input type="datetime-local" value={form.scheduledPublishAt} onChange={(e) => setField('scheduledPublishAt', e.target.value)} className={inputCls} />
-              <p className="text-xs text-white/30 mt-1">Laissez vide pour une publication immédiate après approbation.</p>
-            </div>
+            {!isPropose && (
+              <div>
+                <label className={labelCls}>Publication programmée <span className="text-white/30 font-normal">(optionnel)</span></label>
+                <input type="datetime-local" value={form.scheduledPublishAt} onChange={(e) => setField('scheduledPublishAt', e.target.value)} className={inputCls} />
+                <p className="text-xs text-white/30 mt-1">Laissez vide pour une publication immédiate après approbation.</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1268,6 +1428,44 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
             <div className="sm:col-span-2">
               <label className={labelCls}>Adresse <span className="text-rose-neon">*</span></label>
               <input value={form.venueAddress} onChange={(e) => setField('venueAddress', e.target.value)} className={inputCls} />
+            </div>
+            <div className="sm:col-span-2">
+              <div className="flex items-start gap-2 bg-cyan-neon/5 border border-cyan-neon/20 rounded-xl px-4 py-3 mb-3">
+                <MapPin className="w-4 h-4 text-cyan-neon flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-white/60 leading-relaxed">
+                  Ajoutez le lien de votre lieu sur Google Maps — les acheteurs verront un bouton
+                  <span className="text-cyan-neon font-semibold"> "Voir sur Google Maps" </span>
+                  sur la page de l'événement pour s'y rendre facilement.
+                </p>
+              </div>
+              <label className={labelCls}>Lien Google Maps <span className="text-white/30 font-normal">(optionnel)</span></label>
+              <input
+                type="url"
+                value={mapsUrl}
+                onChange={(e) => handleMapsUrl(e.target.value)}
+                placeholder="https://maps.app.goo.gl/... ou https://www.google.com/maps/..."
+                className={inputCls}
+              />
+              {form.venueLatitude !== '' && !mapsUrl && (
+                <p className="text-xs text-green-400 mt-1 flex items-center gap-1">
+                  <Check className="w-3 h-3" /> Coordonnées déjà enregistrées — collez un nouveau lien pour les modifier
+                </p>
+              )}
+              {mapsLoading ? (
+                <p className="text-xs text-white/40 mt-1 flex items-center gap-1">
+                  <span className="inline-block w-3 h-3 border border-white/30 border-t-white/80 rounded-full animate-spin" /> Résolution du lien en cours…
+                </p>
+              ) : mapsUrl && form.venueLatitude !== '' ? (
+                <p className="text-xs text-green-400 mt-1 flex items-center gap-1">
+                  <Check className="w-3 h-3" /> Coordonnées extraites — le lien Maps sera précis sur la page événement
+                </p>
+              ) : mapsUrl ? (
+                <p className="text-xs text-yellow-400 mt-1">Lien non reconnu — le nom + adresse sera utilisé pour Maps</p>
+              ) : (
+                <p className="text-xs text-white/30 mt-1">
+                  Optionnel. Sur Google Maps : cherchez votre lieu → appuyez sur "Partager" → "Copier le lien".
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -1306,7 +1504,7 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
         <div className="flex gap-3">
           <Button type="button" variant="secondary" size="md" onClick={onClose} className="flex-1">Annuler</Button>
           <Button type="submit" variant="primary" size="md" className="flex-1" isLoading={isSubmitting}>
-            <Check className="w-4 h-4" /> {isDraft ? 'Sauvegarder le brouillon' : 'Republier l\'événement'}
+            <Check className="w-4 h-4" /> {isPropose ? 'Soumettre pour approbation' : isDraft ? 'Sauvegarder le brouillon' : 'Soumettre les modifications'}
           </Button>
         </div>
       </form>
@@ -1459,11 +1657,14 @@ export default function MesEvenements() {
               <tbody>
                 {data.events.map((event) => {
                   const isRevision = event.status === 'NEEDS_REVISION';
+                  const hasPending = (event as any).pendingStatus === 'PENDING';
+                  const pendingRejected = (event as any).pendingStatus === 'REJECTED';
+                  const isEditable = !['CANCELLED', 'COMPLETED', 'PENDING_REVIEW'].includes(event.status);
                   return (
                     <tr
                       key={event.eventId}
-                      onClick={isRevision ? undefined : () => setSelectedEvent(event)}
-                      className={`border-b border-white/5 transition-colors group ${isRevision ? 'cursor-default bg-yellow-400/[0.03]' : 'hover:bg-white/[0.03] cursor-pointer'}`}
+                      onClick={isRevision || hasPending ? undefined : () => setSelectedEvent(event)}
+                      className={`border-b border-white/5 transition-colors group ${isRevision || hasPending ? 'cursor-default' : 'hover:bg-white/[0.03] cursor-pointer'} ${isRevision ? 'bg-yellow-400/[0.03]' : hasPending ? 'bg-violet-neon/[0.03]' : ''}`}
                     >
                       <td className="px-5 py-4">
                         <p className={`text-white font-semibold line-clamp-1 ${isRevision ? '' : 'group-hover:text-violet-neon transition-colors'}`}>
@@ -1474,6 +1675,16 @@ export default function MesEvenements() {
                         )}
                         {isRevision && event.rejectionReason && (
                           <p className="text-xs text-rose-neon/60 mt-1 line-clamp-1">Refus : {event.rejectionReason}</p>
+                        )}
+                        {hasPending && (
+                          <p className="text-xs text-violet-neon/70 mt-1 flex items-center gap-1">
+                            <Clock className="w-3 h-3" /> Modifications en attente d'approbation
+                          </p>
+                        )}
+                        {pendingRejected && (
+                          <p className="text-xs text-rose-neon/70 mt-1 flex items-center gap-1">
+                            <X className="w-3 h-3" /> Modifications refusées{(event as any).pendingAdminNote ? ` — ${(event as any).pendingAdminNote}` : ''}
+                          </p>
                         )}
                         {/* Prochain versement */}
                         {event.status === 'PUBLISHED' && (() => {
@@ -1534,19 +1745,23 @@ export default function MesEvenements() {
                       </td>
                       <td className="px-3 py-4">
                         <div className="flex items-center gap-1.5">
-                          {isRevision ? (
+                          {hasPending ? (
+                            <span className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-violet-neon/10 text-violet-neon/60 border border-violet-neon/20 whitespace-nowrap">
+                              <Clock className="w-3.5 h-3.5" /> En attente
+                            </span>
+                          ) : isEditable ? (
                             <button
-                              onClick={(e) => { e.stopPropagation(); setEditingEventId(event.eventId); setEditingEventNote(event.adminNote); setEditingEventStatus(event.status); }}
-                              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-yellow-400/10 text-yellow-400 hover:bg-yellow-400/20 border border-yellow-400/30 transition-colors whitespace-nowrap"
+                              onClick={(e) => { e.stopPropagation(); setEditingEventId(event.eventId); setEditingEventNote(event.adminNote ?? null); setEditingEventStatus(event.status); }}
+                              className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors whitespace-nowrap ${
+                                isRevision
+                                  ? 'bg-yellow-400/10 text-yellow-400 hover:bg-yellow-400/20 border-yellow-400/30'
+                                  : ['PUBLISHED', 'APPROVED'].includes(event.status)
+                                  ? 'bg-violet-neon/10 text-violet-neon hover:bg-violet-neon/20 border-violet-neon/30'
+                                  : 'bg-white/5 text-white/50 hover:bg-violet-neon/10 hover:text-violet-neon border-white/10 hover:border-violet-neon/30'
+                              }`}
                             >
-                              <Pencil className="w-3.5 h-3.5" /> Modifier
-                            </button>
-                          ) : event.status === 'DRAFT' ? (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setEditingEventId(event.eventId); setEditingEventNote(null); setEditingEventStatus(event.status); }}
-                              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-white/5 text-white/50 hover:bg-violet-neon/10 hover:text-violet-neon border border-white/10 hover:border-violet-neon/30 transition-colors whitespace-nowrap"
-                            >
-                              <Pencil className="w-3.5 h-3.5" /> Modifier
+                              <Pencil className="w-3.5 h-3.5" />
+                              {['PUBLISHED', 'APPROVED'].includes(event.status) ? 'Proposer modif.' : 'Modifier'}
                             </button>
                           ) : (
                             <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-violet-neon transition-colors" />

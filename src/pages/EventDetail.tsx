@@ -28,6 +28,7 @@ export default function EventDetail() {
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [activeGallery, setActiveGallery] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [descExpanded, setDescExpanded] = useState(false);
 
   // Reviews
   const [reviewRating, setReviewRating] = useState(0);
@@ -84,7 +85,7 @@ export default function EventDetail() {
   const joinWaitlist = useMutation(
     () => api.post(`/events/${id}/waitlist`, {}).then((r) => r.data),
     {
-      onSuccess: (d) => { toast.success(d.message); refetchWaitlist(); },
+      onSuccess: (d) => { toast.success(d.message); queryClient.invalidateQueries(['waitlist-status', id]); },
       onError: (err: { response?: { data?: { message?: string } } }) => {
         toast.error(err?.response?.data?.message || 'Erreur lors de l\'inscription');
       },
@@ -94,7 +95,7 @@ export default function EventDetail() {
   const leaveWaitlist = useMutation(
     () => api.delete(`/events/${id}/waitlist`).then((r) => r.data),
     {
-      onSuccess: () => { toast.success('Vous avez quitté la liste d\'attente'); refetchWaitlist(); },
+      onSuccess: () => { toast.success('Vous avez quitté la liste d\'attente'); queryClient.invalidateQueries(['waitlist-status', id]); },
     }
   );
 
@@ -235,7 +236,7 @@ export default function EventDetail() {
           <img
             src={event.coverImageUrl}
             alt={event.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover object-top"
           />
         ) : (
           <div className="w-full h-full bg-neon-gradient opacity-25" />
@@ -273,7 +274,7 @@ export default function EventDetail() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           {/* ===== LEFT COL ===== */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
             {/* Countdown + date */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
@@ -310,7 +311,15 @@ export default function EventDetail() {
               className="glass-card p-6"
             >
               <h2 className="font-bebas text-xl tracking-wider text-white mb-4">À propos</h2>
-              <p className="text-white/60 text-sm leading-relaxed whitespace-pre-line">{event.description}</p>
+              <p className={`text-white/60 text-sm leading-relaxed whitespace-pre-line ${!descExpanded ? 'line-clamp-3' : ''}`}>
+                {event.description}
+              </p>
+              <button
+                onClick={() => setDescExpanded((v) => !v)}
+                className="mt-2 text-xs text-violet-neon hover:underline"
+              >
+                {descExpanded ? 'Réduire' : 'Lire plus'}
+              </button>
             </motion.div>
 
             {/* Partage */}
@@ -632,7 +641,7 @@ export default function EventDetail() {
           </div>
 
           {/* ===== RIGHT COL — Ticket panel ===== */}
-          <div className="space-y-4">
+          <div className="space-y-4 order-1 lg:order-2">
             {isCompleted ? (
               <motion.div
                 initial={{ opacity: 0, x: 16 }}
@@ -659,6 +668,8 @@ export default function EventDetail() {
                 const available = cat.quantityTotal - cat.quantitySold - cat.quantityReserved;
                 const isSoldOut = available <= 0;
                 const qty = quantities[cat.id] || 1;
+                const maxQty = Math.min(cat.maxPerOrder, available);
+                const atMax = qty >= maxQty;
 
                 return (
                   <motion.div
@@ -682,41 +693,55 @@ export default function EventDetail() {
                     )}
 
                     {/* Availability */}
-                    <p className={`text-xs mb-3 ${available <= 10 ? 'text-rose-neon' : 'text-white/30'}`}>
-                      {isSoldOut ? 'COMPLET' : `${available} place${available > 1 ? 's' : ''} restante${available > 1 ? 's' : ''}`}
+                    <p className={`text-xs mb-3 font-semibold ${isSoldOut ? 'text-rose-neon' : available <= 10 ? 'text-rose-neon animate-pulse' : 'text-white/30'}`}>
+                      {isSoldOut
+                        ? 'COMPLET'
+                        : available <= 10
+                        ? `⚡ Plus que ${available} place${available > 1 ? 's' : ''} disponible${available > 1 ? 's' : ''} !`
+                        : `${available} place${available > 1 ? 's' : ''} restante${available > 1 ? 's' : ''}`}
                     </p>
 
                     {/* Qty + Add */}
                     {!isSoldOut && (
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center border border-violet-neon/20 rounded-lg overflow-hidden">
-                          <button
-                            onClick={() => setQuantities((q) => ({ ...q, [cat.id]: Math.max(1, qty - 1) }))}
-                            className="px-2.5 py-1.5 text-white/60 hover:text-white hover:bg-violet-neon/10 transition-colors"
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center border border-violet-neon/20 rounded-lg overflow-hidden">
+                            <button
+                              onClick={() => setQuantities((q) => ({ ...q, [cat.id]: Math.max(1, qty - 1) }))}
+                              disabled={qty <= 1}
+                              className="px-2.5 py-1.5 text-white/60 hover:text-white hover:bg-violet-neon/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            >
+                              <Minus className="w-3.5 h-3.5" />
+                            </button>
+                            <span className="px-3 py-1.5 text-white text-sm font-mono min-w-[2ch] text-center bg-bg-secondary">
+                              {qty}
+                            </span>
+                            <button
+                              onClick={() => setQuantities((q) => ({ ...q, [cat.id]: Math.min(maxQty, qty + 1) }))}
+                              disabled={atMax}
+                              className="px-2.5 py-1.5 text-white/60 hover:text-white hover:bg-violet-neon/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => handleAddToCart(cat)}
                           >
-                            <Minus className="w-3.5 h-3.5" />
-                          </button>
-                          <span className="px-3 py-1.5 text-white text-sm font-mono min-w-[2ch] text-center bg-bg-secondary">
-                            {qty}
-                          </span>
-                          <button
-                            onClick={() => setQuantities((q) => ({
-                              ...q,
-                              [cat.id]: Math.min(Math.min(cat.maxPerOrder, available), qty + 1),
-                            }))}
-                            className="px-2.5 py-1.5 text-white/60 hover:text-white hover:bg-violet-neon/10 transition-colors"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                          </button>
+                            Ajouter
+                          </Button>
                         </div>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => handleAddToCart(cat)}
-                        >
-                          Ajouter
-                        </Button>
+                        {/* Message limite atteinte */}
+                        {atMax && (
+                          <p className="text-xs text-amber-400/80 flex items-center gap-1">
+                            <X className="w-3 h-3" />
+                            {qty >= available
+                              ? `Maximum disponible atteint (${available} place${available > 1 ? 's' : ''})`
+                              : `Limite par commande atteinte (${cat.maxPerOrder} max)`}
+                          </p>
+                        )}
                       </div>
                     )}
                   </motion.div>

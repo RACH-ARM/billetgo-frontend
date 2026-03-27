@@ -160,11 +160,20 @@ export default function HeroSection({ event }: HeroSectionProps) {
               <div className="flex items-center gap-3">
                 <div className="w-28 h-1.5 bg-white/10 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-neon-gradient rounded-full"
-                    style={{ width: `${occupancy}%` }}
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${occupancy}%`,
+                      background: occupancy >= 90
+                        ? 'linear-gradient(90deg, #E040FB, #ff4466)'
+                        : occupancy >= 70
+                        ? 'linear-gradient(90deg, #f59e0b, #E040FB)'
+                        : 'linear-gradient(135deg, #7B2FBE, #E040FB)',
+                    }}
                   />
                 </div>
-                <span className="text-xs text-white/40">{occupancy}% vendus</span>
+                <span className={`text-xs ${occupancy >= 85 ? 'text-rose-neon font-semibold animate-pulse' : 'text-white/40'}`}>
+                  {occupancy}% vendus
+                </span>
               </div>
             )}
           </motion.div>

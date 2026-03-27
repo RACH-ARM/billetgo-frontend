@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Html5Qrcode } from 'html5-qrcode';
 import {
   CheckCircle, XCircle, AlertTriangle, ScanLine, CameraOff,
-  RotateCcw, LogOut, Users, Clock,
+  LogOut, Users, Clock,
 } from 'lucide-react';
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
@@ -50,6 +50,7 @@ export default function ScannerApp() {
   const [result, setResult] = useState<ScanResult | null>(null);
   const [scanCount, setScanCount] = useState(() => loadStats().scanCount);
   const [validCount, setValidCount] = useState(() => loadStats().validCount);
+  const [scanGlow, setScanGlow] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
 
   useEffect(() => {
@@ -63,6 +64,7 @@ export default function ScannerApp() {
   }, []);
 
   const startScanning = async () => {
+    // Si un résultat est affiché, on le ferme et on relance
     setResult(null);
     setCameraError(null);
     const qr = new Html5Qrcode('qr-reader');
@@ -71,10 +73,14 @@ export default function ScannerApp() {
     try {
       await qr.start(
         { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 260, height: 260 } },
+        { fps: 25, qrbox: { width: 240, height: 240 } },
         async (decodedText) => {
-          setScanning(false);
+          // Flash violet immédiat dès la détection
+          setScanGlow(true);
+          setTimeout(() => setScanGlow(false), 700);
+          // Arrêter la caméra immédiatement après détection
           qr.stop().catch(() => {});
+          setScanning(false);
           await verifyQR(decodedText);
         },
         () => {}
@@ -122,6 +128,17 @@ export default function ScannerApp() {
 
   return (
     <div className="min-h-screen bg-bg px-4 py-8 max-w-md mx-auto">
+      <style>{`
+        @keyframes violetFlash {
+          0%   { opacity: 0;   box-shadow: 0 0 0px 0px rgba(123,47,190,0); }
+          25%  { opacity: 1;   box-shadow: 0 0 40px 12px rgba(123,47,190,0.9), inset 0 0 30px rgba(123,47,190,0.4); }
+          60%  { opacity: 0.7; box-shadow: 0 0 60px 20px rgba(123,47,190,0.6), inset 0 0 20px rgba(123,47,190,0.2); }
+          100% { opacity: 0;   box-shadow: 0 0 0px 0px rgba(123,47,190,0); }
+        }
+        .scan-glow-overlay {
+          animation: violetFlash 0.7s ease-out forwards;
+        }
+      `}</style>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -151,7 +168,15 @@ export default function ScannerApp() {
 
       {/* QR Scanner */}
       <div className="glass-card p-4 mb-4 overflow-hidden">
-        <div id="qr-reader" className="rounded-xl overflow-hidden" />
+        <div className="relative rounded-xl overflow-hidden">
+          <div id="qr-reader" />
+          {/* Overlay flash violet au moment du scan */}
+          {scanGlow && (
+            <div
+              className="scan-glow-overlay absolute inset-0 rounded-xl pointer-events-none border-2 border-violet-neon"
+            />
+          )}
+        </div>
         {!scanning && !cameraError && (
           <div className="h-56 flex flex-col items-center justify-center text-white/20 border-2 border-dashed border-violet-neon/20 rounded-xl gap-3">
             <CameraOff size={40} className="text-white/10" />
@@ -247,11 +272,11 @@ export default function ScannerApp() {
             )}
 
             <button
-              onClick={reset}
-              className="mt-5 w-full py-2.5 rounded-xl border border-white/10 text-white/40 hover:text-white/70 hover:border-white/20 transition-colors flex items-center justify-center gap-2 text-sm"
+              onClick={startScanning}
+              className={`mt-5 w-full py-3 rounded-2xl font-bebas text-xl tracking-wider transition-all flex items-center justify-center gap-3 bg-neon-gradient text-white shadow-neon`}
             >
-              <RotateCcw size={14} />
-              Scanner suivant
+              <ScanLine size={22} />
+              SCANNER LE SUIVANT
             </button>
           </motion.div>
         )}

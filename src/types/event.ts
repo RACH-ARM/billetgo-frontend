@@ -1,5 +1,5 @@
 export type EventStatus = 'DRAFT' | 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED' | 'PUBLISHED' | 'CANCELLED' | 'COMPLETED';
-export type EventCategory = 'CLUB' | 'FESTIVAL' | 'BEACH' | 'CONCERT' | 'SPORT' | 'CULTUREL' | 'AUTRE';
+export type EventCategory = 'CLUB' | 'FESTIVAL' | 'BEACH' | 'CONCERT' | 'SPORT' | 'CULTUREL' | 'RANDONNEE' | 'AUTRE';
 export type OfferType = 'STANDARD' | 'INTERMEDIAIRE' | 'PREMIUM';
 
 export interface TicketCategory {

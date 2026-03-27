@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
 import {
-  Check, ChevronLeft, Ticket, Smartphone, User, CreditCard,
-  ArrowRight, Trash2, CalendarDays, MapPin, CheckCircle, X, Info, Clock,
+  Check, ChevronLeft, Ticket, Smartphone, CreditCard,
+  ArrowRight, Trash2, CalendarDays, MapPin, CheckCircle, X, Info, Clock, Lock,
 } from 'lucide-react';
 import { useCartStore } from '../stores/cartStore';
 import { useAuthStore } from '../stores/authStore';
@@ -11,17 +11,15 @@ import { useCreateOrder, useInitiatePayment } from '../hooks/usePayment';
 import { useEvent } from '../hooks/useEvents';
 import { formatPrice } from '../utils/formatPrice';
 import { formatEventDate } from '../utils/formatDate';
-import { normalizeGabonPhone, isValidGabonPhone } from '../utils/phone';
+import { normalizeGabonPhone, isValidGabonPhone, isPhoneMatchingProvider } from '../utils/phone';
 import Button from '../components/common/Button';
 import toast from 'react-hot-toast';
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2;
 
 const STEPS = [
   { label: 'Récapitulatif', Icon: Ticket },
-  { label: 'Informations', Icon: User },
   { label: 'Paiement', Icon: CreditCard },
-  { label: 'Confirmation', Icon: Check },
 ];
 
 const PROVIDERS = [
@@ -59,9 +57,11 @@ export default function Checkout() {
   const [promoApplied, setPromoApplied] = useState<{ id: string; code: string; discountType: string; discountValue: number } | null>(null);
   const [promoLoading, setPromoLoading] = useState(false);
   const [isExpired, setIsExpired] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const createOrder = useCreateOrder();
   const initiatePayment = useInitiatePayment();
   const { data: freshEvent } = useEvent(event?.id ?? '');
+  const isPaying = useRef(false);
 
   // Timer 15 min — persiste via sessionStorage pour survivre aux refreshs
   const CART_TTL = 5 * 60; // secondes
@@ -106,14 +106,15 @@ export default function Checkout() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Rediriger si le panier devient vide après suppression d'un article (pas si session expirée — l'écran d'expiration gère la navigation)
+  // Rediriger si le panier devient vide après suppression d'un article (pas si session expirée ou paiement en cours)
   useEffect(() => {
-    if (items.length === 0 && !isExpired) navigate('/');
+    if (items.length === 0 && !isExpired && !isPaying.current) navigate('/');
   }, [items.length, isExpired, navigate]);
 
   const timerMin = String(Math.floor(timeLeft / 60)).padStart(2, '0');
   const timerSec = String(timeLeft % 60).padStart(2, '0');
   const timerUrgent = timeLeft < 120;
+  const timerCritical = timeLeft < 60;
 
   if (!event || items.length === 0) return null;
 
@@ -136,7 +137,7 @@ export default function Checkout() {
           </div>
           <div className="w-full p-4 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">
             {event.coverImageUrl && (
-              <img src={event.coverImageUrl} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+              <img src={event.coverImageUrl} alt="" className="w-12 h-12 rounded-lg object-cover object-top flex-shrink-0" />
             )}
             <div className="text-left min-w-0">
               <p className="text-white font-semibold text-sm truncate">{event.title}</p>
@@ -146,7 +147,7 @@ export default function Checkout() {
           <div className="flex flex-col gap-3 w-full">
             <Link
               to={`/events/${event.id}`}
-              onClick={() => { clearCart(); sessionStorage.removeItem('checkout_expiry'); }}
+              onClick={() => { clearCart(); sessionStorage.setItem('checkout_expiry', String(Date.now() + 10 * 60 * 1000)); }}
               className="neon-button w-full text-center py-3 rounded-xl font-semibold"
             >
               Recommencer l'achat
@@ -206,20 +207,22 @@ export default function Checkout() {
         return available < item.quantity;
       })
     : [];
-  const hasStockIssue = soldOutItems.length > 0;
+  const totalItemsQty = items.reduce((s, i) => s + i.quantity, 0);
+  const maxPerOrder = event.maxTicketsPerOrder ?? 10;
+  const exceedsMaxPerOrder = totalItemsQty > maxPerOrder;
+  const hasStockIssue = soldOutItems.length > 0 || exceedsMaxPerOrder;
 
-  const phoneValid = isValidGabonPhone(buyerInfo.phone);
-  const canProceedStep2 = buyerInfo.name.trim().length >= 2 && phoneValid;
-  const canPay = paymentPhone.trim().length >= 8;
+  const paymentPhoneValid = isValidGabonPhone(paymentPhone) && isPhoneMatchingProvider(paymentPhone, provider);
+  const canPay = buyerInfo.name.trim().length >= 2 && paymentPhoneValid && cgvAccepted;
 
   const handlePayment = async () => {
+    setPaymentError(null);
     try {
       const order = await createOrder.mutateAsync({
         eventId: event.id,
         items: items.map((i) => ({ categoryId: i.category.id, quantity: i.quantity })),
         buyerName: buyerInfo.name,
         buyerEmail: buyerInfo.email || undefined,
-        buyerPhone: normalizeGabonPhone(buyerInfo.phone) ?? buyerInfo.phone,
         cgvAcceptedAt: new Date().toISOString(),
         ...(promoApplied && { promoCode: promoApplied.code }),
       });
@@ -227,7 +230,7 @@ export default function Checkout() {
       const result = await initiatePayment.mutateAsync({
         orderId: order.id,
         method: provider,
-        phone: paymentPhone,
+        phone: normalizeGabonPhone(paymentPhone) ?? paymentPhone,
       });
 
       // DEV uniquement : déclencher l'auto-paiement en arrière-plan via le proxy Vite
@@ -236,6 +239,8 @@ export default function Checkout() {
       }
 
       sessionStorage.removeItem('checkout_expiry');
+      isPaying.current = true;
+      clearCart();
       navigate(`/confirmation/${order.id}`, {
         replace: true,
         state: {
@@ -259,22 +264,22 @@ export default function Checkout() {
       const status = axiosErr.response?.status;
       const isConnectionError = !axiosErr.response || axiosErr.code === 'ERR_NETWORK' || (status != null && status >= 500 && !axiosErr.response.data?.message);
       if (isConnectionError) {
-        toast.error('Connexion impossible. Vérifiez votre réseau et réessayez.');
+        setPaymentError('Connexion impossible. Vérifiez votre réseau et réessayez.');
         return;
       }
       const response = axiosErr.response!.data;
       if (response?.code === 'ORDER_EXPIRED') {
         setIsExpired(true);
       } else if (response?.code === 'EMAIL_NOT_VERIFIED') {
-        toast.error('Vérifiez votre email avant d\'acheter. Consultez votre boîte mail.', { duration: 6000 });
+        setPaymentError('Vérifiez votre email avant d\'acheter. Consultez votre boîte mail.');
       } else {
-        toast.error(response?.message || 'Erreur lors du paiement');
+        setPaymentError(response?.message || 'Erreur lors du paiement');
       }
     }
   };
 
   return (
-    <div className="min-h-screen py-10 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen py-10 px-4 sm:px-6 lg:px-8 pb-24 lg:pb-10">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between gap-4 mb-8">
@@ -290,7 +295,11 @@ export default function Checkout() {
               ACHAT DE BILLETS
             </h1>
           </div>
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-sm font-mono font-bold transition-colors ${timerUrgent ? 'border-rose-neon/60 text-rose-neon bg-rose-neon/10 animate-pulse' : 'border-white/10 text-white/50'}`}>
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-sm font-mono font-bold transition-colors ${
+            timerCritical ? 'border-rose-neon text-rose-neon bg-rose-neon/20 animate-pulse scale-105' :
+            timerUrgent ? 'border-rose-neon/60 text-rose-neon bg-rose-neon/10 animate-pulse' :
+            'border-white/10 text-white/50'
+          }`}>
             <Clock className="w-3.5 h-3.5" />
             {timerMin}:{timerSec}
           </div>
@@ -300,9 +309,9 @@ export default function Checkout() {
           {/* ===== LEFT — Steps ===== */}
           <div className="lg:col-span-2">
             {/* Stepper */}
-            {step < 4 && (
+            {step < 3 && (
               <div className="flex items-center mb-8">
-                {STEPS.slice(0, 3).map(({ label, Icon }, i) => {
+                {STEPS.slice(0, 2).map(({ label, Icon }, i) => {
                   const stepNum = (i + 1) as Step;
                   const isDone = step > stepNum;
                   const isActive = step === stepNum;
@@ -323,7 +332,7 @@ export default function Checkout() {
                           {label}
                         </span>
                       </div>
-                      {i < 2 && (
+                      {i < 1 && (
                         <div className={`flex-1 h-px mx-3 ${isDone ? 'bg-violet-neon' : 'bg-violet-neon/15'}`} />
                       )}
                     </div>
@@ -346,7 +355,7 @@ export default function Checkout() {
                     {/* Event header */}
                     <div className="flex items-start gap-4 mb-5 pb-5 border-b border-white/5">
                       {event.coverImageUrl ? (
-                        <img src={event.coverImageUrl} alt={event.title} className="w-20 h-20 object-cover rounded-xl flex-shrink-0" />
+                        <img src={event.coverImageUrl} alt={event.title} className="w-20 h-20 object-cover object-top rounded-xl flex-shrink-0" />
                       ) : (
                         <div className="w-20 h-20 rounded-xl flex-shrink-0" style={{ background: 'linear-gradient(135deg, #2D1060 0%, #0D0D1A 60%, #003060 100%)' }} />
                       )}
@@ -363,8 +372,21 @@ export default function Checkout() {
                       </div>
                     </div>
 
+                    {/* Alerte limite de billets par commande */}
+                    {exceedsMaxPerOrder && (
+                      <div className="mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-2">
+                        <Info className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-amber-400 text-sm font-semibold">Trop de billets</p>
+                          <p className="text-white/50 text-xs mt-0.5">
+                            Maximum {maxPerOrder} billet{maxPerOrder > 1 ? 's' : ''} par commande pour cet événement. Vous en avez sélectionné {totalItemsQty}.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Alerte stock insuffisant */}
-                    {hasStockIssue && (
+                    {soldOutItems.length > 0 && (
                       <div className="mb-4 p-3 rounded-xl bg-rose-neon/10 border border-rose-neon/30 flex items-start gap-2">
                         <X className="w-4 h-4 text-rose-neon flex-shrink-0 mt-0.5" />
                         <div>
@@ -458,33 +480,35 @@ export default function Checkout() {
                         </button>
                       </div>
                     ) : (
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={promoInput}
-                          onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
-                          onKeyDown={(e) => e.key === 'Enter' && applyPromo()}
-                          placeholder="VOTRECODE"
-                          className="flex-1 bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white placeholder-white/20 font-mono text-sm focus:outline-none focus:border-violet-neon transition-colors"
-                        />
-                        <button
-                          onClick={applyPromo}
-                          disabled={promoLoading || !promoInput.trim()}
-                          className="px-4 py-2.5 rounded-xl bg-violet-neon/20 border border-violet-neon/40 text-violet-neon hover:bg-violet-neon/30 text-sm font-semibold transition-colors disabled:opacity-40"
-                        >
-                          {promoLoading ? '...' : 'Appliquer'}
-                        </button>
-                      </div>
+                      <>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={promoInput}
+                            onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
+                            onKeyDown={(e) => e.key === 'Enter' && applyPromo()}
+                            placeholder="VOTRECODE"
+                            className="flex-1 bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white placeholder-white/20 font-mono text-sm focus:outline-none focus:border-violet-neon transition-colors"
+                          />
+                          <button
+                            onClick={applyPromo}
+                            disabled={promoLoading || !promoInput.trim()}
+                            className="px-4 py-2.5 rounded-xl bg-violet-neon/20 border border-violet-neon/40 text-violet-neon hover:bg-violet-neon/30 text-sm font-semibold transition-colors disabled:opacity-40"
+                          >
+                            {promoLoading ? '...' : 'Appliquer'}
+                          </button>
+                        </div>
+                      </>
                     )}
                   </div>
 
-                  <Button variant="primary" size="lg" className="w-full" onClick={() => setStep(2)} disabled={hasStockIssue}>
+                  <Button variant="primary" size="lg" className="w-full" onClick={() => setStep(2 as Step)} disabled={hasStockIssue}>
                     Continuer <ArrowRight className="w-4 h-4" />
                   </Button>
                 </motion.div>
               )}
 
-              {/* ── Step 2 : Informations ── */}
+              {/* ── Step 2 : Infos + Paiement ── */}
               {step === 2 && (
                 <motion.div
                   key="step2"
@@ -494,8 +518,6 @@ export default function Checkout() {
                   className="space-y-4"
                 >
                   <div className="glass-card p-6 space-y-5">
-                    <h2 className="font-bebas text-xl tracking-wider text-white">Vos informations</h2>
-
                     <div>
                       <label className="text-xs text-white/50 uppercase tracking-widest block mb-2">
                         Nom complet <span className="text-rose-neon">*</span>
@@ -503,7 +525,7 @@ export default function Checkout() {
                       <input
                         value={buyerInfo.name}
                         onChange={(e) => setBuyerInfo((b) => ({ ...b, name: e.target.value }))}
-                        placeholder="Jean Dupont"
+                        placeholder="Votre nom complet"
                         className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors"
                       />
                     </div>
@@ -516,102 +538,43 @@ export default function Checkout() {
                         value={buyerInfo.email}
                         onChange={(e) => setBuyerInfo((b) => ({ ...b, email: e.target.value }))}
                         type="email"
-                        placeholder="jean@exemple.com"
+                        placeholder="votre@email.com"
                         className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors"
                       />
                     </div>
 
+
+                    <div className="border-t border-white/5 pt-5">
+                      <label className="text-xs text-white/50 uppercase tracking-widest block mb-3">
+                        Mode de paiement
+                      </label>
+                      <div className="grid grid-cols-2 gap-3">
+                        {PROVIDERS.map((p) => (
+                          <button
+                            key={p.id}
+                            onClick={() => setProvider(p.id)}
+                            className={`relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                              provider === p.id ? `${p.border} ${p.bg}` : 'border-white/10 hover:border-violet-neon/30'
+                            }`}
+                          >
+                            {provider === p.id && (
+                              <div className="absolute top-2 right-2 w-5 h-5 bg-neon-gradient rounded-full flex items-center justify-center">
+                                <Check className="w-3 h-3 text-white" />
+                              </div>
+                            )}
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center ${p.bg}`}>
+                              <Smartphone className={`w-4 h-4 ${p.color}`} />
+                            </div>
+                            <span className={`font-bebas text-base tracking-wider ${p.color}`}>{p.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     <div>
                       <label className="text-xs text-white/50 uppercase tracking-widest block mb-2">
-                        Numéro WhatsApp <span className="text-rose-neon">*</span>
+                        Numéro à débiter <span className="text-rose-neon">*</span>
                       </label>
-                      <div className="flex gap-2">
-                        <div className="flex items-center gap-2 bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-3 text-white/60 text-sm flex-shrink-0">
-                          <span>🇬🇦</span>
-                          <span>+241</span>
-                        </div>
-                        <input
-                          value={buyerInfo.phone}
-                          onChange={(e) => setBuyerInfo((b) => ({ ...b, phone: e.target.value }))}
-                          type="tel"
-                          placeholder="XX XX XX XX"
-                          className={`flex-1 bg-bg-secondary border rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none transition-colors ${
-                            buyerInfo.phone && !phoneValid
-                              ? 'border-rose-neon focus:border-rose-neon'
-                              : 'border-violet-neon/20 focus:border-violet-neon'
-                          }`}
-                        />
-                      </div>
-                      {buyerInfo.phone && !phoneValid ? (
-                        <p className="text-rose-neon text-xs mt-1.5">
-                          Numéro invalide — ex : 62 55 76 55 (8 chiffres après +241)
-                        </p>
-                      ) : (
-                        <p className="text-white/30 text-xs mt-1.5">
-                          Votre QR Code sera envoyé sur ce numéro WhatsApp
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <Button variant="secondary" size="lg" onClick={() => setStep(1)} className="flex-1">
-                      <ChevronLeft className="w-4 h-4" /> Retour
-                    </Button>
-                    <Button
-                      variant="primary"
-                      size="lg"
-                      onClick={() => setStep(3)}
-                      disabled={!canProceedStep2}
-                      className="flex-1"
-                    >
-                      Continuer <ArrowRight className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* ── Step 3 : Paiement ── */}
-              {step === 3 && (
-                <motion.div
-                  key="step3"
-                  initial={{ opacity: 0, x: -16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 16 }}
-                  className="space-y-4"
-                >
-                  <div className="glass-card p-6 space-y-5">
-                    <h2 className="font-bebas text-xl tracking-wider text-white">Mode de paiement Mobile Money</h2>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      {PROVIDERS.map((p) => (
-                        <button
-                          key={p.id}
-                          onClick={() => setProvider(p.id)}
-                          className={`relative flex flex-col items-center gap-3 p-5 rounded-xl border-2 transition-all ${
-                            provider === p.id ? `${p.border} ${p.bg}` : 'border-white/10 hover:border-violet-neon/30'
-                          }`}
-                        >
-                          {provider === p.id && (
-                            <div className="absolute top-2.5 right-2.5 w-5 h-5 bg-neon-gradient rounded-full flex items-center justify-center">
-                              <Check className="w-3 h-3 text-white" />
-                            </div>
-                          )}
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${p.bg}`}>
-                            <Smartphone className={`w-5 h-5 ${p.color}`} />
-                          </div>
-                          <span className={`font-bebas text-lg tracking-wider ${p.color}`}>{p.name}</span>
-                        </button>
-                      ))}
-                    </div>
-
-                    <div>
-                      <label className="text-xs text-white/50 uppercase tracking-widest block mb-1">
-                        Numéro {provider === 'AIRTEL_MONEY' ? 'Airtel Money' : 'Moov Money'} <span className="text-rose-neon">*</span>
-                      </label>
-                      <p className="text-xs text-rose-neon/80 mb-2">
-                        Renseignez le numéro {provider === 'AIRTEL_MONEY' ? 'Airtel Money' : 'Moov Money'} qui sera débité — ce n'est pas forcément votre numéro d'inscription.
-                      </p>
                       <div className="flex gap-2">
                         <div className="flex items-center gap-2 bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-3 text-white/60 text-sm flex-shrink-0">
                           <span>🇬🇦</span>
@@ -621,21 +584,20 @@ export default function Checkout() {
                           value={paymentPhone}
                           onChange={(e) => setPaymentPhone(e.target.value)}
                           type="tel"
-                          placeholder="01 00 00 00"
+                          placeholder={provider === 'AIRTEL_MONEY' ? '07X XXX XXX' : '06X XXX XXX'}
                           className="flex-1 bg-bg-secondary border border-violet-neon/20 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors"
                         />
                       </div>
-                      <p className="text-xs text-white/30 mt-1.5">
-                        Une notification de confirmation sera envoyée sur ce numéro.
-                      </p>
+                      {paymentPhone.length >= 2 && isValidGabonPhone(paymentPhone) && !isPhoneMatchingProvider(paymentPhone, provider) && (
+                        <p className="text-xs text-rose-neon mt-1.5">
+                          Ce numéro ne correspond pas à {provider === 'AIRTEL_MONEY' ? 'Airtel Money (07X...)' : 'Moov Money (06X...)'}
+                        </p>
+                      )}
                     </div>
 
-                    <div className="flex items-start gap-3 bg-violet-neon/5 border border-violet-neon/20 rounded-xl p-3">
-                      <CreditCard className="w-4 h-4 text-violet-neon flex-shrink-0 mt-0.5" />
-                      <p className="text-xs text-white/50">
-                        Paiement sécurisé. Vous recevrez une demande de confirmation sur votre téléphone.
-                        Après validation, un email de confirmation est envoyé et vos billets sont disponibles dans "Mes billets" — les QR codes ne sont accessibles que sur BilletGo.
-                      </p>
+                    <div className="flex items-center gap-2 text-xs text-white/40">
+                      <CreditCard className="w-3.5 h-3.5 text-violet-neon flex-shrink-0" />
+                      Paiement sécurisé — confirmation par téléphone
                     </div>
                   </div>
 
@@ -647,24 +609,32 @@ export default function Checkout() {
                       className="mt-0.5 accent-violet-500 w-4 h-4 flex-shrink-0"
                     />
                     <span className="text-xs text-white/50 leading-relaxed">
-                      J'ai lu et j'accepte les{' '}
-                      <Link to="/cgv" target="_blank" className="text-violet-neon hover:underline">Conditions Générales de Vente</Link>.
-                      Je reconnais que les billets sont non remboursables sauf annulation de l'événement.
+                      J'accepte les{' '}
+                      <Link to="/cgv" target="_blank" className="text-violet-neon hover:underline">CGV</Link>
+                      {' '}— billets non remboursables sauf annulation de l'événement.
                     </span>
                   </label>
 
+                  {paymentError && (
+                    <div className="flex items-start gap-2 p-3 rounded-xl bg-rose-neon/10 border border-rose-neon/30">
+                      <X className="w-4 h-4 text-rose-neon flex-shrink-0 mt-0.5" />
+                      <p className="text-rose-neon text-sm">{paymentError}</p>
+                    </div>
+                  )}
+
                   <div className="flex gap-3">
-                    <Button variant="secondary" size="lg" onClick={() => setStep(2)} className="flex-1">
+                    <Button variant="secondary" size="lg" onClick={() => { setStep(1 as Step); setPaymentError(null); }} className="flex-1">
                       <ChevronLeft className="w-4 h-4" /> Retour
                     </Button>
                     <Button
                       variant="primary"
                       size="lg"
                       onClick={handlePayment}
-                      disabled={!canPay || !cgvAccepted}
+                      disabled={!canPay}
                       isLoading={createOrder.isLoading || initiatePayment.isLoading}
                       className="flex-1"
                     >
+                      <Lock className="w-4 h-4" />
                       Payer {formatPrice(totalToPay)}
                     </Button>
                   </div>
@@ -681,7 +651,7 @@ export default function Checkout() {
 
               <div className="flex gap-3 mb-4 pb-4 border-b border-white/5">
                 {event.coverImageUrl ? (
-                  <img src={event.coverImageUrl} alt={event.title} className="w-14 h-14 rounded-xl object-cover flex-shrink-0" />
+                  <img src={event.coverImageUrl} alt={event.title} className="w-14 h-14 rounded-xl object-cover object-top flex-shrink-0" />
                 ) : (
                   <div className="w-14 h-14 rounded-xl flex-shrink-0" style={{ background: 'linear-gradient(135deg, #2D1060 0%, #0D0D1A 60%, #003060 100%)' }} />
                 )}
@@ -722,6 +692,18 @@ export default function Checkout() {
           </div>
         </div>
       </div>
+      {/* Sticky mobile total bar */}
+      {step === 1 && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-bg/95 backdrop-blur-md border-t border-violet-neon/20 px-4 py-3 flex items-center justify-between gap-4">
+          <div className="flex flex-col">
+            <span className="text-xs text-white/40">Total à payer</span>
+            <span className="font-mono font-bold text-cyan-neon text-lg">{formatPrice(totalToPay)}</span>
+          </div>
+          <Button variant="primary" size="lg" onClick={() => setStep(2 as Step)} disabled={hasStockIssue} className="flex-shrink-0">
+            Continuer <ArrowRight className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

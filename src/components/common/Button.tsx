@@ -24,7 +24,7 @@ export default function Button({ variant = 'primary', size = 'md', isLoading, ch
       className={`font-sora font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${sizes[size]} ${className}`}
       {...props}
     >
-      {isLoading && <span className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin" />}
+      {isLoading && <span className="w-4 h-4 border-2 border-white/25 border-t-white rounded-full animate-spin flex-shrink-0" />}
       {children}
     </motion.button>
   );

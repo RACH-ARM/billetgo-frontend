@@ -107,6 +107,25 @@ export const useUpdateEvent = () => {
   );
 };
 
+export const useProposeChanges = () => {
+  const qc = useQueryClient();
+  return useMutation(
+    ({ eventId, payload, coverImage }: { eventId: string; payload: Partial<CreateEventPayload>; coverImage?: File }) => {
+      const form = new FormData();
+      Object.entries(payload).forEach(([key, val]) => {
+        if (val !== undefined && val !== null) {
+          form.append(key, typeof val === 'object' ? JSON.stringify(val) : String(val));
+        }
+      });
+      if (coverImage) form.append('coverImage', coverImage);
+      return api.patch(`/organizer/events/${eventId}/propose`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }).then(r => r.data);
+    },
+    { onSuccess: () => qc.invalidateQueries('organizer-stats') }
+  );
+};
+
 export const useResubmitEvent = () => {
   const qc = useQueryClient();
   return useMutation(

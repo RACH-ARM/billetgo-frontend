@@ -1,21 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
+import { useParams, useLocation, useNavigate, Link, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  CheckCircle2, XCircle, Clock, Ticket, ImageDown,
-  MessageCircle, CalendarDays, MapPin, HelpCircle, RefreshCw, Share2,
+  CheckCircle2, XCircle, Clock, Ticket,
+  CalendarDays, MapPin, HelpCircle, RefreshCw, Share2, Mail,
 } from 'lucide-react';
 import { paymentService } from '../services/paymentService';
-import { ticketService } from '../services/ticketService';
-import { useCartStore } from '../stores/cartStore';
 import { useQueryClient } from 'react-query';
 import { formatEventDate } from '../utils/formatDate';
 import { formatPrice } from '../utils/formatPrice';
 import Button from '../components/common/Button';
-import toast from 'react-hot-toast';
-import type { PaymentProvider, Ticket as TicketType } from '../types/ticket';
-import { generateTicketCanvas, blobToBase64 } from '../utils/ticketCanvas';
-import api from '../services/api';
+import type { PaymentProvider } from '../types/ticket';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 type ConfirmationState = 'WAITING' | 'SUCCESS' | 'FAILURE' | 'TIMEOUT' | 'UNAUTHORIZED';
@@ -41,7 +36,7 @@ interface NavState {
 // ─── Config ───────────────────────────────────────────────────────────────────
 const MAX_WAIT_MS = 2 * 60 * 1000; // 2 minutes
 const POLL_INTERVAL_MS = 3000;
-const SUPPORT_WHATSAPP = import.meta.env.VITE_SUPPORT_WHATSAPP || '24177000000';
+const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL || 'support@billetgo.ga';
 
 // ─── Waiting animation ────────────────────────────────────────────────────────
 function WaitingRings() {
@@ -108,7 +103,7 @@ function InfoBlock() {
           {
             n: '2',
             title: "Le jour de l'événement",
-            body: "Ouvrez BilletGo, allez dans \"Mes billets\" et appuyez sur \"Afficher le QR code\" — l'agent à l'entrée scanne directement votre écran. Vous avez enregistré votre billet en image ? Retrouvez-le dans votre galerie photo, même sans connexion.",
+            body: "Allez dans \"Mes billets\", affichez votre QR code et présentez votre écran à l'entrée. Vous pouvez aussi l'enregistrer en image dans votre galerie pour un accès hors connexion.",
           },
           {
             n: '3',
@@ -138,28 +133,26 @@ function InfoBlock() {
   );
 }
 
-// ─── Main page ────────────────────────────────────────────────────────────────
+// ─── Guard : accès direct à l'URL sans passer par le checkout ────────────────
 export default function OrderConfirmation() {
+  const location = useLocation();
+  if (!location.state) return <Navigate to="/" replace />;
+  return <OrderConfirmationInner />;
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
+function OrderConfirmationInner() {
   const { orderId } = useParams<{ orderId: string }>();
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { clearCart } = useCartStore();
 
-  const state = location.state as NavState | null;
+  const state = location.state as NavState;
 
   const [confirmationState, setConfirmationState] = useState<ConfirmationState>('WAITING');
-  const [orderTickets, setOrderTickets] = useState<TicketType[]>([]);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // If no navigation state — accès direct à l'URL sans passer par le checkout
-  useEffect(() => {
-    if (!state) setConfirmationState('UNAUTHORIZED');
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Polling loop
   useEffect(() => {
@@ -182,7 +175,6 @@ export default function OrderConfirmation() {
         if (result.status === 'SUCCESS') {
           clearInterval(pollRef.current!);
           setConfirmationState('SUCCESS');
-          clearCart();
           queryClient.invalidateQueries('my-tickets');
         } else if (result.status === 'FAILED' || result.status === 'CANCELLED') {
           clearInterval(pollRef.current!);
@@ -199,69 +191,8 @@ export default function OrderConfirmation() {
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [confirmationState]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fetch this order's tickets after success (delay for backend generation)
-  useEffect(() => {
-    if (confirmationState !== 'SUCCESS' || !orderId) return;
-    const t = setTimeout(async () => {
-      try {
-        const tickets = await ticketService.getMyTickets();
-        setOrderTickets(tickets.filter((tk) => tk.orderId === orderId));
-      } catch {
-        // non-blocking
-      }
-    }, 2000);
-    return () => clearTimeout(t);
-  }, [confirmationState, orderId]);
+  const supportUrl = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`Problème commande ${orderId ?? ''}`)}&body=${encodeURIComponent(`Bonjour BilletGo,\n\nJ'ai un problème avec ma commande ${orderId ?? ''}.\n\nPouvez-vous m'aider ?\n\nMerci`)}`;
 
-  const handleSaveAllImages = async () => {
-    if (orderTickets.length === 0) {
-      navigate('/mes-billets');
-      return;
-    }
-    setIsDownloading(true);
-    const canvas = canvasRef.current!;
-    try {
-      const files: File[] = [];
-      for (const ticket of orderTickets) {
-        const response = await api.get(`/tickets/${ticket.id}/qr`, { responseType: 'blob' });
-        const qrDataUrl = await blobToBase64(new Blob([response.data], { type: 'image/png' }));
-        await generateTicketCanvas(canvas, qrDataUrl, {
-          ticketId: ticket.id,
-          eventTitle: ticket.category.event.title,
-          categoryName: ticket.category.name,
-          eventDate: ticket.category.event.eventDate,
-          venueName: ticket.category.event.venueName,
-          coverImageUrl: ticket.category.event.coverImageUrl ?? undefined,
-        });
-        const blob: Blob = await new Promise((res) => canvas.toBlob((b) => res(b!), 'image/png'));
-        files.push(new File([blob], `billet-${ticket.id.slice(0, 8)}.png`, { type: 'image/png' }));
-      }
-
-      if (navigator.canShare && navigator.canShare({ files })) {
-        await navigator.share({ files, title: `Mes billets – ${state?.eventName || 'BilletGo'}` });
-      } else {
-        // Fallback : téléchargement un par un
-        for (const file of files) {
-          const url = URL.createObjectURL(file);
-          const a = document.createElement('a');
-          a.href = url; a.download = file.name; a.target = '_blank';
-          document.body.appendChild(a); a.click(); document.body.removeChild(a);
-          setTimeout(() => URL.revokeObjectURL(url), 2000);
-        }
-        toast.success('Billets enregistrés !');
-      }
-    } catch (err) {
-      if (err instanceof Error && err.name !== 'AbortError') {
-        toast.error('Erreur lors de la génération des images');
-      }
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
-  const whatsappUrl = `https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(
-    `Bonjour BilletGo, j'ai un problème avec ma commande ${orderId ?? ''}. Pouvez-vous m'aider ?`
-  )}`;
 
   return (
     <div className="min-h-screen bg-bg flex flex-col items-center justify-center px-4 py-16">
@@ -351,7 +282,7 @@ export default function OrderConfirmation() {
                     <img
                       src={state.coverImageUrl}
                       alt={state.eventName}
-                      className="w-full h-32 object-cover rounded-xl opacity-80"
+                      className="w-full h-32 object-cover object-top rounded-xl opacity-80"
                     />
                   )}
                   <h2 className="font-bebas text-xl tracking-wider text-white">{state.eventName}</h2>
@@ -386,28 +317,14 @@ export default function OrderConfirmation() {
               )}
 
               {/* Actions */}
-              <canvas ref={canvasRef} className="hidden" />
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button
-                  variant="secondary"
-                  size="lg"
-                  className="flex-1"
-                  onClick={handleSaveAllImages}
-                  isLoading={isDownloading}
-                >
-                  <ImageDown className="w-4 h-4" />
-                  Enregistrer dans la galerie
-                </Button>
-                <Button
-                  variant="primary"
-                  size="lg"
-                  className="flex-1"
-                  onClick={() => navigate('/mes-billets')}
-                >
-                  <Ticket className="w-4 h-4" />
-                  Voir mes billets
-                </Button>
-              </div>
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={() => navigate('/mes-billets', { replace: true })}
+              >
+                <Ticket className="w-4 h-4" />
+                Voir mes billets
+              </Button>
 
               {/* Calendrier + partage */}
               {state && (
@@ -437,16 +354,22 @@ export default function OrderConfirmation() {
                     <CalendarDays className="w-4 h-4" />
                     Ajouter au calendrier
                   </button>
-                  <a
-                    href={`https://wa.me/?text=${encodeURIComponent(`Je viens d'acheter mes billets pour ${state.eventName} ! Rejoins-moi sur BilletGo : ${window.location.origin}/events`)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold transition-all"
-                    style={{ background: 'rgba(37,211,102,0.12)', border: '1px solid rgba(37,211,102,0.30)', color: '#25D366' }}
+                  <button
+                    onClick={() => {
+                      const text = `Je viens d'acheter mes billets pour ${state.eventName} ! Rejoins-moi sur BilletGo : ${window.location.origin}/evenements`;
+                      if (navigator.share) {
+                        navigator.share({ title: state.eventName, text }).catch(() => {});
+                      } else {
+                        navigator.clipboard.writeText(text).then(() => {
+                          import('react-hot-toast').then(({ default: toast }) => toast.success('Lien copié !'));
+                        });
+                      }
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-white/10 text-white/60 hover:border-violet-neon/40 hover:text-violet-neon transition-all text-sm font-semibold"
                   >
                     <Share2 className="w-4 h-4" />
-                    Partager sur WhatsApp
-                  </a>
+                    Partager
+                  </button>
                 </div>
               )}
 
@@ -481,7 +404,7 @@ export default function OrderConfirmation() {
               )}
 
               <div className="flex flex-col gap-3">
-                <Button variant="primary" size="lg" onClick={() => navigate('/mes-billets')}>
+                <Button variant="primary" size="lg" onClick={() => navigate('/mes-billets', { replace: true })}>
                   <Ticket className="w-4 h-4" />
                   Vérifier dans mes billets
                 </Button>
@@ -530,13 +453,11 @@ export default function OrderConfirmation() {
                   Réessayer le paiement
                 </Button>
                 <a
-                  href={whatsappUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href={supportUrl}
                   className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-white/10 text-white/60 hover:text-white hover:border-white/30 transition-all text-sm font-semibold"
                 >
-                  <MessageCircle className="w-4 h-4" />
-                  Contacter le support WhatsApp
+                  <Mail className="w-4 h-4" />
+                  Contacter le support
                 </a>
                 <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
                   Retour à l'accueil
@@ -565,7 +486,7 @@ export default function OrderConfirmation() {
                 </p>
               </div>
               <div className="flex flex-col gap-3">
-                <Button variant="primary" size="lg" onClick={() => navigate('/mes-billets')}>
+                <Button variant="primary" size="lg" onClick={() => navigate('/mes-billets', { replace: true })}>
                   <Ticket className="w-4 h-4" />
                   Mes billets
                 </Button>

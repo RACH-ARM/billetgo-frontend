@@ -2,13 +2,14 @@ import { useState, useMemo, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  LayoutGrid, Headphones, Tent, Waves, Mic2, Trophy, Theater,
+  LayoutGrid, Headphones, Tent, Waves, Mic2, Trophy, Theater, Footprints,
   Search, X, Flame, MapPin, MousePointerClick, Smartphone, Calendar,
 } from 'lucide-react';
 import { useEvents } from '../hooks/useEvents';
 import EventGrid from '../components/events/EventGrid';
 import HeroSection from '../components/events/HeroSection';
 import TickerTape from '../components/events/TickerTape';
+import { isEventLive } from '../components/events/EventCard';
 import type { EventCategory } from '../types/event';
 
 type CategoryIcon = React.ComponentType<{ className?: string }>;
@@ -21,6 +22,7 @@ const CATEGORIES: { value: EventCategory | ''; label: string; Icon: CategoryIcon
   { value: 'CONCERT', label: 'Concert', Icon: Mic2 },
   { value: 'SPORT', label: 'Sport', Icon: Trophy },
   { value: 'CULTUREL', label: 'Culturel', Icon: Theater },
+  { value: 'RANDONNEE', label: 'Randonnée', Icon: Footprints },
 ];
 
 type DateFilter = '' | 'today' | 'weekend' | 'week' | 'month';
@@ -100,6 +102,9 @@ export default function Home() {
   // Appel unique au chargement initial — sert à la fois pour le hero/trending ET la liste
   const { data: allData, isLoading: allLoading } = useEvents({ limit: 20 });
 
+  // Événements passés (terminés récemment)
+  const { data: pastData } = useEvents({ timeframe: 'past', limit: 6 });
+
   // Appel supplémentaire seulement quand l'utilisateur filtre ou change de page
   const { data: filteredData, isLoading: filteredLoading } = useEvents(
     {
@@ -130,6 +135,11 @@ export default function Home() {
     }).slice(0, 4);
   }, [allData]);
 
+  const liveEvents = useMemo(() => {
+    if (!allData?.events) return [];
+    return allData.events.filter((e) => isEventLive(e.eventDate, e.doorsOpenAt, e.endDate));
+  }, [allData]);
+
   const trendingEvents = useMemo(() => {
     if (!allData?.events) return [];
     const hot = allData.events.filter((e) => e.isHot);
@@ -157,6 +167,24 @@ export default function Home() {
 
       {allData?.events && allData.events.length > 0 && (
         <TickerTape events={allData.events} />
+      )}
+
+      {liveEvents.length > 0 && (
+        <section className="px-4 sm:px-6 lg:px-8 pt-14 pb-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center gap-3 mb-6">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-neon opacity-75" />
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-neon" />
+              </span>
+              <h2 className="font-bebas text-3xl tracking-wider text-rose-neon">EN CE MOMENT</h2>
+              <span className="text-xs text-white/30 font-semibold uppercase tracking-widest mt-1">
+                {liveEvents.length} événement{liveEvents.length > 1 ? 's' : ''} en cours
+              </span>
+            </div>
+            <EventGrid events={liveEvents} isLoading={false} />
+          </div>
+        </section>
       )}
 
       {weekendEvents.length > 0 && (
@@ -292,6 +320,16 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      {/* Événements passés récemment */}
+      {(pastData?.events?.length ?? 0) > 0 && !isFiltered && (
+        <section className="px-4 sm:px-6 lg:px-8 pt-14 pb-6">
+          <div className="max-w-7xl mx-auto">
+            <SectionHeader title="Passés récemment" accent="violet" />
+            <EventGrid events={pastData!.events} isLoading={false} />
+          </div>
+        </section>
+      )}
 
       {/* How it works — en bas, après les événements */}
       <HowItWorks />

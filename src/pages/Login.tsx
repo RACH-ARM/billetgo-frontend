@@ -105,6 +105,7 @@ export default function Login() {
               className={inputCls}
             />
             {errors.identifier && <p className="text-rose-neon text-xs mt-1">{errors.identifier}</p>}
+            <p className="text-xs text-white/30 mt-1">L'adresse email ou le numéro avec lequel vous vous êtes inscrit</p>
           </div>
           <div>
             <label className="text-xs text-white/50 uppercase tracking-widest block mb-1.5">Mot de passe</label>
@@ -125,6 +126,7 @@ export default function Login() {
               </button>
             </div>
             {errors.password && <p className="text-rose-neon text-xs mt-1">{errors.password}</p>}
+            <p className="text-xs text-white/30 mt-1">Mot de passe choisi lors de votre inscription</p>
           </div>
 
           <div className="flex justify-end">
