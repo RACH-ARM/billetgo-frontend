@@ -13,13 +13,28 @@
     <meta property="og:title" content="BilletGo — Ton événement. Ton ticket. Maintenant." />
     <meta property="og:description" content="Billetterie événementielle du Gabon — Paiement Airtel Money & Moov Money" />
     <meta property="og:image" content="/og-image.png" />
-    <!-- Google Fonts -->
+    <!-- Google Fonts — preconnect + chargement non-bloquant pour éviter le FOUT -->
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Sora:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
-      rel="stylesheet"
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Sora:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap"
     />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Sora:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Sora:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
     <title>BilletGo — Ton événement. Ton ticket. Maintenant.</title>
   </head>
   <body class="bg-bg text-white font-sora">

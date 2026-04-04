@@ -82,6 +82,7 @@ export default function MyTickets() {
   const [expandedTickets, setExpandedTickets] = useState<Set<string>>(new Set());
 
   // Liste fusionnée commandes + billets reçus, triée par date de réception desc
+  // Les commandes COMPLETED avec des billets actifs (UNUSED) remontent en premier
   const feedEntries = useMemo(() => {
     const entries: Array<{ type: 'order' | 'received'; data: any; receivedAt: Date }> = [];
     (orders ?? []).forEach((o: any) => {
@@ -90,8 +91,23 @@ export default function MyTickets() {
     (receivedTickets ?? []).forEach((t: any) => {
       entries.push({ type: 'received', data: t, receivedAt: new Date(t.updatedAt) });
     });
-    return entries.sort((a, b) => b.receivedAt.getTime() - a.receivedAt.getTime());
-  }, [orders, receivedTickets]);
+    return entries.sort((a, b) => {
+      const priority = (entry: typeof entries[0]) => {
+        if (entry.type === 'received') {
+          return entry.data.status === 'UNUSED' ? 1 : 3;
+        }
+        const o = entry.data;
+        const hasActive = (o.tickets ?? []).some((t: any) => t.status === 'UNUSED' && t.buyerId === user?.id);
+        if (o.status === 'COMPLETED' && hasActive) return 0;
+        if (o.status === 'COMPLETED') return 2;
+        return 3;
+      };
+      const pa = priority(a);
+      const pb = priority(b);
+      if (pa !== pb) return pa - pb;
+      return b.receivedAt.getTime() - a.receivedAt.getTime();
+    });
+  }, [orders, receivedTickets, user?.id]);
 
   const toggleTickets = (orderId: string) => {
     setExpandedTickets((prev) => {

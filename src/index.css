@@ -81,3 +81,24 @@
     display: none;
   }
 }
+
+/* ── Reduced motion — respecte les préférences système ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.1ms !important;
+    scroll-behavior: auto !important;
+  }
+  .live-card {
+    animation: none !important;
+    box-shadow: 0 0 10px rgba(224, 64, 251, 0.25) !important;
+  }
+  .animate-ping,
+  .animate-pulse,
+  .animate-spin,
+  .animate-bounce {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+}

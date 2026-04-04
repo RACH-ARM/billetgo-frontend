@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { CalendarDays, MapPin } from 'lucide-react';
 import type { Event } from '../../types/event';
 import { formatEventDate } from '../../utils/formatDate';
@@ -12,6 +12,10 @@ interface HeroSectionProps {
 }
 
 export default function HeroSection({ event }: HeroSectionProps) {
+  const prefersReducedMotion = useReducedMotion();
+  // Disable particles on low-end devices (< 4 CPU cores) or reduced-motion preference
+  const showParticles = !prefersReducedMotion && (navigator.hardwareConcurrency ?? 4) >= 4;
+
   const minPrice = event.ticketCategories.length > 0
     ? Math.min(...event.ticketCategories.map((c) => c.price))
     : 0;
@@ -39,21 +43,23 @@ export default function HeroSection({ event }: HeroSectionProps) {
         <div className="absolute inset-0 bg-gradient-to-r from-bg/80 via-bg/20 to-transparent" />
       </div>
 
-      {/* Animated particles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(6)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-1 h-1 rounded-full bg-violet-neon/60"
-            style={{
-              left: `${15 + i * 15}%`,
-              top: `${20 + (i % 3) * 25}%`,
-            }}
-            animate={{ y: [-10, 10, -10], opacity: [0.3, 0.8, 0.3] }}
-            transition={{ duration: 3 + i * 0.5, repeat: Infinity, ease: 'easeInOut' }}
-          />
-        ))}
-      </div>
+      {/* Animated particles — skipped on low-end / reduced-motion devices */}
+      {showParticles && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {[...Array(6)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-1 h-1 rounded-full bg-violet-neon/60"
+              style={{
+                left: `${15 + i * 15}%`,
+                top: `${20 + (i % 3) * 25}%`,
+              }}
+              animate={{ y: [-10, 10, -10], opacity: [0.3, 0.8, 0.3] }}
+              transition={{ duration: 3 + i * 0.5, repeat: Infinity, ease: 'easeInOut' }}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Content */}
       <div className="relative z-10 h-full flex flex-col justify-end px-4 sm:px-8 lg:px-16 pb-10 sm:pb-16 max-w-7xl mx-auto">

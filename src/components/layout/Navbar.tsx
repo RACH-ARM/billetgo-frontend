@@ -47,10 +47,10 @@ export default function Navbar() {
     }
   };
 
-  const showVerifBanner = isAuthenticated && user?.email && !user?.isVerified;
+  const showVerifBanner = isAuthenticated && user?.email && !user?.isVerified && user?.role !== 'ORGANIZER';
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-bg/80 backdrop-blur-md border-b border-violet-neon/20">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-bg/95 backdrop-blur-md border-b border-violet-neon/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
 
         {/* Logo */}

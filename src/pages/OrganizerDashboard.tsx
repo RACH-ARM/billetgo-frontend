@@ -6,9 +6,9 @@ import {
   AreaChart, Area,
 } from 'recharts';
 import {
-  CalendarDays, Ticket, TrendingUp, Users,
+  CalendarDays, Ticket, TrendingUp, TrendingDown, Users,
   LogOut, AlertTriangle, Check, Clock, Upload, FileCheck, Phone, X,
-  Star, Shield, Award, Zap, UserCircle,
+  Star, Shield, Award, Zap, UserCircle, Minus,
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useOrganizerStats, useOrganizerProfile, useUpdateProfile, useOrganizerAnalytics, useUploadKYC } from '../hooks/useOrganizer';
@@ -21,13 +21,14 @@ import toast from 'react-hot-toast';
 
 // ── KPI Card ──────────────────────────────────────────────────
 function KpiCard({
-  title, value, subtitle, Icon, color,
+  title, value, subtitle, Icon, color, trend,
 }: {
   title: string;
   value: string | number;
   subtitle?: string;
   Icon: React.ComponentType<{ className?: string }>;
   color: 'violet' | 'rose' | 'cyan' | 'green';
+  trend?: number; // % change vs previous period, undefined = no data
 }) {
   const colors = {
     violet: { text: 'text-violet-neon', bg: 'bg-violet-neon/10', border: 'border-violet-neon/20' },
@@ -36,6 +37,8 @@ function KpiCard({
     green:  { text: 'text-green-400',   bg: 'bg-green-500/10',   border: 'border-green-500/20' },
   };
   const c = colors[color];
+  const TrendIcon = trend === undefined || trend === 0 ? Minus : trend > 0 ? TrendingUp : TrendingDown;
+  const trendColor = trend === undefined || trend === 0 ? 'text-white/20' : trend > 0 ? 'text-green-400' : 'text-rose-neon';
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -43,13 +46,21 @@ function KpiCard({
       className={`glass-card p-5 border ${c.border}`}
     >
       <div className="flex items-start justify-between">
-        <div>
+        <div className="flex-1 min-w-0">
           <p className="text-xs text-white/50 uppercase tracking-widest mb-1">{title}</p>
           <p className={`font-bebas text-3xl sm:text-4xl ${c.text}`}>{value}</p>
           {subtitle && <p className="text-xs text-white/30 mt-1">{subtitle}</p>}
         </div>
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${c.bg}`}>
-          <Icon className={`w-5 h-5 ${c.text}`} />
+        <div className="flex flex-col items-end gap-2 flex-shrink-0 ml-2">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${c.bg}`}>
+            <Icon className={`w-5 h-5 ${c.text}`} />
+          </div>
+          {trend !== undefined && (
+            <span className={`flex items-center gap-0.5 text-[10px] font-semibold ${trendColor}`}>
+              <TrendIcon className="w-3 h-3" />
+              {trend === 0 ? '—' : `${trend > 0 ? '+' : ''}${trend}%`}
+            </span>
+          )}
         </div>
       </div>
     </motion.div>
@@ -381,7 +392,7 @@ function PendingApprovalScreen({ profile, onLogout }: { profile: OrganizerProfil
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <a
-                href={`https://docs.google.com/viewer?url=${encodeURIComponent(kycUrl)}&embedded=true`}
+                href={/\.(jpg|jpeg|png|webp)$/i.test(kycUrl) || kycUrl.includes('/image/upload/') ? kycUrl : `https://docs.google.com/viewer?url=${encodeURIComponent(kycUrl)}&embedded=true`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs text-violet-neon hover:text-violet-neon/70 transition-colors"
@@ -430,6 +441,20 @@ export default function OrganizerDashboard() {
   const navigate = useNavigate();
   const { data, isLoading } = useOrganizerStats();
   const { data: profile, isLoading: profileLoading } = useOrganizerProfile();
+  const { data: analytics60 } = useOrganizerAnalytics(60);
+
+  // Calcul de tendance : 30 derniers jours vs 30 jours précédents
+  const computeTrend = (key: 'tickets' | 'revenue'): number | undefined => {
+    const days = analytics60?.dailySales as Array<{ tickets: number; revenue: number }> | undefined;
+    if (!days || days.length < 2) return undefined;
+    const mid = Math.floor(days.length / 2);
+    const prev = days.slice(0, mid).reduce((s, d) => s + d[key], 0);
+    const curr = days.slice(mid).reduce((s, d) => s + d[key], 0);
+    if (prev === 0) return curr > 0 ? 100 : 0;
+    return Math.round(((curr - prev) / prev) * 100);
+  };
+  const trendTickets = computeTrend('tickets');
+  const trendRevenue = computeTrend('revenue');
 
   if (isLoading || profileLoading) {
     return (
@@ -500,8 +525,8 @@ export default function OrganizerDashboard() {
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <KpiCard title="Événements" value={data?.eventsCount ?? 0} subtitle="Total créés" Icon={CalendarDays} color="violet" />
-        <KpiCard title="Billets vendus" value={(data?.globalSold ?? 0).toLocaleString('fr-FR')} subtitle="Toutes catégories" Icon={Ticket} color="cyan" />
-        <KpiCard title="Revenus nets" value={formatPrice(data?.globalRevenue ?? 0, 'FCFA', '0 FCFA')} subtitle="Après commission BilletGo" Icon={TrendingUp} color="green" />
+        <KpiCard title="Billets vendus" value={(data?.globalSold ?? 0).toLocaleString('fr-FR')} subtitle="vs 30j précédents" Icon={Ticket} color="cyan" trend={trendTickets} />
+        <KpiCard title="Revenus nets" value={formatPrice(data?.globalRevenue ?? 0, 'FCFA', '0 FCFA')} subtitle="vs 30j précédents" Icon={TrendingUp} color="green" trend={trendRevenue} />
         <KpiCard title="Acheteurs" value={(data?.globalSold ?? 0).toLocaleString('fr-FR')} subtitle="Billets générés" Icon={Users} color="rose" />
       </div>
 

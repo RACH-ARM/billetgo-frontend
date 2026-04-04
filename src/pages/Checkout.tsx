@@ -50,7 +50,7 @@ export default function Checkout() {
     email: user?.email ?? '',
     phone: '',
   });
-  const [provider, setProvider] = useState<'AIRTEL_MONEY' | 'MOOV_MONEY'>('AIRTEL_MONEY');
+  const [provider, setProvider] = useState<'AIRTEL_MONEY' | 'MOOV_MONEY' | null>(null);
   const [cgvAccepted, setCgvAccepted] = useState(false);
   const [paymentPhone, setPaymentPhone] = useState('');
   const [promoInput, setPromoInput] = useState('');
@@ -113,8 +113,8 @@ export default function Checkout() {
 
   const timerMin = String(Math.floor(timeLeft / 60)).padStart(2, '0');
   const timerSec = String(timeLeft % 60).padStart(2, '0');
-  const timerUrgent = timeLeft < 120;
-  const timerCritical = timeLeft < 60;
+  const timerUrgent = timeLeft < 90;
+  const timerCritical = timeLeft < 45;
 
   if (!event || items.length === 0) return null;
 
@@ -212,8 +212,8 @@ export default function Checkout() {
   const exceedsMaxPerOrder = totalItemsQty > maxPerOrder;
   const hasStockIssue = soldOutItems.length > 0 || exceedsMaxPerOrder;
 
-  const paymentPhoneValid = isValidGabonPhone(paymentPhone) && isPhoneMatchingProvider(paymentPhone, provider);
-  const canPay = buyerInfo.name.trim().length >= 2 && paymentPhoneValid && cgvAccepted;
+  const paymentPhoneValid = provider !== null && isValidGabonPhone(paymentPhone) && isPhoneMatchingProvider(paymentPhone, provider);
+  const canPay = buyerInfo.name.trim().length >= 2 && provider !== null && paymentPhoneValid && cgvAccepted;
 
   const handlePayment = async () => {
     setPaymentError(null);
@@ -229,7 +229,7 @@ export default function Checkout() {
 
       const result = await initiatePayment.mutateAsync({
         orderId: order.id,
-        method: provider,
+        method: provider!,
         phone: normalizeGabonPhone(paymentPhone) ?? paymentPhone,
       });
 
@@ -279,7 +279,7 @@ export default function Checkout() {
   };
 
   return (
-    <div className="min-h-screen py-10 px-4 sm:px-6 lg:px-8 pb-24 lg:pb-10">
+    <div className="min-h-screen py-10 px-4 sm:px-6 lg:px-8 pb-24">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between gap-4 mb-8">
@@ -296,9 +296,9 @@ export default function Checkout() {
             </h1>
           </div>
           <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-sm font-mono font-bold transition-colors ${
-            timerCritical ? 'border-rose-neon text-rose-neon bg-rose-neon/20 animate-pulse scale-105' :
-            timerUrgent ? 'border-rose-neon/60 text-rose-neon bg-rose-neon/10 animate-pulse' :
-            'border-white/10 text-white/50'
+            timerCritical ? 'border-rose-neon text-rose-neon bg-rose-neon/20 animate-pulse' :
+            timerUrgent ? 'border-rose-neon/50 text-rose-neon/80 bg-rose-neon/5' :
+            'border-white/10 text-white/30'
           }`}>
             <Clock className="w-3.5 h-3.5" />
             {timerMin}:{timerSec}
@@ -502,9 +502,6 @@ export default function Checkout() {
                     )}
                   </div>
 
-                  <Button variant="primary" size="lg" className="w-full" onClick={() => setStep(2 as Step)} disabled={hasStockIssue}>
-                    Continuer <ArrowRight className="w-4 h-4" />
-                  </Button>
                 </motion.div>
               )}
 
@@ -546,13 +543,13 @@ export default function Checkout() {
 
                     <div className="border-t border-white/5 pt-5">
                       <label className="text-xs text-white/50 uppercase tracking-widest block mb-3">
-                        Mode de paiement
+                        Opérateur de paiement <span className="text-rose-neon">*</span>
                       </label>
                       <div className="grid grid-cols-2 gap-3">
                         {PROVIDERS.map((p) => (
                           <button
                             key={p.id}
-                            onClick={() => setProvider(p.id)}
+                            onClick={() => { setProvider(p.id); setPaymentPhone(''); }}
                             className={`relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
                               provider === p.id ? `${p.border} ${p.bg}` : 'border-white/10 hover:border-violet-neon/30'
                             }`}
@@ -571,29 +568,40 @@ export default function Checkout() {
                       </div>
                     </div>
 
-                    <div>
-                      <label className="text-xs text-white/50 uppercase tracking-widest block mb-2">
-                        Numéro à débiter <span className="text-rose-neon">*</span>
-                      </label>
-                      <div className="flex gap-2">
-                        <div className="flex items-center gap-2 bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-3 text-white/60 text-sm flex-shrink-0">
-                          <span>🇬🇦</span>
-                          <span>+241</span>
-                        </div>
-                        <input
-                          value={paymentPhone}
-                          onChange={(e) => setPaymentPhone(e.target.value)}
-                          type="tel"
-                          placeholder={provider === 'AIRTEL_MONEY' ? '07X XXX XXX' : '06X XXX XXX'}
-                          className="flex-1 bg-bg-secondary border border-violet-neon/20 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors"
-                        />
-                      </div>
-                      {paymentPhone.length >= 2 && isValidGabonPhone(paymentPhone) && !isPhoneMatchingProvider(paymentPhone, provider) && (
-                        <p className="text-xs text-rose-neon mt-1.5">
-                          Ce numéro ne correspond pas à {provider === 'AIRTEL_MONEY' ? 'Airtel Money (07X...)' : 'Moov Money (06X...)'}
-                        </p>
-                      )}
-                    </div>
+                    {provider !== null && (
+                      <AnimatePresence mode="wait">
+                        <motion.div
+                          key={provider}
+                          initial={{ opacity: 0, y: -8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          transition={{ duration: 0.18 }}
+                        >
+                          <label className="text-xs text-white/50 uppercase tracking-widest block mb-2">
+                            Numéro {provider === 'AIRTEL_MONEY' ? 'Airtel Money' : 'Moov Money'} à débiter <span className="text-rose-neon">*</span>
+                          </label>
+                          <div className="flex gap-2">
+                            <div className="flex items-center gap-2 bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-3 text-white/60 text-sm flex-shrink-0">
+                              <span>🇬🇦</span>
+                              <span>+241</span>
+                            </div>
+                            <input
+                              value={paymentPhone}
+                              onChange={(e) => setPaymentPhone(e.target.value)}
+                              type="tel"
+                              autoFocus
+                              placeholder={provider === 'AIRTEL_MONEY' ? '07X XXX XXX' : '06X XXX XXX'}
+                              className="flex-1 bg-bg-secondary border border-violet-neon/20 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors"
+                            />
+                          </div>
+                          {paymentPhone.length >= 2 && isValidGabonPhone(paymentPhone) && !isPhoneMatchingProvider(paymentPhone, provider) && (
+                            <p className="text-xs text-rose-neon mt-1.5">
+                              Ce numéro ne correspond pas à {provider === 'AIRTEL_MONEY' ? 'Airtel Money (07X...)' : 'Moov Money (06X...)'}
+                            </p>
+                          )}
+                        </motion.div>
+                      </AnimatePresence>
+                    )}
 
                     <div className="flex items-center gap-2 text-xs text-white/40">
                       <CreditCard className="w-3.5 h-3.5 text-violet-neon flex-shrink-0" />
@@ -694,7 +702,7 @@ export default function Checkout() {
       </div>
       {/* Sticky mobile total bar */}
       {step === 1 && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-bg/95 backdrop-blur-md border-t border-violet-neon/20 px-4 py-3 flex items-center justify-between gap-4">
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-bg/95 backdrop-blur-md border-t border-violet-neon/20 px-4 py-3 flex items-center justify-between gap-4">
           <div className="flex flex-col">
             <span className="text-xs text-white/40">Total à payer</span>
             <span className="font-mono font-bold text-cyan-neon text-lg">{formatPrice(totalToPay)}</span>

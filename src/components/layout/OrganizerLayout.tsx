@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { NavLink, Link, useNavigate, Outlet, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Banknote, CalendarDays, Bell, Star, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Banknote, CalendarDays, Bell, User, LogOut, Menu, X } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
-import { useNotifications } from '../../hooks/useOrganizer';
+import { useNotifications, useOrganizerProfile } from '../../hooks/useOrganizer';
+
+const APPROVAL_REQUIRED_PATHS = ['/mes-evenements', '/versements'];
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Tableau de bord' },
@@ -56,7 +58,7 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-5 py-6 border-b border-white/5 flex-shrink-0">
+      <div className="px-5 py-6 border-b border-white/5 flex-shrink-0 flex justify-center pl-12">
         <Link to="/dashboard" onClick={onClose}>
           <img src="/logo.svg" alt="BilletGo" className="h-8 w-auto" />
         </Link>
@@ -75,12 +77,12 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
         <div className="my-3 border-t border-white/5" />
 
         <NavLink
-          to="/organisateurs"
+          to="/compte"
           className={linkClass}
           onClick={onClose}
         >
-          <Star className="w-4 h-4 flex-shrink-0" />
-          <span>Nos offres</span>
+          <User className="w-4 h-4 flex-shrink-0" />
+          <span>Mon compte</span>
         </NavLink>
       </nav>
 
@@ -105,6 +107,25 @@ export default function OrganizerLayout() {
   const { data: notifs } = useNotifications();
   const unreadCount = (notifs ?? []).filter((n) => !n.isRead).length;
   const location = useLocation();
+  const navigate = useNavigate();
+  const { updateUser, user } = useAuthStore();
+  const { data: profile } = useOrganizerProfile();
+
+  // Sync isApproved depuis le profil — quand l'admin approuve, plus besoin de re-login
+  useEffect(() => {
+    if (profile?.isApproved !== undefined && profile.isApproved !== user?.isApproved) {
+      updateUser({ isApproved: profile.isApproved });
+    }
+  }, [profile?.isApproved]);
+
+  // Garde : on attend que le profil soit chargé, puis on redirige si non approuvé
+  useEffect(() => {
+    if (profile === undefined) return;
+    const onProtectedPath = APPROVAL_REQUIRED_PATHS.some(p => location.pathname.startsWith(p));
+    if (onProtectedPath && !profile.isApproved) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [profile, location.pathname]);
 
   const closeDrawer = () => setDrawerOpen(false);
 
@@ -130,7 +151,7 @@ export default function OrganizerLayout() {
       </aside>
 
       {/* ── Mobile top bar ── */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-30 h-16 bg-[#0D0D1A]/90 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-4">
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-30 h-16 bg-[#0D0D1A]/95 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-4">
         <button
           onClick={() => setDrawerOpen(true)}
           className="w-9 h-9 flex items-center justify-center rounded-xl text-white/60 hover:text-white hover:bg-white/5 transition-all"

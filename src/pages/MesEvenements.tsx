@@ -1,12 +1,12 @@
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CalendarDays, Ticket, Download, Search,
   ChevronRight, ArrowLeft, Phone, Mail, CreditCard,
-  Plus, Trash2, Flame, Star, AlertTriangle, Check,
+  Plus, Trash2, AlertTriangle, Check,
   Pencil, Clock, Ban, Tag, X, Banknote, Images, ImagePlus, MapPin,
 } from 'lucide-react';
-import { useOrganizerStats, useEventBuyers, useCreateEvent, useUpdateEvent, useProposeChanges, useResubmitEvent, useCancelEvent, useEventPromos, useCreatePromoCode, useDeletePromoCode, useOrganizerProfile, useEventDetails, useEventWaitlist, usePlatformRates, useUploadEventGallery, useDeleteEventGalleryPhoto, type PlatformRates } from '../hooks/useOrganizer';
+import { useOrganizerStats, useEventBuyers, useCreateEvent, useUpdateEvent, useProposeChanges, useResubmitEvent, useCancelEvent, useEventPromos, useCreatePromoCode, useDeletePromoCode, useOrganizerProfile, useEventDetails, useEventWaitlist, useUploadEventGallery, useDeleteEventGalleryPhoto } from '../hooks/useOrganizer';
 import { organizerService, type OrganizerEventStat, type CreateEventTicketCategory } from '../services/organizerService';
 import { formatPrice } from '../utils/formatPrice';
 import { formatEventDate } from '../utils/formatDate';
@@ -100,7 +100,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 // ── CSS helpers ───────────────────────────────────────────────
-const inputCls = 'w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-4 py-3 text-white text-sm placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors';
+const inputCls = 'w-full appearance-none bg-bg-secondary border border-violet-neon/20 rounded-xl px-4 py-3 text-white text-sm placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors';
 const labelCls = 'text-xs text-white/40 uppercase tracking-widest block mb-1.5';
 
 const EMPTY_CATEGORY: CreateEventTicketCategory = { name: '', price: 0, quantityTotal: 0, maxPerOrder: 20 };
@@ -146,70 +146,6 @@ const EVENT_CATEGORIES = [
   { value: 'RANDONNEE', label: 'Randonnée' },
   { value: 'AUTRE', label: 'Autre' },
 ];
-
-// ── Offer builder ─────────────────────────────────────────────
-function buildOffers(rates: PlatformRates) {
-  const fmt = (rate: number) => `${(rate * 100 % 1 === 0 ? rate * 100 : (rate * 100).toFixed(1))}%`;
-  const ex = (rate: number) => {
-    const net = Math.round(5000 * (1 - rate));
-    return `${net.toLocaleString('fr-FR')} FCFA reversés / billet à 5 000 FCFA`;
-  };
-  return [
-    {
-      value: 'STANDARD',
-      label: 'Standard',
-      commission: fmt(rates.standardCommission),
-      tagline: 'L\'essentiel pour démarrer',
-      perks: [
-        'Page événement + affiche HD',
-        'Vente Mobile Money 24h/24',
-        'QR Code unique + PDF en 30s',
-        'Dashboard ventes en temps réel',
-        'Export CSV acheteurs',
-        'App de scan illimitée Jour J',
-      ],
-      example: ex(rates.standardCommission),
-      color: 'border-white/15 hover:border-violet-neon/40',
-      activeColor: 'border-violet-neon bg-violet-neon/10',
-      badge: null as ReactNode,
-    },
-    {
-      value: 'INTERMEDIAIRE',
-      label: 'Intermédiaire',
-      commission: fmt(rates.intermediateCommission),
-      tagline: 'Visibilité + Promotion active',
-      perks: [
-        'Tout Standard inclus',
-        'Badge HOT + section Tendances',
-        'Promotion réseaux sociaux',
-        'Rapport analytique post-événement',
-        'Support prioritaire',
-      ],
-      example: ex(rates.intermediateCommission),
-      color: 'border-white/15 hover:border-rose-neon/40',
-      activeColor: 'border-rose-neon bg-rose-neon/10',
-      badge: <span className="flex items-center gap-1 text-rose-neon font-bold text-xs"><Flame className="w-3 h-3" /> HOT</span> as ReactNode,
-    },
-    {
-      value: 'PREMIUM',
-      label: 'Premium',
-      commission: fmt(rates.premiumCommission),
-      tagline: 'Visibilité max + Terrain',
-      perks: [
-        'Tout Intermédiaire inclus',
-        'Section "À LA UNE" exclusive',
-        'Affichage physique Libreville',
-        'Posts influenceurs gabonais',
-        'Couverture médias locaux',
-        'Support VIP 7j/7',
-      ],
-      example: ex(rates.premiumCommission),
-      color: 'border-white/15 hover:border-yellow-400/40',
-      activeColor: 'border-yellow-400 bg-yellow-400/10',
-      badge: <span className="flex items-center gap-1 text-yellow-400 font-bold text-xs"><Star className="w-3 h-3" /> À la une</span> as ReactNode,
-    },
-  ];
-}
 
 // ── Buyers panel ──────────────────────────────────────────────
 function BuyersPanel({ event, onBack }: { event: OrganizerEventStat; onBack: () => void }) {
@@ -670,12 +606,20 @@ function PromoPanel({ event, onBack }: { event: OrganizerEventStat; onBack: () =
 }
 
 // ── Create Event Form ──────────────────────────────────────────
+const DRAFT_KEY = 'billetgo_create_event_draft';
+
+function loadDraft() {
+  try {
+    const raw = sessionStorage.getItem(DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
 function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
   const createEvent = useCreateEvent();
-  const { data: rates } = usePlatformRates();
-  const OFFERS = buildOffers(rates ?? { standardCommission: 0.10, intermediateCommission: 0.15, premiumCommission: 0.20, freeTicketFee: 500 });
+  const draft = loadDraft();
   const [contractAccepted, setContractAccepted] = useState(false);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState(draft?.form ?? {
     title: '', subtitle: '', description: '', category: 'AUTRE',
     offer: 'STANDARD',
     eventDate: '', doorsOpenAt: '', endDate: '', scheduledPublishAt: '',
@@ -684,12 +628,26 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
     venueLongitude: '' as string | number,
     maxTicketsPerOrder: 20,
   });
-  const [mapsUrl, setMapsUrl] = useState('');
+  const [mapsUrl, setMapsUrl] = useState(draft?.mapsUrl ?? '');
   const [mapsLoading, setMapsLoading] = useState(false);
-  const [categories, setCategories] = useState<CreateEventTicketCategory[]>([{ ...EMPTY_CATEGORY }]);
+  const [categories, setCategories] = useState<CreateEventTicketCategory[]>(draft?.categories ?? [{ ...EMPTY_CATEGORY }]);
   const [coverImage, setCoverImage] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [removeCatIndex, setRemoveCatIndex] = useState<number | null>(null);
+
+  const clearDraft = () => sessionStorage.removeItem(DRAFT_KEY);
+
+  // Sauvegarde automatique du brouillon à chaque modification
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ form, categories, mapsUrl }));
+    } catch { /* sessionStorage indisponible */ }
+  }, [form, categories, mapsUrl]);
+
+  // Toast de restauration au premier rendu si un brouillon existe
+  useEffect(() => {
+    if (draft) toast.success('Brouillon restauré', { duration: 3000 });
+  }, []);
 
   const handleMapsUrl = async (url: string) => {
     setMapsUrl(url);
@@ -730,28 +688,34 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
   const addCategory = () => setCategories((cats) => [...cats, { ...EMPTY_CATEGORY }]);
   const removeCategory = (i: number) => setCategories((cats) => cats.filter((_, idx) => idx !== i));
 
+  const scrollTo = (id: string) =>
+    setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+
+  // Mapping champ Zod (body.xxx) → id HTML
+  const FIELD_IDS: Record<string, string> = {
+    'body.title': 'cf-title',
+    'body.description': 'cf-description',
+    'body.eventDate': 'cf-eventDate',
+    'body.endDate': 'cf-endDate',
+    'body.doorsOpenAt': 'cf-doorsOpenAt',
+    'body.venueName': 'cf-venueName',
+    'body.venueAddress': 'cf-venueAddress',
+    'body.venueCity': 'cf-venueCity',
+    'body.ticketCategories': 'cf-categories',
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.title || !form.description || !form.eventDate || !form.venueName || !form.venueAddress) {
-      toast.error('Remplissez tous les champs obligatoires');
-      return;
-    }
-    if (!form.endDate) {
-      toast.error('La date de fin est obligatoire');
-      return;
-    }
-    if (new Date(form.endDate) <= new Date(form.eventDate)) {
-      toast.error("L'heure de fin doit être après le début de l'événement");
-      return;
-    }
-    if (form.doorsOpenAt && new Date(form.endDate) <= new Date(form.doorsOpenAt)) {
-      toast.error("L'heure de fin doit être après l'ouverture des portes");
-      return;
-    }
-    if (categories.some((c) => !c.name || c.price < 0 || c.quantityTotal <= 0)) {
-      toast.error('Vérifiez les catégories de billets');
-      return;
-    }
+    if (!form.title) { toast.error('Le titre est obligatoire'); scrollTo('cf-title'); return; }
+    if (!form.description) { toast.error('La description est obligatoire'); scrollTo('cf-description'); return; }
+    if (form.description.length < 20) { toast.error('La description doit faire au moins 20 caractères'); scrollTo('cf-description'); return; }
+    if (!form.eventDate) { toast.error("La date de début est obligatoire"); scrollTo('cf-eventDate'); return; }
+    if (!form.endDate) { toast.error('La date de fin est obligatoire'); scrollTo('cf-endDate'); return; }
+    if (new Date(form.endDate) <= new Date(form.eventDate)) { toast.error("L'heure de fin doit être après le début"); scrollTo('cf-endDate'); return; }
+    if (form.doorsOpenAt && new Date(form.endDate) <= new Date(form.doorsOpenAt)) { toast.error("L'heure de fin doit être après l'ouverture des portes"); scrollTo('cf-endDate'); return; }
+    if (!form.venueName) { toast.error('Le nom du lieu est obligatoire'); scrollTo('cf-venueName'); return; }
+    if (!form.venueAddress) { toast.error("L'adresse est obligatoire"); scrollTo('cf-venueAddress'); return; }
+    if (categories.some((c) => !c.name || c.price < 0 || c.quantityTotal <= 0)) { toast.error('Vérifiez les catégories de billets'); scrollTo('cf-categories'); return; }
     try {
       await createEvent.mutateAsync({
         payload: {
@@ -764,11 +728,19 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
         },
         coverImage: coverImage ?? undefined,
       });
+      clearDraft();
       toast.success('Événement soumis — en attente de validation admin');
       onSuccess();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(msg || 'Erreur lors de la création');
+      const res = (err as { response?: { data?: { message?: string; errors?: { field: string; message: string }[] } } })?.response?.data;
+      if (res?.errors?.length) {
+        const first = res.errors[0];
+        toast.error(first.message, { duration: 6000 });
+        const fieldId = FIELD_IDS[first.field] ?? FIELD_IDS[first.field.replace(/\.\d+.*/, '')];
+        if (fieldId) scrollTo(fieldId);
+      } else {
+        toast.error(res?.message || 'Erreur lors de la création');
+      }
     }
   };
 
@@ -779,7 +751,7 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
       exit={{ opacity: 0, x: 20 }}
     >
       <div className="flex items-center gap-4 mb-6">
-        <button onClick={onClose} className="flex items-center gap-1.5 text-white/50 hover:text-white transition-colors text-sm">
+        <button onClick={() => { clearDraft(); onClose(); }} className="flex items-center gap-1.5 text-white/50 hover:text-white transition-colors text-sm">
           <ArrowLeft className="w-4 h-4" /> Retour
         </button>
         <h2 className="font-bebas text-3xl tracking-wider text-gradient">NOUVEL ÉVÉNEMENT</h2>
@@ -815,7 +787,7 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
               <label className={labelCls}>Titre <span className="text-rose-neon">*</span></label>
-              <input value={form.title} onChange={(e) => setField('title', e.target.value)} placeholder="Ex: Soirée Libreville Vol.3" className={inputCls} />
+              <input id="cf-title" value={form.title} onChange={(e) => setField('title', e.target.value)} placeholder="Ex: Soirée Libreville Vol.3" className={inputCls} />
               <p className="text-xs text-white/30 mt-1">Nom principal affiché sur la page de l'événement et dans les billets.</p>
             </div>
             <div className="sm:col-span-2">
@@ -826,13 +798,19 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
             <div className="sm:col-span-2">
               <label className={labelCls}>Description <span className="text-rose-neon">*</span></label>
               <textarea
+                id="cf-description"
                 value={form.description}
                 onChange={(e) => setField('description', e.target.value)}
                 placeholder="Décrivez votre événement..."
                 rows={4}
                 className={inputCls + ' resize-none'}
               />
-              <p className="text-xs text-white/30 mt-1">Décrivez l'ambiance, les artistes, le programme. Minimum 20 caractères.</p>
+              <div className="flex items-center justify-between mt-1">
+                <p className="text-xs text-white/30">Décrivez l'ambiance, les artistes, le programme. Minimum 20 caractères.</p>
+                <span className={`text-xs font-mono ${form.description.length < 20 ? 'text-rose-neon' : 'text-white/30'}`}>
+                  {form.description.length}/20
+                </span>
+              </div>
             </div>
             <div>
               <label className={labelCls}>Catégorie</label>
@@ -849,61 +827,33 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
           </div>
         </div>
 
-        {/* Offre */}
-        <div className="glass-card p-6 space-y-4">
-          <h3 className="font-bebas text-lg tracking-wider text-white border-b border-white/5 pb-3">Offre BilletGo</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {OFFERS.map((o) => {
-              const isActive = form.offer === o.value;
-              return (
-                <button
-                  key={o.value}
-                  type="button"
-                  onClick={() => setField('offer', o.value)}
-                  className={`relative flex flex-col gap-2 p-4 rounded-xl border-2 text-left transition-all ${isActive ? o.activeColor : o.color}`}
-                >
-                  {o.badge && (
-                    <span className="absolute top-2.5 right-2.5">{o.badge}</span>
-                  )}
-                  <span className="font-bebas text-xl tracking-wider text-white">{o.label}</span>
-                  <span className="text-xs text-white/40 -mt-1">{o.tagline}</span>
-                  <div className="flex items-baseline gap-1 mt-1">
-                    <span className="font-mono text-2xl font-bold text-white">{o.commission}</span>
-                    <span className="text-xs text-white/40">commission</span>
-                  </div>
-                  <ul className="mt-1 space-y-1.5">
-                    {o.perks.map((p) => (
-                      <li key={p} className="flex items-start gap-1.5 text-xs text-white/60">
-                        <span className="w-1 h-1 rounded-full bg-white/40 flex-shrink-0 mt-1.5" />
-                        {p}
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="mt-2 text-xs text-white/30 border-t border-white/5 pt-2">{o.example}</p>
-                </button>
-              );
-            })}
-          </div>
+        {/* Commission */}
+        <div className="glass-card p-4 flex items-center gap-3">
+          <Banknote className="w-5 h-5 text-violet-neon flex-shrink-0" />
+          <p className="text-sm text-white/60">
+            <span className="text-white font-semibold">10% de commission</span> prélevée sur chaque billet vendu.
+            Les billets gratuits sont soumis à des frais fixes de <span className="text-white font-semibold">500 FCFA</span>.
+          </p>
         </div>
 
         {/* Dates */}
         <div className="glass-card p-6 space-y-4">
           <h3 className="font-bebas text-lg tracking-wider text-white border-b border-white/5 pb-3">Dates & horaires</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
+          <div className="grid grid-cols-1 gap-4">
+            <div id="cf-eventDate">
               <label className={labelCls}>Date & heure de début <span className="text-rose-neon">*</span></label>
               <input type="datetime-local" value={form.eventDate} onChange={(e) => setField('eventDate', e.target.value)} className={inputCls} />
               <p className="text-xs text-white/30 mt-1">Heure à laquelle l'événement commence officiellement.</p>
             </div>
-            <div>
-              <label className={labelCls}>Ouverture des portes</label>
-              <input type="datetime-local" value={form.doorsOpenAt} onChange={(e) => setField('doorsOpenAt', e.target.value)} className={inputCls} />
-              <p className="text-xs text-white/30 mt-1">Heure à partir de laquelle les acheteurs peuvent entrer. Affiché sur le billet.</p>
-            </div>
-            <div>
+            <div id="cf-endDate">
               <label className={labelCls}>Date & heure de fin <span className="text-rose-neon">*</span></label>
               <input type="datetime-local" value={form.endDate} onChange={(e) => setField('endDate', e.target.value)} className={inputCls} />
               <p className="text-xs text-white/30 mt-1">Heure de fermeture de l'événement. Détermine quand l'indicateur "EN COURS" s'éteint sur la carte.</p>
+            </div>
+            <div id="cf-doorsOpenAt">
+              <label className={labelCls}>Ouverture des portes</label>
+              <input type="datetime-local" value={form.doorsOpenAt} onChange={(e) => setField('doorsOpenAt', e.target.value)} className={inputCls} />
+              <p className="text-xs text-white/30 mt-1">Heure à partir de laquelle les acheteurs peuvent entrer. Affiché sur le billet.</p>
             </div>
             <div>
               <label className={labelCls}>Publication programmée <span className="text-white/30 font-normal">(optionnel)</span></label>
@@ -917,17 +867,17 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
         <div className="glass-card p-6 space-y-4">
           <h3 className="font-bebas text-lg tracking-wider text-white border-b border-white/5 pb-3">Lieu</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
+            <div id="cf-venueName">
               <label className={labelCls}>Nom du lieu <span className="text-rose-neon">*</span></label>
               <input value={form.venueName} onChange={(e) => setField('venueName', e.target.value)} placeholder="Ex: Club Empire" className={inputCls} />
               <p className="text-xs text-white/30 mt-1">Nom de la salle, du club ou de l'espace. Affiché sur le billet.</p>
             </div>
-            <div>
+            <div id="cf-venueCity">
               <label className={labelCls}>Ville</label>
               <input value={form.venueCity} onChange={(e) => setField('venueCity', e.target.value)} placeholder="Libreville" className={inputCls} />
               <p className="text-xs text-white/30 mt-1">Ville où se déroule l'événement.</p>
             </div>
-            <div className="sm:col-span-2">
+            <div className="sm:col-span-2" id="cf-venueAddress">
               <label className={labelCls}>Adresse <span className="text-rose-neon">*</span></label>
               <input value={form.venueAddress} onChange={(e) => setField('venueAddress', e.target.value)} placeholder="Ex: Boulevard Triomphal, Libreville" className={inputCls} />
               <p className="text-xs text-white/30 mt-1">Adresse complète affichée sur le billet et la page de l'événement.</p>
@@ -969,7 +919,7 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
         </div>
 
         {/* Catégories de billets */}
-        <div className="glass-card p-6 space-y-4">
+        <div id="cf-categories" className="glass-card p-6 space-y-4">
           <div className="flex items-center justify-between border-b border-white/5 pb-3">
             <h3 className="font-bebas text-lg tracking-wider text-white">Catégories de billets</h3>
             <Button type="button" variant="secondary" size="sm" onClick={addCategory}>
@@ -1026,16 +976,14 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
           />
           <span className="text-xs text-white/50 leading-relaxed">
             J'accepte les conditions de la plateforme BilletGo, notamment la commission de{' '}
-            <span className="text-white font-semibold">
-              {OFFERS.find((o) => o.value === form.offer)?.commission ?? '10%'}
-            </span>{' '}
-            prélevée sur chaque billet vendu (forfait {OFFERS.find((o) => o.value === form.offer)?.label ?? 'Standard'}).
+            <span className="text-white font-semibold">10%</span>{' '}
+            prélevée sur chaque billet vendu.
             Je certifie être habilité à soumettre cet événement.
           </span>
         </label>
 
         <div className="flex gap-3 pb-8">
-          <Button type="button" variant="secondary" size="lg" onClick={onClose} className="flex-1">
+          <Button type="button" variant="secondary" size="lg" onClick={() => { clearDraft(); onClose(); }} className="flex-1">
             Annuler
           </Button>
           <Button
@@ -1390,18 +1338,18 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
         {/* Dates */}
         <div className="glass-card p-6 space-y-4">
           <h3 className="font-bebas text-lg tracking-wider text-white border-b border-white/5 pb-3">Dates</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <div>
-              <label className={labelCls}>Date & heure <span className="text-rose-neon">*</span></label>
+              <label className={labelCls}>Date & heure de début <span className="text-rose-neon">*</span></label>
               <input type="datetime-local" value={form.eventDate} onChange={(e) => setField('eventDate', e.target.value)} className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>Ouverture des portes</label>
-              <input type="datetime-local" value={form.doorsOpenAt} onChange={(e) => setField('doorsOpenAt', e.target.value)} className={inputCls} />
             </div>
             <div>
               <label className={labelCls}>Fin de l'événement <span className="text-rose-neon">*</span></label>
               <input type="datetime-local" value={form.endDate} onChange={(e) => setField('endDate', e.target.value)} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Ouverture des portes</label>
+              <input type="datetime-local" value={form.doorsOpenAt} onChange={(e) => setField('doorsOpenAt', e.target.value)} className={inputCls} />
             </div>
             {!isPropose && (
               <div>
