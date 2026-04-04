@@ -76,7 +76,7 @@ export default function Confidentialite() {
               <li>Adresse IP lors des connexions</li>
               <li>Journaux d'accès à l'API (conservés 30 jours via Upstash Redis)</li>
               <li>Journaux d'audit des actions administratives (création, modification, libération de versement, etc.)</li>
-              <li>Logs de notifications envoyées (email, SMS, in-app)</li>
+              <li>Logs de notifications envoyées (email, in-app)</li>
             </ul>
           </Section>
 

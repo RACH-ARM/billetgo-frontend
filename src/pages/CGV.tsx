@@ -44,7 +44,7 @@ export default function CGV() {
               BilletGo perçoit une commission sur chaque billet vendu, incluse dans le prix affiché à
               l'acheteur (l'acheteur ne paie pas de frais supplémentaires). Pour les billets gratuits, des
               frais fixes de service de <span className="text-white font-semibold">500 FCFA</span> par billet
-              peuvent s'appliquer selon décision de l'organisateur ou de l'administration BilletGo.
+              sont appliqués de manière systématique.
             </p>
             <p>
               Le montant total à régler est clairement indiqué dans le récapitulatif de commande avant toute
@@ -53,12 +53,10 @@ export default function CGV() {
           </Section>
 
           <Section title="3. Processus d'achat">
-            <p>L'achat d'un ou plusieurs billets se déroule en quatre étapes successives :</p>
+            <p>L'achat d'un ou plusieurs billets se déroule en deux étapes successives :</p>
             <ol className="list-decimal list-inside space-y-1 pl-2">
-              <li>Sélection des billets et des catégories souhaitées.</li>
-              <li>Récapitulatif de commande et vérification des informations acheteur.</li>
-              <li>Choix de l'opérateur mobile money et saisie du numéro de paiement.</li>
-              <li>Confirmation du paiement sur votre téléphone via la notification de votre opérateur.</li>
+              <li>Sélection des billets, récapitulatif de commande et application éventuelle d'un code promo.</li>
+              <li>Saisie des informations acheteur, choix de l'opérateur mobile money, saisie du numéro à débiter et confirmation.</li>
             </ol>
             <p>
               La commande est définitivement enregistrée et les billets générés uniquement après confirmation
@@ -93,7 +91,7 @@ export default function CGV() {
               La version numérique est acceptée à l'entrée — l'impression n'est pas requise.
             </p>
             <p>
-              Une confirmation de commande est également envoyée par email et/ou SMS selon les coordonnées
+              Une confirmation de commande est également envoyée par email selon les coordonnées
               renseignées lors de votre inscription.
             </p>
           </Section>
@@ -119,7 +117,7 @@ export default function CGV() {
               <li>En cas d'annulation officielle d'un événement par l'organisateur, BilletGo procède au remboursement intégral du prix d'achat à tous les acheteurs concernés.</li>
               <li>Le remboursement est garanti dans la limite des fonds retenus en séquestre par BilletGo au moment de l'annulation.</li>
               <li>Pour les montants excédant les fonds en séquestre (si des tranches avaient déjà été versées à l'organisateur), la responsabilité de l'indemnisation incombe à l'organisateur.</li>
-              <li>Les notifications d'annulation et de remboursement sont envoyées automatiquement par email, SMS et notification in-app.</li>
+              <li>Les notifications d'annulation et de remboursement sont envoyées automatiquement par email et notification in-app.</li>
             </ul>
           </Section>
 

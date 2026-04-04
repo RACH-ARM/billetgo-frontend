@@ -156,7 +156,7 @@ export default function CGU() {
               En cas d'annulation officielle d'un événement par l'organisateur, BilletGo procède au remboursement
               intégral du prix d'achat à tous les acheteurs concernés, dans la limite des fonds retenus en séquestre.
               Les notifications d'annulation et de remboursement sont envoyées automatiquement par email,
-              SMS et notification in-app.
+              et notification in-app.
             </p>
           </Section>
 
