@@ -1480,7 +1480,7 @@ export default function AdminBackoffice() {
                                     const url = org.kycDocumentUrl as string;
                                     return (
                                       <a
-                                        href={`https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`}
+                                        href={/\.(jpg|jpeg|png|webp)$/i.test(url) || url.includes('/image/upload/') ? url : `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-violet-neon/10 text-violet-neon text-xs font-semibold border border-violet-neon/20 hover:bg-violet-neon/20 transition-colors whitespace-nowrap"

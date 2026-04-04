@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, Navigate } from 'react-router-dom';
+import { useQuery } from 'react-query';
+import { organizerService } from '../services/organizerService';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Lock, Bell, Trash2, Camera, ChevronLeft,
@@ -778,6 +780,16 @@ export default function MonCompte() {
   const role = user?.role ?? 'BUYER';
   const tabs = TABS_BY_ROLE[role] ?? TABS_BY_ROLE['BUYER'];
   const [activeTab, setActiveTab] = useState(tabs[0].id);
+
+  // Bloquer les organisateurs non approuvés
+  const { data: orgProfile } = useQuery(
+    'organizer-profile',
+    organizerService.getProfile,
+    { enabled: role === 'ORGANIZER', staleTime: 60_000 }
+  );
+  if (role === 'ORGANIZER' && orgProfile !== undefined && !orgProfile.isApproved) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   return (
     <div className="min-h-screen bg-bg py-20 px-4">

@@ -13,7 +13,7 @@ const PageSpinner = () => (
 
 export default function PageLayout() {
   const { isAuthenticated, user } = useAuthStore();
-  const hasVerifBanner = isAuthenticated && !!user?.email && !user?.isVerified;
+  const hasVerifBanner = isAuthenticated && !!user?.email && !user?.isVerified && user?.role !== 'ORGANIZER';
 
   return (
     <div className="min-h-screen flex flex-col">

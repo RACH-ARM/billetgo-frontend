@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import {
   LayoutGrid, Headphones, Tent, Waves, Mic2, Trophy, Theater, Footprints,
   Search, X, Flame, MapPin, MousePointerClick, Smartphone, Calendar,
+  XCircle, CheckCircle, QrCode, Shield, Download, Users,
 } from 'lucide-react';
 import { useEvents } from '../hooks/useEvents';
 import EventGrid from '../components/events/EventGrid';
@@ -331,9 +332,96 @@ export default function Home() {
         </section>
       )}
 
+      {/* Problèmes résolus — côté acheteur */}
+      <ProblemsResolved />
+
       {/* How it works — en bas, après les événements */}
       <HowItWorks />
     </div>
+  );
+}
+
+const BUYER_PROBLEMS = [
+  {
+    problem: 'Faux billets et arnaques',
+    solution: 'Chaque billet possède un QR Code cryptographique unique (HMAC-SHA256) — impossible à copier ou falsifier.',
+    Icon: QrCode,
+    color: 'violet',
+  },
+  {
+    problem: 'Billet perdu ou oublié',
+    solution: 'Votre billet est enregistré dans la galerie de votre téléphone et accessible à tout moment depuis "Mes billets".',
+    Icon: Download,
+    color: 'rose',
+  },
+  {
+    problem: 'Files d\'attente interminables',
+    solution: 'Scan QR instantané à l\'entrée — en quelques secondes, votre passage est confirmé et vous entrez.',
+    Icon: Shield,
+    color: 'cyan',
+  },
+  {
+    problem: 'Transfert de billet risqué',
+    solution: 'Transférez votre billet à quelqu\'un d\'autre en un clic — l\'ancien QR Code est automatiquement invalidé.',
+    Icon: Users,
+    color: 'green',
+  },
+] as const;
+
+function ProblemsResolved() {
+  const colors = {
+    violet: { text: 'text-violet-neon', bg: 'bg-violet-neon/10', border: 'border-violet-neon/20' },
+    rose:   { text: 'text-rose-neon',   bg: 'bg-rose-neon/10',   border: 'border-rose-neon/20' },
+    cyan:   { text: 'text-cyan-neon',   bg: 'bg-cyan-neon/10',   border: 'border-cyan-neon/20' },
+    green:  { text: 'text-green-400',   bg: 'bg-green-500/10',   border: 'border-green-500/20' },
+  };
+
+  return (
+    <section className="px-4 sm:px-6 lg:px-8 py-16">
+      <div className="max-w-7xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-10"
+        >
+          <p className="text-xs text-violet-neon uppercase tracking-widest font-semibold mb-3">Ce que BilletGo règle pour vous</p>
+          <h2 className="font-bebas text-4xl sm:text-5xl tracking-wider text-white mb-2">Les problèmes résolus</h2>
+          <p className="text-white/40 text-sm">Plus jamais ces galères avec BilletGo.</p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {BUYER_PROBLEMS.map((item, i) => {
+            const c = colors[item.color];
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.08 }}
+                className="glass-card p-5 border border-white/5 flex flex-col gap-3"
+              >
+                <div className="flex items-start gap-2">
+                  <XCircle className="w-4 h-4 text-red-400/60 flex-shrink-0 mt-0.5" />
+                  <p className="text-white/35 text-xs line-through">{item.problem}</p>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${c.bg}`}>
+                    <item.Icon className={`w-3.5 h-3.5 ${c.text}`} />
+                  </div>
+                  <p className="text-white/65 text-xs leading-relaxed">{item.solution}</p>
+                </div>
+                <div className="flex items-center gap-1.5 pt-1">
+                  <CheckCircle className={`w-3.5 h-3.5 ${c.text}`} />
+                  <span className={`text-xs font-semibold ${c.text}`}>Résolu</span>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -349,7 +437,7 @@ const HOW_STEPS = [
     num: '02',
     Icon: MousePointerClick,
     title: 'Sélectionnez vos places',
-    desc: 'Choisissez votre catégorie (Standard, VIP, Carré Or…) et le nombre de billets souhaités.',
+    desc: 'Choisissez votre catégorie (Standard, VIP, VIIP…) et le nombre de billets souhaités.',
     color: 'rose',
   },
   {
