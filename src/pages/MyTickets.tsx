@@ -408,7 +408,15 @@ export default function MyTickets() {
                           usedCount={usedTickets}
                           totalCount={activeTickets}
                           eventTitle={order.event.title}
-                          categoryName={order.orderItems.map((item: any) => `${item.quantity}× ${item.category.name}`).join(', ')}
+                          categoryName={Object.entries(
+                            myTickets
+                              .filter((t: any) => t.status !== 'REFUNDED' && t.status !== 'CANCELLED')
+                              .reduce((acc: Record<string, number>, t: any) => {
+                                const name = t.category?.name ?? '';
+                                acc[name] = (acc[name] ?? 0) + 1;
+                                return acc;
+                              }, {})
+                          ).map(([name, qty]) => `${qty}× ${name}`).join(', ')}
                           eventDate={order.event.eventDate}
                           venueName={order.event.venueName}
                           coverImageUrl={order.event.coverImageUrl}
