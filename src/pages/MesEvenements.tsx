@@ -821,7 +821,7 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
             </div>
             <div>
               <label className={labelCls}>Max billets / commande</label>
-              <input type="number" min={1} max={500} value={form.maxTicketsPerOrder} onChange={(e) => setField('maxTicketsPerOrder', Number(e.target.value))} className={inputCls} />
+              <input type="number" min={1} max={500} value={form.maxTicketsPerOrder || ''} onChange={(e) => setField('maxTicketsPerOrder', Number(e.target.value))} className={inputCls} />
               <p className="text-xs text-white/30 mt-1">Nombre total de billets qu'un seul acheteur peut commander en une fois, toutes catégories confondues.</p>
             </div>
           </div>
@@ -944,12 +944,12 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
                 </div>
                 <div>
                   <label className={labelCls}>Prix (FCFA) <span className="text-rose-neon">*</span></label>
-                  <input type="number" min={0} value={cat.price} onChange={(e) => setCategoryField(i, 'price', Number(e.target.value))} placeholder="5000" className={inputCls} />
+                  <input type="number" min={0} value={cat.price || ''} onChange={(e) => setCategoryField(i, 'price', Number(e.target.value))} placeholder="5000" className={inputCls} />
                   <p className="text-xs text-white/30 mt-1">Mettre 0 pour un billet gratuit (frais fixes de 500 FCFA appliqués).</p>
                 </div>
                 <div>
                   <label className={labelCls}>Quantité <span className="text-rose-neon">*</span></label>
-                  <input type="number" min={1} value={cat.quantityTotal} onChange={(e) => setCategoryField(i, 'quantityTotal', Number(e.target.value))} placeholder="100" className={inputCls} />
+                  <input type="number" min={1} value={cat.quantityTotal || ''} onChange={(e) => setCategoryField(i, 'quantityTotal', Number(e.target.value))} placeholder="100" className={inputCls} />
                   <p className="text-xs text-white/30 mt-1">Nombre total de billets disponibles pour cette catégorie.</p>
                 </div>
                 <div className="col-span-2">
@@ -959,7 +959,7 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
                 </div>
                 <div>
                   <label className={labelCls}>Max / commande</label>
-                  <input type="number" min={1} max={200} value={cat.maxPerOrder ?? 20} onChange={(e) => setCategoryField(i, 'maxPerOrder', Number(e.target.value))} className={inputCls} />
+                  <input type="number" min={1} max={200} value={cat.maxPerOrder || ''} onChange={(e) => setCategoryField(i, 'maxPerOrder', Number(e.target.value))} className={inputCls} />
                   <p className="text-xs text-white/30 mt-1">Limite de billets pour cette catégorie spécifique par acheteur.</p>
                 </div>
               </div>
@@ -1330,7 +1330,7 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
             </div>
             <div>
               <label className={labelCls}>Max billets / commande</label>
-              <input type="number" min={1} max={500} value={form.maxTicketsPerOrder} onChange={(e) => setField('maxTicketsPerOrder', Number(e.target.value))} className={inputCls} />
+              <input type="number" min={1} max={500} value={form.maxTicketsPerOrder || ''} onChange={(e) => setField('maxTicketsPerOrder', Number(e.target.value))} className={inputCls} />
             </div>
           </div>
         </div>
@@ -1434,11 +1434,11 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
               </div>
               <div>
                 <label className={labelCls}>Prix (FCFA)</label>
-                <input type="number" min={0} value={cat.price} onChange={(e) => setCategoryField(i, 'price', Number(e.target.value))} className={inputCls} />
+                <input type="number" min={0} value={cat.price || ''} onChange={(e) => setCategoryField(i, 'price', Number(e.target.value))} className={inputCls} />
               </div>
               <div>
                 <label className={labelCls}>Places</label>
-                <input type="number" min={1} value={cat.quantityTotal} onChange={(e) => setCategoryField(i, 'quantityTotal', Number(e.target.value))} className={inputCls} />
+                <input type="number" min={1} value={cat.quantityTotal || ''} onChange={(e) => setCategoryField(i, 'quantityTotal', Number(e.target.value))} className={inputCls} />
               </div>
               {categories.length > 1 && (
                 <button type="button" onClick={() => setRemoveCatIndex(i)} className="col-span-2 sm:col-span-4 text-xs text-rose-neon/60 hover:text-rose-neon flex items-center gap-1 transition-colors">
