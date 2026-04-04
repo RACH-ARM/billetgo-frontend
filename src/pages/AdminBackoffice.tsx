@@ -408,7 +408,7 @@ export default function AdminBackoffice() {
     {
       onSuccess: () => {
         qc.invalidateQueries('admin-events-pending-changes');
-        qc.invalidateQueries('admin-dashboard');
+        qc.invalidateQueries('admin-dashboard'); qc.invalidateQueries('admin-counts');
         toast.success('Modifications approuvées et appliquées');
       },
       onError: () => toast.error('Erreur lors de l\'approbation'),
@@ -422,6 +422,7 @@ export default function AdminBackoffice() {
     {
       onSuccess: () => {
         qc.invalidateQueries('admin-events-pending-changes');
+        qc.invalidateQueries('admin-counts');
         toast.success('Modifications refusées');
       },
       onError: () => toast.error('Erreur lors du refus'),
@@ -509,7 +510,7 @@ export default function AdminBackoffice() {
       await api.patch(`/admin/events/${id}/status`, { status, rejectionReason: reason, adminNote });
     },
     {
-      onSuccess: () => { qc.invalidateQueries('admin-events'); qc.invalidateQueries('admin-events-completed'); qc.invalidateQueries('admin-dashboard'); toast.success('Statut mis à jour'); },
+      onSuccess: () => { qc.invalidateQueries('admin-events'); qc.invalidateQueries('admin-events-completed'); qc.invalidateQueries('admin-dashboard'); qc.invalidateQueries('admin-counts'); toast.success('Statut mis à jour'); },
       onError: () => toast.error('Erreur lors de la mise à jour'),
     }
   );
@@ -574,7 +575,7 @@ export default function AdminBackoffice() {
       await api.patch(`/admin/events/${id}/status`, { status: 'CANCELLED' });
     },
     {
-      onSuccess: () => { qc.invalidateQueries('admin-vitrine'); qc.invalidateQueries('admin-dashboard'); toast.success('Événement retiré de la vitrine'); },
+      onSuccess: () => { qc.invalidateQueries('admin-vitrine'); qc.invalidateQueries('admin-dashboard'); qc.invalidateQueries('admin-counts'); toast.success('Événement retiré de la vitrine'); },
       onError: () => toast.error('Erreur'),
     }
   );
@@ -765,14 +766,20 @@ export default function AdminBackoffice() {
     }
   );
 
+  const { data: adminCounts } = useQuery(
+    'admin-counts',
+    () => api.get('/admin/counts').then((r) => r.data.data as { pendingEvents: number; pendingChanges: number; pendingPayouts: number; pendingRefunds: number }),
+    { refetchInterval: 30_000, staleTime: 0 }
+  );
+
   const TABS = [
     { key: 'dashboard' as TabType, label: 'Dashboard', Icon: LayoutDashboard },
-    { key: 'events' as TabType, label: 'Validation', Icon: ListChecks, badge: dashboard?.pendingEvents },
+    { key: 'events' as TabType, label: 'Validation', Icon: ListChecks, badge: (adminCounts?.pendingEvents ?? 0) + (adminCounts?.pendingChanges ?? 0) || undefined },
     { key: 'vitrine' as TabType, label: 'Vitrine', Icon: Sparkles },
-    { key: 'scanners' as TabType, label: 'Scanners', Icon: ScanLine, badge: scannersData?.length },
+    { key: 'scanners' as TabType, label: 'Scanners', Icon: ScanLine },
     { key: 'users' as TabType, label: 'Utilisateurs', Icon: Users },
-    { key: 'payouts' as TabType, label: 'Virements', Icon: Banknote, badge: payoutsData?.length },
-    { key: 'refunds' as TabType, label: 'Remboursements', Icon: RotateCcw, badge: ((refundsData?.filter((r: { refundStatus: string }) => r.refundStatus === 'REQUESTED').length ?? 0) + (ticketRefundsData?.filter((r: { refundStatus: string }) => r.refundStatus === 'REQUESTED').length ?? 0)) || undefined },
+    { key: 'payouts' as TabType, label: 'Virements', Icon: Banknote, badge: adminCounts?.pendingPayouts || undefined },
+    { key: 'refunds' as TabType, label: 'Remboursements', Icon: RotateCcw, badge: adminCounts?.pendingRefunds || undefined },
     { key: 'audit' as TabType, label: 'Audit', Icon: ScrollText },
     { key: 'settings' as TabType, label: 'Paramètres', Icon: Settings },
   ];
