@@ -606,6 +606,14 @@ function PromoPanel({ event, onBack }: { event: OrganizerEventStat; onBack: () =
 }
 
 // ── Create Event Form ──────────────────────────────────────────
+type CreateEventFormState = {
+  title: string; subtitle: string; description: string; category: string;
+  eventDate: string; doorsOpenAt: string; endDate: string; scheduledPublishAt: string;
+  venueName: string; venueAddress: string; venueCity: string;
+  venueLatitude: string | number; venueLongitude: string | number;
+  maxTicketsPerOrder: number;
+};
+
 const DRAFT_KEY = 'billetgo_create_event_draft';
 
 function loadDraft() {
@@ -619,13 +627,11 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
   const createEvent = useCreateEvent();
   const draft = loadDraft();
   const [contractAccepted, setContractAccepted] = useState(false);
-  const [form, setForm] = useState(draft?.form ?? {
+  const [form, setForm] = useState<CreateEventFormState>(draft?.form ?? {
     title: '', subtitle: '', description: '', category: 'AUTRE',
-    offer: 'STANDARD',
     eventDate: '', doorsOpenAt: '', endDate: '', scheduledPublishAt: '',
     venueName: '', venueAddress: '', venueCity: 'Libreville',
-    venueLatitude: '' as string | number,
-    venueLongitude: '' as string | number,
+    venueLatitude: '', venueLongitude: '',
     maxTicketsPerOrder: 20,
   });
   const [mapsUrl, setMapsUrl] = useState(draft?.mapsUrl ?? '');
@@ -1032,12 +1038,11 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
   const isDraft = eventStatus === 'DRAFT';
   const isPropose = ['PUBLISHED', 'APPROVED'].includes(eventStatus);
   const [initialized, setInitialized] = useState(false);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<CreateEventFormState>({
     title: '', subtitle: '', description: '', category: 'AUTRE',
     eventDate: '', doorsOpenAt: '', endDate: '', scheduledPublishAt: '',
     venueName: '', venueAddress: '', venueCity: 'Libreville',
-    venueLatitude: '' as string | number,
-    venueLongitude: '' as string | number,
+    venueLatitude: '', venueLongitude: '',
     maxTicketsPerOrder: 20,
   });
   const [mapsUrl, setMapsUrl] = useState('');
