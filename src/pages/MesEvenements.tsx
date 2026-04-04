@@ -1577,7 +1577,7 @@ export default function MesEvenements() {
             <Ticket className="w-4 h-4 text-violet-neon" />
             <h2 className="font-bebas text-xl tracking-wider text-white">Tous les événements</h2>
           </div>
-          <p className="text-xs text-white/30 hidden sm:block">Cliquer sur un événement pour voir les acheteurs</p>
+          <p className="text-xs text-white/30 hidden sm:block">Appuyez sur un événement pour voir les acheteurs</p>
         </div>
 
         {!data?.events?.length ? (
@@ -1594,162 +1594,140 @@ export default function MesEvenements() {
             </Button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-white/5 text-white/40 text-xs uppercase tracking-widest">
-                  <th className="text-left px-5 py-3">Événement</th>
-                  <th className="text-left px-5 py-3">Statut</th>
-                  <th className="text-left px-5 py-3 hidden md:table-cell">Date</th>
-                  <th className="text-right px-5 py-3">Vendus</th>
-                  <th className="text-right px-5 py-3 hidden sm:table-cell">Revenus nets</th>
-                  <th className="px-5 py-3 hidden xl:table-cell">Forfait</th>
-                  <th className="px-5 py-3 hidden lg:table-cell">Remplissage</th>
-                  <th className="px-3 py-3" />
-                </tr>
-              </thead>
-              <tbody>
-                {data.events.map((event) => {
-                  const isRevision = event.status === 'NEEDS_REVISION';
-                  const hasPending = (event as any).pendingStatus === 'PENDING';
-                  const pendingRejected = (event as any).pendingStatus === 'REJECTED';
-                  const isEditable = !['CANCELLED', 'COMPLETED', 'PENDING_REVIEW'].includes(event.status);
-                  return (
-                    <tr
-                      key={event.eventId}
-                      onClick={isRevision || hasPending ? undefined : () => setSelectedEvent(event)}
-                      className={`border-b border-white/5 transition-colors group ${isRevision || hasPending ? 'cursor-default' : 'hover:bg-white/[0.03] cursor-pointer'} ${isRevision ? 'bg-yellow-400/[0.03]' : hasPending ? 'bg-violet-neon/[0.03]' : ''}`}
-                    >
-                      <td className="px-5 py-4">
-                        <p className={`text-white font-semibold line-clamp-1 ${isRevision ? '' : 'group-hover:text-violet-neon transition-colors'}`}>
+          <div className="divide-y divide-white/5">
+            {data.events.map((event) => {
+              const isRevision = event.status === 'NEEDS_REVISION';
+              const hasPending = (event as any).pendingStatus === 'PENDING';
+              const pendingRejected = (event as any).pendingStatus === 'REJECTED';
+              const isEditable = !['CANCELLED', 'COMPLETED', 'PENDING_REVIEW'].includes(event.status);
+              const nextPayout = event.status === 'PUBLISHED' ? getNextPayout(event.eventDate, tier) : null;
+              return (
+                <div
+                  key={event.eventId}
+                  onClick={isRevision || hasPending ? undefined : () => setSelectedEvent(event)}
+                  className={`flex items-start gap-4 px-5 py-4 transition-colors group ${isRevision || hasPending ? 'cursor-default' : 'hover:bg-white/[0.03] cursor-pointer'} ${isRevision ? 'bg-yellow-400/[0.02]' : hasPending ? 'bg-violet-neon/[0.02]' : ''}`}
+                >
+                  {/* Vignette cover */}
+                  <div className="w-14 h-14 flex-shrink-0 rounded-xl overflow-hidden bg-bg-secondary border border-white/5">
+                    {event.coverImageUrl
+                      ? <img src={event.coverImageUrl} alt="" className="w-full h-full object-cover opacity-80" />
+                      : <div className="w-full h-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#2D1060,#0D0D1A 60%,#003060)' }}>
+                          <Ticket className="w-5 h-5 text-white/20" />
+                        </div>
+                    }
+                  </div>
+
+                  {/* Infos principales */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-3 flex-wrap">
+                      <div className="min-w-0">
+                        <p className={`font-semibold text-sm leading-snug truncate ${isRevision ? 'text-yellow-300' : 'text-white group-hover:text-violet-neon transition-colors'}`}>
                           {event.title}
                         </p>
-                        {isRevision && event.adminNote && (
-                          <p className="text-xs text-yellow-400/70 mt-1 line-clamp-2 leading-relaxed">{event.adminNote}</p>
-                        )}
-                        {isRevision && event.rejectionReason && (
-                          <p className="text-xs text-rose-neon/60 mt-1 line-clamp-1">Refus : {event.rejectionReason}</p>
-                        )}
-                        {hasPending && (
-                          <p className="text-xs text-violet-neon/70 mt-1 flex items-center gap-1">
-                            <Clock className="w-3 h-3" /> Modifications en attente d'approbation
-                          </p>
-                        )}
-                        {pendingRejected && (
-                          <p className="text-xs text-rose-neon/70 mt-1 flex items-center gap-1">
-                            <X className="w-3 h-3" /> Modifications refusées{(event as any).pendingAdminNote ? ` — ${(event as any).pendingAdminNote}` : ''}
-                          </p>
-                        )}
-                        {/* Prochain versement */}
-                        {event.status === 'PUBLISHED' && (() => {
-                          const next = getNextPayout(event.eventDate, tier);
-                          if (!next) return null;
-                          return (
-                            <p className="text-xs text-cyan-neon/50 mt-1 flex items-center gap-1">
-                              <Banknote className="w-3 h-3 flex-shrink-0" />
-                              Prochain versement : jusqu'à {Math.round(next.cumPct * 100)}% le {next.date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
-                            </p>
-                          );
-                        })()}
-                        {['PENDING_REVIEW', 'APPROVED', 'NEEDS_REVISION'].includes(event.status) && (
-                          <p className="text-xs text-white/20 mt-1 flex items-center gap-1">
-                            <Clock className="w-3 h-3 flex-shrink-0" />
-                            Planning estimé dans Versements
-                          </p>
-                        )}
-                      </td>
-                      <td className="px-5 py-4">
-                        <StatusBadge status={event.status} />
-                        {event.status === 'APPROVED' && event.scheduledPublishAt && (
-                          <p className="text-xs text-white/30 mt-1 flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {new Date(event.scheduledPublishAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                        )}
-                      </td>
-                      <td className="px-5 py-4 text-white/50 text-xs hidden md:table-cell">
-                        {formatEventDate(event.eventDate)}
-                      </td>
-                      <td className="px-5 py-4 text-right">
-                        <span className="font-mono font-bold text-cyan-neon">{event.totalSold}</span>
-                        <span className="text-white/30 text-xs">/{event.totalTickets}</span>
-                      </td>
-                      <td className="px-5 py-4 text-right font-mono text-green-400 font-bold hidden sm:table-cell">
-                        {formatPrice(event.totalRevenue)}
-                      </td>
-                      <td className="px-5 py-4 hidden xl:table-cell">
-                        {event.offer ? (
-                          <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${
-                            event.offer === 'PREMIUM'       ? 'bg-cyan-neon/10 text-cyan-neon border border-cyan-neon/20' :
-                            event.offer === 'INTERMEDIAIRE' ? 'bg-rose-neon/10 text-rose-neon border border-rose-neon/20' :
-                                                              'bg-violet-neon/10 text-violet-neon border border-violet-neon/20'
-                          }`}>
-                            {event.offer === 'INTERMEDIAIRE' ? 'Inter.' : event.offer === 'PREMIUM' ? 'Premium' : 'Standard'}
-                            <span className="font-mono opacity-70">·{Math.round((event.commissionRate ?? 0.10) * 100)}%</span>
-                          </span>
-                        ) : '—'}
-                      </td>
-                      <td className="px-5 py-4 hidden lg:table-cell">
-                        <div className="flex items-center gap-2 min-w-[100px]">
-                          <div className="flex-1 h-1.5 bg-bg-secondary rounded-full overflow-hidden">
-                            <div className="h-full bg-neon-gradient rounded-full" style={{ width: `${event.occupancyRate}%` }} />
-                          </div>
-                          <span className="text-xs text-white/40 w-8 text-right">{event.occupancyRate}%</span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-4">
-                        <div className="flex items-center gap-1.5">
-                          {hasPending ? (
-                            <span className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-violet-neon/10 text-violet-neon/60 border border-violet-neon/20 whitespace-nowrap">
-                              <Clock className="w-3.5 h-3.5" /> En attente
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <span className="text-white/35 text-xs">{formatEventDate(event.eventDate)}</span>
+                          {event.category && (
+                            <span className="text-xs text-white/25 bg-white/5 px-2 py-0.5 rounded-full border border-white/5">
+                              {event.category}
                             </span>
-                          ) : isEditable ? (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setEditingEventId(event.eventId); setEditingEventNote(event.adminNote ?? null); setEditingEventStatus(event.status); }}
-                              className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors whitespace-nowrap ${
-                                isRevision
-                                  ? 'bg-yellow-400/10 text-yellow-400 hover:bg-yellow-400/20 border-yellow-400/30'
-                                  : ['PUBLISHED', 'APPROVED'].includes(event.status)
-                                  ? 'bg-violet-neon/10 text-violet-neon hover:bg-violet-neon/20 border-violet-neon/30'
-                                  : 'bg-white/5 text-white/50 hover:bg-violet-neon/10 hover:text-violet-neon border-white/10 hover:border-violet-neon/30'
-                              }`}
-                            >
-                              <Pencil className="w-3.5 h-3.5" />
-                              {['PUBLISHED', 'APPROVED'].includes(event.status) ? 'Proposer modif.' : 'Modifier'}
-                            </button>
-                          ) : (
-                            <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-violet-neon transition-colors" />
-                          )}
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setPromoEvent(event); }}
-                            className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-white/5 text-white/40 hover:bg-violet-neon/10 hover:text-violet-neon border border-white/5 hover:border-violet-neon/20 transition-colors whitespace-nowrap"
-                            title="Codes promo"
-                          >
-                            <Tag className="w-3 h-3" /> Promos
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setWaitlistEvent(event); }}
-                            className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-white/5 text-white/40 hover:bg-cyan-neon/10 hover:text-cyan-neon border border-white/5 hover:border-cyan-neon/20 transition-colors whitespace-nowrap"
-                            title="Liste d'attente"
-                          >
-                            <Clock className="w-3 h-3" /> Waitlist
-                          </button>
-                          {['PUBLISHED', 'APPROVED'].includes(event.status) && (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); setCancelTarget({ id: event.eventId, title: event.title }); }}
-                              className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-rose-neon/10 text-rose-neon hover:bg-rose-neon/20 border border-rose-neon/20 transition-colors whitespace-nowrap"
-                              title="Annuler l'événement"
-                            >
-                              <Ban className="w-3 h-3" /> Annuler
-                            </button>
                           )}
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </div>
+                      <StatusBadge status={event.status} />
+                    </div>
+
+                    {/* Messages contextuels */}
+                    {isRevision && event.adminNote && (
+                      <p className="text-xs text-yellow-400/70 mt-1.5 line-clamp-2 leading-relaxed">{event.adminNote}</p>
+                    )}
+                    {isRevision && event.rejectionReason && (
+                      <p className="text-xs text-rose-neon/60 mt-1 flex items-center gap-1"><X className="w-3 h-3 flex-shrink-0" /> {event.rejectionReason}</p>
+                    )}
+                    {hasPending && (
+                      <p className="text-xs text-violet-neon/60 mt-1.5 flex items-center gap-1"><Clock className="w-3 h-3 flex-shrink-0" /> Modifications en attente d'approbation</p>
+                    )}
+                    {pendingRejected && (
+                      <p className="text-xs text-rose-neon/60 mt-1.5 flex items-center gap-1"><X className="w-3 h-3 flex-shrink-0" /> Modifications refusées{(event as any).pendingAdminNote ? ` — ${(event as any).pendingAdminNote}` : ''}</p>
+                    )}
+                    {event.status === 'APPROVED' && event.scheduledPublishAt && (
+                      <p className="text-xs text-white/30 mt-1.5 flex items-center gap-1">
+                        <Clock className="w-3 h-3 flex-shrink-0" />
+                        Publication prévue le {new Date(event.scheduledPublishAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    )}
+                    {nextPayout && (
+                      <p className="text-xs text-cyan-neon/50 mt-1.5 flex items-center gap-1">
+                        <Banknote className="w-3 h-3 flex-shrink-0" />
+                        Prochain versement : jusqu'à {Math.round(nextPayout.cumPct * 100)}% le {nextPayout.date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+                      </p>
+                    )}
+
+                    {/* Métriques + barre de remplissage */}
+                    <div className="flex items-center gap-4 mt-3 flex-wrap">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono font-bold text-cyan-neon text-sm">{event.totalSold}</span>
+                        <span className="text-white/25 text-xs">/ {event.totalTickets} billets</span>
+                      </div>
+                      <span className="font-mono font-bold text-green-400 text-sm">{formatPrice(event.totalRevenue)}</span>
+                      <div className="flex items-center gap-2 min-w-[90px]">
+                        <div className="flex-1 h-1 bg-bg-secondary rounded-full overflow-hidden min-w-[60px]">
+                          <div className="h-full bg-neon-gradient rounded-full transition-all" style={{ width: `${event.occupancyRate}%` }} />
+                        </div>
+                        <span className="text-xs text-white/30 tabular-nums w-7 text-right">{event.occupancyRate}%</span>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-1.5 mt-3 flex-wrap" onClick={(e) => e.stopPropagation()}>
+                      {hasPending ? (
+                        <span className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-violet-neon/10 text-violet-neon/60 border border-violet-neon/20">
+                          <Clock className="w-3.5 h-3.5" /> En attente
+                        </span>
+                      ) : isEditable ? (
+                        <button
+                          onClick={() => { setEditingEventId(event.eventId); setEditingEventNote(event.adminNote ?? null); setEditingEventStatus(event.status); }}
+                          className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors ${
+                            isRevision
+                              ? 'bg-yellow-400/10 text-yellow-400 hover:bg-yellow-400/20 border-yellow-400/30'
+                              : ['PUBLISHED', 'APPROVED'].includes(event.status)
+                              ? 'bg-violet-neon/10 text-violet-neon hover:bg-violet-neon/20 border-violet-neon/30'
+                              : 'bg-white/5 text-white/50 hover:bg-violet-neon/10 hover:text-violet-neon border-white/10 hover:border-violet-neon/30'
+                          }`}
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                          {['PUBLISHED', 'APPROVED'].includes(event.status) ? 'Proposer modif.' : 'Modifier'}
+                        </button>
+                      ) : null}
+                      <button
+                        onClick={() => setPromoEvent(event)}
+                        className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-white/5 text-white/40 hover:bg-violet-neon/10 hover:text-violet-neon border border-white/5 hover:border-violet-neon/20 transition-colors"
+                      >
+                        <Tag className="w-3 h-3" /> Promos
+                      </button>
+                      <button
+                        onClick={() => setWaitlistEvent(event)}
+                        className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-white/5 text-white/40 hover:bg-cyan-neon/10 hover:text-cyan-neon border border-white/5 hover:border-cyan-neon/20 transition-colors"
+                      >
+                        <Clock className="w-3 h-3" /> Waitlist
+                      </button>
+                      {['PUBLISHED', 'APPROVED'].includes(event.status) && (
+                        <button
+                          onClick={() => setCancelTarget({ id: event.eventId, title: event.title })}
+                          className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-rose-neon/10 text-rose-neon hover:bg-rose-neon/20 border border-rose-neon/20 transition-colors"
+                        >
+                          <Ban className="w-3 h-3" /> Annuler
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Chevron */}
+                  {!isRevision && !hasPending && (
+                    <ChevronRight className="w-4 h-4 text-white/15 group-hover:text-violet-neon transition-colors flex-shrink-0 mt-1 hidden sm:block" />
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </motion.div>

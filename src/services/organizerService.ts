@@ -4,11 +4,12 @@ export interface OrganizerEventStat {
   eventId: string;
   title: string;
   status: string;
+  category: string;
   eventDate: string;
+  coverImageUrl: string | null;
   scheduledPublishAt: string | null;
   rejectionReason: string | null;
   adminNote: string | null;
-  offer: 'STANDARD' | 'INTERMEDIAIRE' | 'PREMIUM';
   commissionRate: number;
   totalSold: number;
   totalTickets: number;
