@@ -194,10 +194,10 @@ function TabProfil() {
           )}
           <button
             onClick={() => fileRef.current?.click()}
-            disabled={uploadAvatar.isPending}
+            disabled={uploadAvatar.isLoading}
             className="absolute -bottom-2 -right-2 w-7 h-7 rounded-xl bg-violet-neon flex items-center justify-center hover:bg-violet-neon/80 transition-colors"
           >
-            {uploadAvatar.isPending ? (
+            {uploadAvatar.isLoading ? (
               <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
               <Camera className="w-3.5 h-3.5 text-white" />
@@ -229,10 +229,10 @@ function TabProfil() {
           <div className="flex justify-end">
             <button
               onClick={handleSave}
-              disabled={updateMe.isPending}
+              disabled={updateMe.isLoading}
               className="neon-button text-sm py-2 px-5"
             >
-              {updateMe.isPending ? 'Enregistrement...' : 'Enregistrer les modifications'}
+              {updateMe.isLoading ? 'Enregistrement...' : 'Enregistrer les modifications'}
             </button>
           </div>
         )}
@@ -334,10 +334,10 @@ function TabOrganisateur() {
             )}
             <button
               onClick={() => logoRef.current?.click()}
-              disabled={uploadLogo.isPending}
+              disabled={uploadLogo.isLoading}
               className="absolute -bottom-2 -right-2 w-6 h-6 rounded-lg bg-violet-neon flex items-center justify-center hover:bg-violet-neon/80 transition-colors"
             >
-              {uploadLogo.isPending ? (
+              {uploadLogo.isLoading ? (
                 <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <Camera className="w-3 h-3 text-white" />
@@ -365,10 +365,10 @@ function TabOrganisateur() {
           <div className="flex justify-end">
             <button
               onClick={handleSave}
-              disabled={updateOrg.isPending}
+              disabled={updateOrg.isLoading}
               className="neon-button text-sm py-2 px-5"
             >
-              {updateOrg.isPending ? 'Enregistrement...' : 'Enregistrer'}
+              {updateOrg.isLoading ? 'Enregistrement...' : 'Enregistrer'}
             </button>
           </div>
         )}
@@ -653,7 +653,7 @@ function TabSecurite() {
           </div>
           <button
             onClick={handleToggleNotifications}
-            disabled={updateNotifs.isPending}
+            disabled={updateNotifs.isLoading}
             className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${me?.notificationsEnabled ? 'bg-violet-neon' : 'bg-white/10'}`}
           >
             <span className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${me?.notificationsEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
@@ -715,10 +715,10 @@ function TabSecurite() {
         <div className="flex justify-end">
           <button
             onClick={handleChangePassword}
-            disabled={changePwdMutation.isPending || !currentPwd || !newPwd || !confirmPwd || mismatch}
+            disabled={changePwdMutation.isLoading || !currentPwd || !newPwd || !confirmPwd || mismatch}
             className="neon-button text-sm py-2 px-5 disabled:opacity-40"
           >
-            {changePwdMutation.isPending ? 'Mise à jour...' : 'Mettre à jour le mot de passe'}
+            {changePwdMutation.isLoading ? 'Mise à jour...' : 'Mettre à jour le mot de passe'}
           </button>
         </div>
       </div>
@@ -754,10 +754,10 @@ function TabSecurite() {
             <div className="flex gap-2">
               <button
                 onClick={handleDeleteAccount}
-                disabled={deleteAcc.isPending || deleteConfirm !== 'SUPPRIMER'}
+                disabled={deleteAcc.isLoading || deleteConfirm !== 'SUPPRIMER'}
                 className="flex-1 py-2 rounded-xl bg-rose-neon/10 border border-rose-neon/30 text-rose-neon text-sm font-semibold hover:bg-rose-neon/20 transition-colors disabled:opacity-40"
               >
-                {deleteAcc.isPending ? 'Suppression...' : 'Confirmer la suppression'}
+                {deleteAcc.isLoading ? 'Suppression...' : 'Confirmer la suppression'}
               </button>
               <button
                 onClick={() => { setShowDelete(false); setDeleteConfirm(''); }}

@@ -1195,7 +1195,7 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
     }
   };
 
-  const isSubmitting = updateEvent.isLoading || resubmitEvent.isLoading;
+  const isSubmitting = updateEvent.isLoading || resubmitEvent.isLoading || proposeChanges.isLoading;
 
   if (loadingEvent || !initialized) {
     return (
