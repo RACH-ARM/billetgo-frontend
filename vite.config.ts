@@ -1,13 +1,13 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
-import basicSsl from '@vitejs/plugin-basic-ssl';
+import mkcert from 'vite-plugin-mkcert';
 import path from 'path';
 
 export default defineConfig({
   plugins: [
     react(),
-    basicSsl(),
+    mkcert(),
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
