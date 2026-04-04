@@ -151,62 +151,72 @@ export default function EventCard({ event }: { event: Event }) {
         </div>
 
         {/* Body */}
-        <div className="p-4">
-          <h3 className="font-bebas text-xl tracking-wide text-white group-hover:text-rose-neon transition-colors line-clamp-1">
+        <div className="p-2 sm:p-4">
+          <h3 className="font-bebas text-sm sm:text-xl tracking-wide text-white group-hover:text-rose-neon transition-colors line-clamp-2 sm:line-clamp-1 leading-tight">
             {event.title}
           </h3>
-          <p className="text-xs text-white/50 mt-1">{formatEventDate(event.eventDate)}</p>
-          <p className="text-xs text-white/40 mt-0.5 truncate">{event.venueName} — {event.venueCity}</p>
 
-          {/* Countdown / À VENIR / durée restante */}
-          <div className="mt-3">
-            {isLive
-              ? <LiveRemaining eventDate={event.eventDate} doorsOpenAt={event.doorsOpenAt} endDate={event.endDate} />
-              : isComingSoon
-                ? <span className="text-xs font-semibold text-cyan-neon">Ouverture des portes dans quelques instants</span>
-                : <CountdownTimer date={event.eventDate} />
-            }
-          </div>
-
-          {/* Progress bar */}
-          <div className="mt-3">
-            <div className="flex justify-between text-xs mb-1">
-              <span className={occupancy >= 85 ? 'text-rose-neon font-semibold' : 'text-white/40'}>
-                {occupancy}% vendus
-              </span>
-              <span className="text-white/30">{totalSold}/{totalTickets}</span>
-            </div>
-            <div className="h-1.5 bg-bg-secondary rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${occupancy}%`,
-                  background: occupancy >= 90
-                    ? 'linear-gradient(90deg, #E040FB, #ff4466)'
-                    : occupancy >= 70
-                    ? 'linear-gradient(90deg, #f59e0b, #E040FB)'
-                    : 'linear-gradient(135deg, #7B2FBE, #E040FB)',
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Organizer + Price */}
-          <div className="mt-3 flex items-center justify-between gap-2">
-            {event.organizer && (
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="text-xs text-white/40 truncate">{event.organizer.companyName}</span>
-                {(event.isCertified || event.organizer.isCertified) && <CertifiedBadge />}
-              </div>
-            )}
+          {/* Prix — toujours visible */}
+          <div className="mt-1.5 flex items-center justify-between gap-1">
             {isTotallySoldOut ? (
-              <span className="font-mono text-white/30 font-bold whitespace-nowrap ml-auto text-sm">COMPLET</span>
+              <span className="font-mono text-white/30 font-bold text-[10px] sm:text-sm">COMPLET</span>
             ) : (
-              <span className="font-mono text-cyan-neon font-bold whitespace-nowrap ml-auto">
+              <span className="font-mono text-cyan-neon font-bold text-[10px] sm:text-base whitespace-nowrap">
                 {formatPrice(minPrice)}
               </span>
             )}
+            {(event.isCertified || event.organizer?.isCertified) && (
+              <span className="hidden sm:block"><CertifiedBadge /></span>
+            )}
           </div>
+
+          {/* Détails — masqués sur mobile (3 col trop étroit) */}
+          <div className="hidden sm:block">
+            <p className="text-xs text-white/50 mt-1">{formatEventDate(event.eventDate)}</p>
+            <p className="text-xs text-white/40 mt-0.5 truncate">{event.venueName} — {event.venueCity}</p>
+
+            <div className="mt-3">
+              {isLive
+                ? <LiveRemaining eventDate={event.eventDate} doorsOpenAt={event.doorsOpenAt} endDate={event.endDate} />
+                : isComingSoon
+                  ? <span className="text-xs font-semibold text-cyan-neon">Ouverture dans quelques instants</span>
+                  : <CountdownTimer date={event.eventDate} />
+              }
+            </div>
+
+            <div className="mt-3">
+              <div className="flex justify-between text-xs mb-1">
+                <span className={occupancy >= 85 ? 'text-rose-neon font-semibold' : 'text-white/40'}>
+                  {occupancy}% vendus
+                </span>
+                <span className="text-white/30">{totalSold}/{totalTickets}</span>
+              </div>
+              <div className="h-1.5 bg-bg-secondary rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${occupancy}%`,
+                    background: occupancy >= 90
+                      ? 'linear-gradient(90deg, #E040FB, #ff4466)'
+                      : occupancy >= 70
+                      ? 'linear-gradient(90deg, #f59e0b, #E040FB)'
+                      : 'linear-gradient(135deg, #7B2FBE, #E040FB)',
+                  }}
+                />
+              </div>
+            </div>
+
+            {event.organizer && (
+              <div className="mt-3 flex items-center gap-1.5 min-w-0">
+                <span className="text-xs text-white/40 truncate">{event.organizer.companyName}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Date courte sur mobile */}
+          <p className="sm:hidden text-[10px] text-white/35 mt-0.5 truncate leading-tight">
+            {formatEventDate(event.eventDate)}
+          </p>
         </div>
       </Link>
     </motion.div>
