@@ -1,84 +1,13 @@
-// @refresh reset
-import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
-import { useAuthStore } from '../stores/authStore';
-import { Suspense, lazy } from 'react';
-
-const Home = lazy(() => import('../pages/Home'));
-const EventDetail = lazy(() => import('../pages/EventDetail'));
-const Checkout = lazy(() => import('../pages/Checkout'));
-const MyTickets = lazy(() => import('../pages/MyTickets'));
-const OrganizerDashboard = lazy(() => import('../pages/OrganizerDashboard'));
-const AdminBackoffice = lazy(() => import('../pages/AdminBackoffice'));
-const ScannerApp = lazy(() => import('../pages/ScannerApp'));
-const Login = lazy(() => import('../pages/Login'));
-const Register = lazy(() => import('../pages/Register'));
-const OrganizerLanding = lazy(() => import('../pages/OrganizerLanding'));
-const About = lazy(() => import('../pages/About'));
-const ContactPage = lazy(() => import('../pages/Contact'));
-const EventsPage = lazy(() => import('../pages/Events'));
-const HowToUsePage = lazy(() => import('../pages/HowToUse'));
-const OrderConfirmation = lazy(() => import('../pages/OrderConfirmation'));
-const CGU = lazy(() => import('../pages/CGU'));
-const CGV = lazy(() => import('../pages/CGV'));
-const Confidentialite = lazy(() => import('../pages/Confidentialite'));
-const MentionsLegales = lazy(() => import('../pages/MentionsLegales'));
-const ForgotPassword = lazy(() => import('../pages/ForgotPassword'));
-const ResetPassword = lazy(() => import('../pages/ResetPassword'));
-const VerifyEmail = lazy(() => import('../pages/VerifyEmail'));
-const OrganizerPublicPage = lazy(() => import('../pages/OrganizerPublicPage'));
-const Notifications = lazy(() => import('../pages/Notifications'));
-const OrganizerLayout = lazy(() => import('../components/layout/OrganizerLayout'));
-const Versements = lazy(() => import('../pages/Versements'));
-const MesEvenements = lazy(() => import('../pages/MesEvenements'));
-const MonCompte = lazy(() => import('../pages/MonCompte'));
-const PublicLayout = lazy(() => import('../components/layout/PageLayout'));
-
-const Spinner = () => (
-  <div className="min-h-screen bg-bg flex items-center justify-center">
-    <div className="w-12 h-12 border-4 border-violet-neon/30 border-t-violet-neon rounded-full animate-spin" />
-  </div>
-);
-
-const ROLE_HOME: Record<string, string> = {
-  BUYER: '/',
-  ORGANIZER: '/dashboard',
-  ADMIN: '/admin',
-  SCANNER: '/scanner',
-};
-
-// Redirige les utilisateurs non-BUYER vers leur interface (home/events = acheteurs uniquement)
-const BuyerOrGuestRoute = () => {
-  const { isAuthenticated, user } = useAuthStore();
-  if (isAuthenticated && user && user.role !== 'BUYER') {
-    return <Navigate to={ROLE_HOME[user.role] ?? '/'} replace />;
-  }
-  return (
-    <Suspense fallback={<Spinner />}>
-      <PublicLayout />
-    </Suspense>
-  );
-};
-
-// Accessible à tous les rôles (et non-authentifié) — pas de redirection
-const OpenRoute = () => (
-  <Suspense fallback={<Spinner />}>
-    <PublicLayout />
-  </Suspense>
-);
-
-const ProtectedRoute = ({ roles }: { roles?: string[] }) => {
-  const { isAuthenticated, user } = useAuthStore();
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (roles && user && !roles.includes(user.role)) {
-    return <Navigate to={ROLE_HOME[user.role] ?? '/'} replace />;
-  }
-  return (
-    <Suspense fallback={<Spinner />}>
-      <Outlet />
-    </Suspense>
-  );
-};
-
+import { createBrowserRouter, Navigate } from 'react-router-dom';
+import {
+  BuyerOrGuestRoute, OpenRoute, ProtectedRoute,
+  Home, EventDetail, Checkout, MyTickets, OrganizerDashboard,
+  AdminBackoffice, ScannerApp, Login, Register, OrganizerLanding,
+  About, ContactPage, EventsPage, HowToUsePage, OrderConfirmation,
+  CGU, CGV, Confidentialite, MentionsLegales, ForgotPassword,
+  ResetPassword, VerifyEmail, OrganizerPublicPage, Notifications,
+  OrganizerLayout, Versements, MesEvenements, MonCompte,
+} from './routes';
 
 export const router = createBrowserRouter(
   [
