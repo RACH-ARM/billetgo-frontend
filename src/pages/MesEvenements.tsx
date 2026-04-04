@@ -1581,8 +1581,14 @@ export default function MesEvenements() {
         </div>
 
         {!data?.events?.length ? (
-          <div className="text-center py-20 space-y-4">
-            <p className="text-white/30">Aucun événement créé</p>
+          <div className="flex flex-col items-center justify-center py-20 px-6 text-center gap-5">
+            <div className="w-14 h-14 rounded-2xl bg-violet-neon/10 border border-violet-neon/20 flex items-center justify-center">
+              <Ticket className="w-7 h-7 text-violet-neon/60" />
+            </div>
+            <div className="space-y-1.5">
+              <p className="text-white font-semibold">Aucun événement pour l'instant</p>
+              <p className="text-white/35 text-sm max-w-xs">Créez votre premier événement et commencez à vendre des billets en quelques minutes.</p>
+            </div>
             <Button variant="primary" size="md" onClick={() => setShowCreateForm(true)}>
               <Plus className="w-4 h-4" /> Créer votre premier événement
             </Button>
