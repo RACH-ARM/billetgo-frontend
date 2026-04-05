@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { CalendarDays, MapPin } from 'lucide-react';
@@ -6,6 +7,7 @@ import { formatEventDate } from '../../utils/formatDate';
 import { formatPrice } from '../../utils/formatPrice';
 import CountdownTimer from './CountdownTimer';
 import Badge from '../common/Badge';
+import { isEventComingSoon } from './EventCard';
 
 interface HeroSectionProps {
   event: Event;
@@ -13,8 +15,13 @@ interface HeroSectionProps {
 
 export default function HeroSection({ event }: HeroSectionProps) {
   const prefersReducedMotion = useReducedMotion();
-  // Disable particles on low-end devices (< 4 CPU cores) or reduced-motion preference
   const showParticles = !prefersReducedMotion && (navigator.hardwareConcurrency ?? 4) >= 4;
+  const [isComingSoon, setIsComingSoon] = useState(() => isEventComingSoon(event.eventDate, event.doorsOpenAt));
+
+  useEffect(() => {
+    const t = setInterval(() => setIsComingSoon(isEventComingSoon(event.eventDate, event.doorsOpenAt)), 30_000);
+    return () => clearInterval(t);
+  }, [event.eventDate, event.doorsOpenAt]);
 
   const minPrice = event.ticketCategories.length > 0
     ? Math.min(...event.ticketCategories.map((c) => c.price))
@@ -128,7 +135,17 @@ export default function HeroSection({ event }: HeroSectionProps) {
             {/* Countdown */}
             <div>
               <p className="text-xs text-white/40 uppercase tracking-widest mb-1.5">Compte à rebours</p>
-              <CountdownTimer date={event.eventDate} />
+              {isComingSoon ? (
+                <span className="flex items-center gap-2 text-cyan-neon font-semibold text-lg">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-neon opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-neon" />
+                  </span>
+                  Ouverture dans quelques instants
+                </span>
+              ) : (
+                <CountdownTimer date={event.eventDate} />
+              )}
             </div>
 
             {/* Divider */}
