@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useEvents } from '../hooks/useEvents';
 import EventGrid from '../components/events/EventGrid';
-import HeroSection from '../components/events/HeroSection';
+import HeroSection, { HeroSkeleton } from '../components/events/HeroSection';
 import TickerTape from '../components/events/TickerTape';
 import { isEventLive } from '../utils/eventStatus';
 import type { EventCategory } from '../types/event';
@@ -164,7 +164,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
-      {featuredEvent && <HeroSection event={featuredEvent} />}
+      {allLoading ? <HeroSkeleton /> : featuredEvent ? <HeroSection event={featuredEvent} /> : null}
 
       {allData?.events && allData.events.length > 0 && (
         <TickerTape events={allData.events} />

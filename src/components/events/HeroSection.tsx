@@ -13,6 +13,41 @@ interface HeroSectionProps {
   event: Event;
 }
 
+export function HeroSkeleton() {
+  return (
+    <section className="relative h-[85vh] min-h-[560px] max-h-[800px] overflow-hidden animate-pulse">
+      <div className="absolute inset-0 bg-bg-secondary" />
+      <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/70 to-transparent" />
+      <div className="relative z-10 h-full flex flex-col justify-end px-4 sm:px-8 lg:px-16 pb-10 sm:pb-16 max-w-7xl mx-auto">
+        <div className="max-w-2xl space-y-4">
+          <div className="flex gap-2">
+            <div className="h-5 w-20 bg-white/10 rounded-full" />
+            <div className="h-5 w-16 bg-white/10 rounded-full" />
+          </div>
+          <div className="h-10 w-3/4 bg-white/10 rounded-xl" />
+          <div className="h-6 w-1/2 bg-white/[0.07] rounded-xl" />
+          <div className="flex gap-4 mt-2">
+            <div className="h-4 w-28 bg-white/[0.06] rounded-lg" />
+            <div className="h-4 w-36 bg-white/[0.06] rounded-lg" />
+          </div>
+          <div className="flex gap-6 mt-4">
+            <div className="space-y-1.5">
+              <div className="h-3 w-20 bg-white/[0.05] rounded" />
+              <div className="h-8 w-32 bg-white/10 rounded-lg" />
+            </div>
+            <div className="w-px h-12 bg-white/10" />
+            <div className="space-y-1.5">
+              <div className="h-3 w-16 bg-white/[0.05] rounded" />
+              <div className="h-8 w-24 bg-white/10 rounded-lg" />
+            </div>
+          </div>
+          <div className="h-12 w-48 bg-white/10 rounded-xl mt-2" />
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function HeroSection({ event }: HeroSectionProps) {
   const prefersReducedMotion = useReducedMotion();
   const showParticles = !prefersReducedMotion && (navigator.hardwareConcurrency ?? 4) >= 4;
