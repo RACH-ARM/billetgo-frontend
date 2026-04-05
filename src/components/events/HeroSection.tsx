@@ -7,7 +7,7 @@ import { formatEventDate } from '../../utils/formatDate';
 import { formatPrice } from '../../utils/formatPrice';
 import CountdownTimer from './CountdownTimer';
 import Badge from '../common/Badge';
-import { isEventComingSoon } from './EventCard';
+import { isEventComingSoon } from '../../utils/eventStatus';
 
 interface HeroSectionProps {
   event: Event;

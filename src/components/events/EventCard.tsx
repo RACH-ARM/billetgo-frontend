@@ -11,23 +11,7 @@ import Badge from '../common/Badge';
 import CertifiedBadge from '../common/CertifiedBadge';
 import CountdownTimer from './CountdownTimer';
 
-export function isEventLive(eventDate: string, doorsOpenAt: string | null, endDate: string | null): boolean {
-  const now = Date.now();
-  const start = doorsOpenAt ? new Date(doorsOpenAt).getTime() : new Date(eventDate).getTime();
-  const end = endDate
-    ? new Date(endDate).getTime()
-    : start + 4 * 60 * 60 * 1000;
-  return now >= start && now <= end;
-}
-
-export function isEventComingSoon(eventDate: string, doorsOpenAt: string | null): boolean {
-  if (!doorsOpenAt) return false;
-  const now = Date.now();
-  const eventStart = new Date(eventDate).getTime();
-  const doors = new Date(doorsOpenAt).getTime();
-  // Gap entre la fin du compte à rebours (eventDate) et l'ouverture des portes
-  return now >= eventStart && now < doors;
-}
+import { isEventLive, isEventComingSoon } from '../../utils/eventStatus';
 
 function LiveRemaining({ endDate, eventDate, doorsOpenAt }: { eventDate: string; doorsOpenAt: string | null; endDate: string | null }) {
   const compute = () => {

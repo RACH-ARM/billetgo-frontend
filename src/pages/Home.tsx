@@ -10,7 +10,7 @@ import { useEvents } from '../hooks/useEvents';
 import EventGrid from '../components/events/EventGrid';
 import HeroSection from '../components/events/HeroSection';
 import TickerTape from '../components/events/TickerTape';
-import { isEventLive } from '../components/events/EventCard';
+import { isEventLive } from '../utils/eventStatus';
 import type { EventCategory } from '../types/event';
 
 type CategoryIcon = React.ComponentType<{ className?: string }>;
