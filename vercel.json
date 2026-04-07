@@ -28,6 +28,10 @@
   ],
   "rewrites": [
     {
+      "source": "/sitemap.xml",
+      "destination": "https://api.billetgo.ga/sitemap.xml"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }

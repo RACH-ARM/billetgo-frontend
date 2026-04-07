@@ -3,6 +3,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import * as Sentry from '@sentry/react';
 import { QueryClientProvider } from 'react-query';
+import { HelmetProvider } from 'react-helmet-async';
 import { Toaster } from 'react-hot-toast';
 import App from './App';
 import { queryClient } from './lib/queryClient';
@@ -11,6 +12,7 @@ import './index.css';
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <Sentry.ErrorBoundary fallback={<div style={{ color: '#fff', padding: 40, textAlign: 'center' }}>Une erreur inattendue s'est produite.</div>}>
+    <HelmetProvider>
     <QueryClientProvider client={queryClient}>
       <App />
       <Toaster
@@ -26,6 +28,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         }}
       />
     </QueryClientProvider>
+    </HelmetProvider>
     </Sentry.ErrorBoundary>
   </React.StrictMode>
 );

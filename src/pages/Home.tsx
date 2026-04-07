@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Helmet } from 'react-helmet-async';
 import {
   LayoutGrid, Headphones, Tent, Waves, Mic2, Trophy, Theater, Footprints,
   Search, X, Flame, MapPin, MousePointerClick, Smartphone, Calendar,
@@ -164,6 +165,22 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
+      <Helmet>
+        <title>BilletGo — Billetterie en ligne au Gabon</title>
+        <meta name="description" content="Achetez vos billets pour les meilleurs événements au Gabon : concerts, clubs, festivals, sport et plus. Paiement sécurisé par Airtel Money et Moov Money." />
+        <link rel="canonical" href="https://billetgo.ga" />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="BilletGo — Billetterie en ligne au Gabon" />
+        <meta property="og:description" content="Achetez vos billets pour les meilleurs événements au Gabon. Paiement sécurisé par Airtel Money et Moov Money." />
+        <meta property="og:url" content="https://billetgo.ga" />
+        <meta property="og:image" content="https://billetgo.ga/og-default.jpg" />
+        <meta property="og:site_name" content="BilletGo" />
+        <meta property="og:locale" content="fr_GA" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="BilletGo — Billetterie en ligne au Gabon" />
+        <meta name="twitter:description" content="Achetez vos billets pour les meilleurs événements au Gabon. Paiement sécurisé par Airtel Money et Moov Money." />
+        <meta name="twitter:image" content="https://billetgo.ga/og-default.jpg" />
+      </Helmet>
       {allLoading ? <HeroSkeleton /> : featuredEvent ? <HeroSection event={featuredEvent} /> : null}
 
       {allData?.events && allData.events.length > 0 && (

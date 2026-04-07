@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Zap, X, ArrowRight, Minus, Plus, MapPin, Share2, Copy, Check as CheckIcon, Star, MessageSquare, Bell, BellOff } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { Helmet } from 'react-helmet-async';
 import { useEvent } from '../hooks/useEvents';
 import { eventService } from '../services/eventService';
 import { useCartStore } from '../stores/cartStore';
@@ -17,6 +18,8 @@ import Button from '../components/common/Button';
 import type { TicketCategory } from '../types/event';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+
+const SITE_URL = 'https://billetgo.ga';
 
 export default function EventDetail() {
   const { id } = useParams<{ id: string }>();
@@ -228,8 +231,39 @@ export default function EventDetail() {
     toast.success('Lien copié !');
   };
 
+  const minPrice = event.ticketCategories?.length
+    ? Math.min(...event.ticketCategories.map((c: TicketCategory) => c.price))
+    : 0;
+  const seoTitle = `${event.title} — ${event.venueCity} | BilletGo`;
+  const seoDesc = event.description
+    ? event.description.slice(0, 160)
+    : `Réservez vos billets pour ${event.title} le ${new Date(event.eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} à ${event.venueName}, ${event.venueCity}. À partir de ${formatPrice(minPrice)} sur BilletGo.`;
+  const seoUrl = `${SITE_URL}/events/${event.id}`;
+  const seoImage = event.coverImageUrl ?? `${SITE_URL}/og-default.jpg`;
+
   return (
     <div className="min-h-screen">
+      <Helmet>
+        <title>{seoTitle}</title>
+        <meta name="description" content={seoDesc} />
+        <link rel="canonical" href={seoUrl} />
+        {/* Open Graph */}
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content={seoTitle} />
+        <meta property="og:description" content={seoDesc} />
+        <meta property="og:url" content={seoUrl} />
+        <meta property="og:image" content={seoImage} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:site_name" content="BilletGo" />
+        <meta property="og:locale" content="fr_GA" />
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={seoTitle} />
+        <meta name="twitter:description" content={seoDesc} />
+        <meta name="twitter:image" content={seoImage} />
+      </Helmet>
+
       {/* Hero Banner */}
       <div className="relative h-72 md:h-[480px] overflow-hidden">
         {event.coverImageUrl ? (

@@ -2,11 +2,14 @@ import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Helmet } from 'react-helmet-async';
 import { ChevronLeft, CalendarDays, MapPin, Images, X } from 'lucide-react';
 import api from '../services/api';
 import EventCard from '../components/events/EventCard';
 import CertifiedBadge from '../components/common/CertifiedBadge';
 import type { Event } from '../types/event';
+
+const SITE_URL = 'https://billetgo.ga';
 
 interface OrganizerPublicData {
   id: string;
@@ -65,8 +68,31 @@ export default function OrganizerPublicPage() {
 
   const allPhotos = data?.events.flatMap((e) => e.galleryUrls ?? []) ?? [];
 
+  const seoTitle = `${data.companyName} — Organisateur d'événements | BilletGo`;
+  const seoDesc = data.description
+    ? data.description.slice(0, 160)
+    : `Découvrez les événements de ${data.companyName} sur BilletGo — billetterie en ligne au Gabon.`;
+  const seoUrl = `${SITE_URL}/organizers/${data.id}`;
+  const seoImage = data.logoUrl ?? `${SITE_URL}/og-default.jpg`;
+
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <Helmet>
+        <title>{seoTitle}</title>
+        <meta name="description" content={seoDesc} />
+        <link rel="canonical" href={seoUrl} />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content={seoTitle} />
+        <meta property="og:description" content={seoDesc} />
+        <meta property="og:url" content={seoUrl} />
+        <meta property="og:image" content={seoImage} />
+        <meta property="og:site_name" content="BilletGo" />
+        <meta property="og:locale" content="fr_GA" />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content={seoTitle} />
+        <meta name="twitter:description" content={seoDesc} />
+        <meta name="twitter:image" content={seoImage} />
+      </Helmet>
       <Link
         to="/"
         className="inline-flex items-center gap-1.5 text-white/40 hover:text-white transition-colors text-sm mb-8"
@@ -93,15 +119,15 @@ export default function OrganizerPublicPage() {
           </div>
         )}
         <div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="font-bebas text-4xl sm:text-5xl tracking-wider text-gradient leading-none">
-              {data.companyName}
-            </h1>
-            {data.isCertified && <CertifiedBadge size="md" />}
+          <h1 className="font-bebas text-4xl sm:text-5xl tracking-wider text-gradient leading-none">
+            {data.companyName}
+          </h1>
+          <div className="flex items-start gap-3 mt-2">
+            {(data.isCertified || data.events.some((e: any) => e.isCertified)) && <CertifiedBadge size="md" />}
+            {data.description && (
+              <p className="text-white/50 text-sm max-w-xl leading-relaxed">{data.description}</p>
+            )}
           </div>
-          {data.description && (
-            <p className="text-white/50 text-sm mt-2 max-w-xl leading-relaxed">{data.description}</p>
-          )}
           <div className="flex flex-wrap gap-4 mt-3 text-xs text-white/30">
             <span className="flex items-center gap-1.5">
               <CalendarDays className="w-3.5 h-3.5" />

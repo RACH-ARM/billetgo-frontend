@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /checkout
+Disallow: /my-tickets
+Disallow: /mon-compte
+Disallow: /organizer
+Disallow: /admin
+Disallow: /scanner
+
+Sitemap: https://billetgo.ga/sitemap.xml

@@ -12,6 +12,7 @@ import { useEvent } from '../hooks/useEvents';
 import { formatPrice } from '../utils/formatPrice';
 import { formatEventDate } from '../utils/formatDate';
 import { normalizeGabonPhone, isValidGabonPhone, isPhoneMatchingProvider } from '../utils/phone';
+import { unlockAudio } from '../utils/sounds';
 import Button from '../components/common/Button';
 import toast from 'react-hot-toast';
 
@@ -216,6 +217,7 @@ export default function Checkout() {
   const canPay = buyerInfo.name.trim().length >= 2 && provider !== null && paymentPhoneValid && cgvAccepted;
 
   const handlePayment = async () => {
+    unlockAudio(); // débloque AudioContext pendant l'interaction utilisateur
     setPaymentError(null);
     try {
       const order = await createOrder.mutateAsync({

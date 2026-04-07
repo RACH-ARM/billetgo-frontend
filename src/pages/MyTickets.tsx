@@ -450,10 +450,12 @@ export default function MyTickets() {
                     </p>
                   )}
 
-                  {/* Remboursement partiel — billet par billet */}
-                  {isCompleted && order.status !== 'REFUNDED' && order.refundStatus === 'NONE' && new Date(order.event.eventDate) > new Date() && order.tickets && order.tickets.length > 0 && (() => {
+                  {/* Liste des billets — toujours visible dès qu'il y a des tickets */}
+                  {order.tickets && order.tickets.length > 0 && (() => {
                     const tickets = order.tickets;
                     const isExpanded = expandedTickets.has(order.id);
+                    const isFutureEvent = new Date(order.event.eventDate) > new Date();
+                    const canAct = order.status !== 'REFUNDED';
                     const SHOW = 3;
                     const visibleTickets = isExpanded ? tickets : tickets.slice(0, SHOW);
                     const hiddenCount = tickets.length - SHOW;
@@ -462,6 +464,8 @@ export default function MyTickets() {
                         <p className="text-xs text-white/30 uppercase tracking-wider mb-2">Billets</p>
                         {visibleTickets.map((ticket: any, idx: number) => {
                           const tRefund = ticket.refundStatus ?? 'NONE';
+                          const isTransferred = ticket.buyerId && ticket.buyerId !== user?.id;
+                          const showActions = canAct && isFutureEvent && !isTransferred && ticket.status === 'UNUSED' && tRefund !== 'REQUESTED' && tRefund !== 'APPROVED';
                           return (
                             <div key={ticket.id} className="flex items-center justify-between gap-2">
                               <span className="text-xs text-white/50">
@@ -471,7 +475,7 @@ export default function MyTickets() {
                                 )}
                                 <span className="font-mono text-white/20 ml-1.5">{ticket.id.slice(0, 8)}</span>
                               </span>
-                              {ticket.buyerId && ticket.buyerId !== user?.id ? (
+                              {isTransferred ? (
                                 <span className="text-xs text-cyan-neon flex items-center gap-1">
                                   <ArrowRightLeft className="w-3 h-3" /> Transféré
                                 </span>
@@ -489,7 +493,7 @@ export default function MyTickets() {
                                 <span className="text-xs text-green-400 flex items-center gap-1">
                                   <CheckCircle2 className="w-3 h-3" /> Approuvé
                                 </span>
-                              ) : (
+                              ) : showActions ? (
                                 <div className="flex items-center gap-2">
                                   {tRefund === 'REJECTED' && (
                                     <>
@@ -513,6 +517,8 @@ export default function MyTickets() {
                                     <RotateCcw className="w-3 h-3" /> Rembourser
                                   </button>
                                 </div>
+                              ) : (
+                                <span className="text-xs text-white/20">Disponible</span>
                               )}
                             </div>
                           );

@@ -8,6 +8,7 @@ import {
 import { paymentService } from '../services/paymentService';
 import { useQueryClient } from 'react-query';
 import { formatEventDate } from '../utils/formatDate';
+import { playPaymentSuccess } from '../utils/sounds';
 import { formatPrice } from '../utils/formatPrice';
 import Button from '../components/common/Button';
 import type { PaymentProvider } from '../types/ticket';
@@ -175,6 +176,7 @@ function OrderConfirmationInner() {
         if (result.status === 'SUCCESS') {
           clearInterval(pollRef.current!);
           setConfirmationState('SUCCESS');
+          playPaymentSuccess();
           queryClient.invalidateQueries('my-tickets');
         } else if (result.status === 'FAILED' || result.status === 'CANCELLED') {
           clearInterval(pollRef.current!);

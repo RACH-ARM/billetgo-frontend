@@ -229,40 +229,63 @@ function RevisionModal({ eventTitle, onConfirm, onCancel }: {
 interface ScannerRow {
   id: string;
   isActive: boolean;
-  user: { id: string; firstName: string; lastName: string; phone: string | null; isActive: boolean };
-  event: { id: string; title: string; eventDate: string; organizer?: { companyName: string } };
+  createdAt: string;
+  scanCount: number;
+  validScanCount: number;
+  lastScanAt: string | null;
+  user: { id: string; firstName: string; lastName: string; phone: string | null; email: string | null; isActive: boolean; createdAt: string; scannerPassword: string | null };
+  event: { id: string; title: string; eventDate: string; venueCity?: string; organizer?: { companyName: string } };
+  assignedByUser?: { firstName: string; lastName: string };
 }
 
 function EditScannerModal({
   scanner,
+  allScanners,
   events,
   onClose,
   onSave,
   isLoading,
 }: {
   scanner: ScannerRow;
+  allScanners: ScannerRow[];
   events: { id: string; title: string }[];
   onClose: () => void;
   onSave: (id: string, data: Record<string, unknown>) => void;
   isLoading: boolean;
 }) {
+  const currentEventIds = allScanners
+    .filter((s) => s.user.id === scanner.user.id)
+    .map((s) => s.event.id);
+
   const [firstName, setFirstName] = useState(scanner.user.firstName);
   const [lastName, setLastName] = useState(scanner.user.lastName);
-  const [eventId, setEventId] = useState(scanner.event.id);
+  const [selectedEventIds, setSelectedEventIds] = useState<string[]>(currentEventIds);
   const [newPassword, setNewPassword] = useState('');
   const [showPwd, setShowPwd] = useState(false);
 
+  const allSelected = selectedEventIds.length === events.length;
+  const toggleAll = () => setSelectedEventIds(allSelected ? [] : events.map((e) => e.id));
+  const toggleEvent = (id: string) => setSelectedEventIds((prev) =>
+    prev.includes(id) ? prev.filter((eid) => eid !== id) : [...prev, id]
+  );
+
   const inputCls = 'w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors';
   const labelCls = 'text-xs text-white/40 uppercase tracking-widest block mb-1.5';
+  const infoLabelCls = 'text-[10px] text-white/30 uppercase tracking-widest mb-0.5';
+  const infoValueCls = 'text-sm text-white/80';
 
   const handleSave = () => {
     const payload: Record<string, unknown> = {};
     if (firstName !== scanner.user.firstName) payload.firstName = firstName;
     if (lastName !== scanner.user.lastName) payload.lastName = lastName;
-    if (eventId !== scanner.event.id) payload.eventId = eventId;
     if (newPassword.trim()) payload.newPassword = newPassword;
+    payload.eventIds = selectedEventIds;
     onSave(scanner.id, payload);
   };
+
+  const successRate = scanner.scanCount > 0
+    ? Math.round((scanner.validScanCount / scanner.scanCount) * 100)
+    : null;
 
   return (
     <motion.div
@@ -277,14 +300,78 @@ function EditScannerModal({
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.95, y: 20 }}
         onClick={(e) => e.stopPropagation()}
-        className="glass-card p-6 w-full max-w-md border border-violet-neon/30"
+        className="glass-card w-full max-w-lg border border-violet-neon/30 flex flex-col max-h-[90vh]"
       >
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="font-bebas text-xl tracking-wider text-white">MODIFIER LE SCANNER</h3>
+        {/* Header — fixe */}
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-white/5 flex-shrink-0">
+          <div>
+            <h3 className="font-bebas text-xl tracking-wider text-white">
+              {scanner.user.firstName} {scanner.user.lastName}
+            </h3>
+            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${scanner.user.isActive ? 'bg-green-500/20 text-green-400' : 'bg-rose-neon/20 text-rose-neon'}`}>
+              {scanner.user.isActive ? 'Actif' : 'Bloqué'}
+            </span>
+          </div>
           <button onClick={onClose} className="text-white/40 hover:text-white"><X className="w-5 h-5" /></button>
         </div>
 
-        <div className="space-y-4">
+        {/* Contenu scrollable */}
+        <div className="px-6 py-5 space-y-5 overflow-y-auto flex-1">
+
+          {/* ── Infos lecture seule ── */}
+          <div className="bg-white/[0.03] rounded-xl p-4 grid grid-cols-2 gap-4">
+            <div>
+              <p className={infoLabelCls}>Téléphone</p>
+              <p className={`${infoValueCls} font-mono`}>{scanner.user.phone ?? '—'}</p>
+            </div>
+            <div>
+              <p className={infoLabelCls}>Mot de passe</p>
+              <p className={`${infoValueCls} font-mono tracking-wider`}>{scanner.user.scannerPassword ?? '—'}</p>
+            </div>
+            <div>
+              <p className={infoLabelCls}>Email</p>
+              <p className={infoValueCls}>{scanner.user.email ?? '—'}</p>
+            </div>
+            <div>
+              <p className={infoLabelCls}>Compte créé le</p>
+              <p className={infoValueCls}>{new Date(scanner.user.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+            </div>
+            <div className="col-span-2">
+              <p className={infoLabelCls}>Assigné par</p>
+              <p className={infoValueCls}>{scanner.assignedByUser ? `${scanner.assignedByUser.firstName} ${scanner.assignedByUser.lastName}` : '—'}</p>
+            </div>
+          </div>
+
+          {/* ── Stats scans ── */}
+          <div className="bg-white/[0.03] rounded-xl p-4">
+            <p className="text-xs text-white/30 uppercase tracking-widest mb-3">Activité de scan</p>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="text-center">
+                <p className="font-bebas text-2xl text-white">{scanner.scanCount}</p>
+                <p className="text-[10px] text-white/30 uppercase tracking-widest">Total scans</p>
+              </div>
+              <div className="text-center">
+                <p className="font-bebas text-2xl text-green-400">{scanner.validScanCount}</p>
+                <p className="text-[10px] text-white/30 uppercase tracking-widest">Valides</p>
+              </div>
+              <div className="text-center">
+                <p className={`font-bebas text-2xl ${successRate !== null ? (successRate >= 90 ? 'text-green-400' : successRate >= 70 ? 'text-yellow-400' : 'text-rose-neon') : 'text-white/20'}`}>
+                  {successRate !== null ? `${successRate}%` : '—'}
+                </p>
+                <p className="text-[10px] text-white/30 uppercase tracking-widest">Taux succès</p>
+              </div>
+            </div>
+            {scanner.lastScanAt && (
+              <p className="text-xs text-white/30 mt-3 text-center">
+                Dernier scan : {new Date(scanner.lastScanAt).toLocaleString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </p>
+            )}
+            {!scanner.scanCount && (
+              <p className="text-xs text-white/20 text-center mt-1">Aucun scan effectué pour l'instant</p>
+            )}
+          </div>
+
+          {/* ── Champs modifiables ── */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={labelCls}>Prénom</label>
@@ -296,25 +383,33 @@ function EditScannerModal({
             </div>
           </div>
 
+          {/* Événements */}
           <div>
-            <label className={labelCls}>Téléphone</label>
-            <input value={scanner.user.phone ?? ''} disabled className={`${inputCls} opacity-40 cursor-not-allowed`} />
-            <p className="text-xs text-white/20 mt-1">Le téléphone sert d'identifiant de connexion — non modifiable</p>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs text-white/40 uppercase tracking-widest">
+                Événements assignés
+                {selectedEventIds.length > 0 && (
+                  <span className="ml-2 text-cyan-neon normal-case tracking-normal">{selectedEventIds.length} sélectionné{selectedEventIds.length > 1 ? 's' : ''}</span>
+                )}
+              </label>
+              <button type="button" onClick={toggleAll} className="text-xs text-violet-neon hover:text-white transition-colors">
+                {allSelected ? 'Désélectionner tout' : 'Tout'}
+              </button>
+            </div>
+            <div className="border border-violet-neon/20 rounded-xl overflow-hidden max-h-40 overflow-y-auto bg-bg-secondary">
+              {events.map((ev) => {
+                const checked = selectedEventIds.includes(ev.id);
+                return (
+                  <label key={ev.id} className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors hover:bg-white/5 ${checked ? 'bg-violet-neon/10' : ''}`}>
+                    <input type="checkbox" checked={checked} onChange={() => toggleEvent(ev.id)} className="accent-violet-neon w-4 h-4 flex-shrink-0" />
+                    <span className="text-sm text-white/80 truncate">{ev.title}</span>
+                  </label>
+                );
+              })}
+            </div>
           </div>
 
-          <div>
-            <label className={labelCls}>Événement assigné</label>
-            <select
-              value={eventId}
-              onChange={(e) => setEventId(e.target.value)}
-              className={inputCls}
-            >
-              {events.map((ev) => (
-                <option key={ev.id} value={ev.id}>{ev.title}</option>
-              ))}
-            </select>
-          </div>
-
+          {/* Nouveau mot de passe */}
           <div>
             <label className={labelCls}>Nouveau mot de passe <span className="text-white/20">(laisser vide = inchangé)</span></label>
             <div className="relative">
@@ -323,28 +418,20 @@ function EditScannerModal({
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Min. 6 caractères"
+                autoComplete="new-password"
                 className={`${inputCls} pr-10`}
               />
-              <button
-                type="button"
-                onClick={() => setShowPwd((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white"
-              >
+              <button type="button" onClick={() => setShowPwd((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white">
                 {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
           </div>
         </div>
 
-        <div className="flex gap-3 mt-6">
+        {/* Footer — fixe */}
+        <div className="flex gap-3 px-6 py-4 border-t border-white/5 flex-shrink-0">
           <Button variant="secondary" size="sm" onClick={onClose} className="flex-1">Annuler</Button>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={handleSave}
-            isLoading={isLoading}
-            className="flex-1"
-          >
+          <Button variant="primary" size="sm" onClick={handleSave} isLoading={isLoading} disabled={selectedEventIds.length === 0} className="flex-1">
             Enregistrer
           </Button>
         </div>
@@ -371,9 +458,10 @@ export default function AdminBackoffice() {
   const [rejectTarget, setRejectTarget] = useState<{ id: string; title: string } | null>(null);
   const [revisionTarget, setRevisionTarget] = useState<{ id: string; title: string } | null>(null);
   const [userRoleFilter, setUserRoleFilter] = useState('');
-  const [scannerForm, setScannerForm] = useState({ firstName: '', lastName: '', phone: '', password: '', eventId: '' });
+  const [scannerForm, setScannerForm] = useState({ firstName: '', lastName: '', phone: '', password: '', confirmPassword: '', eventIds: [] as string[] });
   const [showScannerForm, setShowScannerForm] = useState(false);
   const [showScannerPassword, setShowScannerPassword] = useState(false);
+  const [showScannerConfirmPassword, setShowScannerConfirmPassword] = useState(false);
   const [createdScannerCreds, setCreatedScannerCreds] = useState<{ phone: string; password: string } | null>(null);
   const [editingScanner, setEditingScanner] = useState<ScannerRow | null>(null);
   const qc = useQueryClient();
@@ -586,7 +674,7 @@ export default function AdminBackoffice() {
   });
 
   const { data: publishedEventsData } = useQuery('admin-published-events', async () => {
-    const { data } = await api.get('/admin/events?status=PUBLISHED&limit=100');
+    const { data } = await api.get('/admin/events?limit=200');
     return data.data?.events ?? [];
   });
 
@@ -619,7 +707,8 @@ export default function AdminBackoffice() {
 
   const createScanner = useMutation(
     async (payload: typeof scannerForm) => {
-      const { data } = await api.post('/admin/scanners/create-account', payload);
+      const { confirmPassword: _cp, ...body } = payload;
+      const { data } = await api.post('/admin/scanners/create-account', { ...body, eventIds: body.eventIds });
       return data.data;
     },
     {
@@ -630,7 +719,7 @@ export default function AdminBackoffice() {
         } else {
           toast.success('Scanner assigné à l\'événement');
         }
-        setScannerForm({ firstName: '', lastName: '', phone: '', password: '', eventId: '' });
+        setScannerForm({ firstName: '', lastName: '', phone: '', password: '', confirmPassword: '', eventIds: [] });
         setShowScannerForm(false);
       },
       onError: (err: unknown) => {
@@ -1887,35 +1976,141 @@ export default function AdminBackoffice() {
                 className="overflow-hidden mb-5"
               >
                 <div className="glass-card p-5 border border-cyan-neon/20 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {[
-                    { label: 'Prénom', field: 'firstName', placeholder: 'Jean', type: 'text' },
-                    { label: 'Nom', field: 'lastName', placeholder: 'Mbadinga', type: 'text' },
-                    { label: 'Téléphone', field: 'phone', placeholder: '07 00 00 00', type: 'tel' },
-                    { label: 'Mot de passe', field: 'password', placeholder: 'Min. 8 caractères', type: 'password' },
-                  ].map(({ label, field, placeholder, type }) => (
-                    <div key={field}>
-                      <label className="text-xs text-white/40 uppercase tracking-widest block mb-1.5">{label}</label>
-                      <input
-                        type={type}
-                        value={scannerForm[field as keyof typeof scannerForm]}
-                        onChange={(e) => setScannerForm((f) => ({ ...f, [field]: e.target.value }))}
-                        placeholder={placeholder}
-                        className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors"
-                      />
-                    </div>
-                  ))}
+                  {/* Prénom */}
+                  <div>
+                    <label className="text-xs text-white/40 uppercase tracking-widest block mb-1.5">Prénom</label>
+                    <input
+                      type="text"
+                      autoComplete="off"
+                      value={scannerForm.firstName}
+                      onChange={(e) => setScannerForm((f) => ({ ...f, firstName: e.target.value }))}
+                      placeholder="Prénom"
+                      className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors"
+                    />
+                  </div>
+                  {/* Nom */}
+                  <div>
+                    <label className="text-xs text-white/40 uppercase tracking-widest block mb-1.5">Nom</label>
+                    <input
+                      type="text"
+                      autoComplete="off"
+                      value={scannerForm.lastName}
+                      onChange={(e) => setScannerForm((f) => ({ ...f, lastName: e.target.value }))}
+                      placeholder="Nom"
+                      className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors"
+                    />
+                  </div>
+                  {/* Téléphone */}
                   <div className="sm:col-span-2">
-                    <label className="text-xs text-white/40 uppercase tracking-widest block mb-1.5">Événement</label>
-                    <select
-                      value={scannerForm.eventId}
-                      onChange={(e) => setScannerForm((f) => ({ ...f, eventId: e.target.value }))}
-                      className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-violet-neon transition-colors"
-                    >
-                      <option value="">Sélectionner un événement publié...</option>
-                      {(publishedEventsData ?? []).map((ev: Record<string, unknown>) => (
-                        <option key={ev.id as string} value={ev.id as string}>{ev.title as string}</option>
-                      ))}
-                    </select>
+                    <label className="text-xs text-white/40 uppercase tracking-widest block mb-1.5">Téléphone</label>
+                    <input
+                      type="tel"
+                      autoComplete="off"
+                      value={scannerForm.phone}
+                      onChange={(e) => setScannerForm((f) => ({ ...f, phone: e.target.value }))}
+                      placeholder="07 00 00 00"
+                      className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors"
+                    />
+                  </div>
+                  {/* Mot de passe */}
+                  <div>
+                    <label className="text-xs text-white/40 uppercase tracking-widest block mb-1.5">Mot de passe</label>
+                    <div className="relative">
+                      <input
+                        type={showScannerPassword ? 'text' : 'password'}
+                        autoComplete="new-password"
+                        value={scannerForm.password}
+                        onChange={(e) => setScannerForm((f) => ({ ...f, password: e.target.value }))}
+                        placeholder="Min. 8 caractères"
+                        className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 pr-10 text-white text-sm placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowScannerPassword((v) => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors"
+                      >
+                        {showScannerPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  {/* Confirmer mot de passe */}
+                  <div>
+                    <label className="text-xs text-white/40 uppercase tracking-widest block mb-1.5">Confirmer le mot de passe</label>
+                    <div className="relative">
+                      <input
+                        type={showScannerConfirmPassword ? 'text' : 'password'}
+                        autoComplete="new-password"
+                        value={scannerForm.confirmPassword}
+                        onChange={(e) => setScannerForm((f) => ({ ...f, confirmPassword: e.target.value }))}
+                        placeholder="Répéter le mot de passe"
+                        className={`w-full bg-bg-secondary border rounded-xl px-3 py-2.5 pr-10 text-white text-sm placeholder-white/20 focus:outline-none transition-colors ${
+                          scannerForm.confirmPassword && scannerForm.confirmPassword !== scannerForm.password
+                            ? 'border-rose-neon/60 focus:border-rose-neon'
+                            : 'border-violet-neon/20 focus:border-violet-neon'
+                        }`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowScannerConfirmPassword((v) => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors"
+                      >
+                        {showScannerConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {scannerForm.confirmPassword && scannerForm.confirmPassword !== scannerForm.password && (
+                      <p className="text-xs text-rose-neon mt-1">Les mots de passe ne correspondent pas</p>
+                    )}
+                  </div>
+                  {/* Événements */}
+                  <div className="sm:col-span-2">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-xs text-white/40 uppercase tracking-widest">
+                        Événements assignés
+                        {scannerForm.eventIds.length > 0 && (
+                          <span className="ml-2 text-cyan-neon normal-case tracking-normal">{scannerForm.eventIds.length} sélectionné{scannerForm.eventIds.length > 1 ? 's' : ''}</span>
+                        )}
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const allIds = (publishedEventsData ?? []).map((ev: Record<string, unknown>) => ev.id as string);
+                          const allSelected = scannerForm.eventIds.length === allIds.length;
+                          setScannerForm((f) => ({ ...f, eventIds: allSelected ? [] : allIds }));
+                        }}
+                        className="text-xs text-violet-neon hover:text-white transition-colors"
+                      >
+                        {scannerForm.eventIds.length === (publishedEventsData ?? []).length && (publishedEventsData ?? []).length > 0 ? 'Désélectionner tout' : 'Tout'}
+                      </button>
+                    </div>
+                    <div className="border border-violet-neon/20 rounded-xl overflow-hidden max-h-48 overflow-y-auto bg-bg-secondary">
+                      {(publishedEventsData ?? []).length === 0 ? (
+                        <p className="text-white/30 text-sm px-3 py-3">Aucun événement disponible</p>
+                      ) : (
+                        (publishedEventsData ?? []).map((ev: Record<string, unknown>) => {
+                          const id = ev.id as string;
+                          const checked = scannerForm.eventIds.includes(id);
+                          return (
+                            <label
+                              key={id}
+                              className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors hover:bg-white/5 ${checked ? 'bg-violet-neon/10' : ''}`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => setScannerForm((f) => ({
+                                  ...f,
+                                  eventIds: checked
+                                    ? f.eventIds.filter((eid) => eid !== id)
+                                    : [...f.eventIds, id],
+                                }))}
+                                className="accent-violet-neon w-4 h-4 flex-shrink-0"
+                              />
+                              <span className="text-sm text-white/80 truncate">{ev.title as string}</span>
+                            </label>
+                          );
+                        })
+                      )}
+                    </div>
                   </div>
                   <div className="sm:col-span-2 flex justify-end">
                     <Button
@@ -1923,7 +2118,14 @@ export default function AdminBackoffice() {
                       size="md"
                       onClick={() => createScanner.mutate(scannerForm)}
                       isLoading={createScanner.isLoading}
-                      disabled={!scannerForm.firstName || !scannerForm.lastName || !scannerForm.phone || !scannerForm.password || !scannerForm.eventId}
+                      disabled={
+                        !scannerForm.firstName ||
+                        !scannerForm.lastName ||
+                        !scannerForm.phone ||
+                        !scannerForm.password ||
+                        scannerForm.password !== scannerForm.confirmPassword ||
+                        scannerForm.eventIds.length === 0
+                      }
                     >
                       <ScanLine className="w-4 h-4" />
                       Créer le compte scanner
@@ -2478,6 +2680,7 @@ export default function AdminBackoffice() {
         {editingScanner && (
           <EditScannerModal
             scanner={editingScanner}
+            allScanners={scannersData ?? []}
             events={publishedEventsData ?? []}
             onClose={() => setEditingScanner(null)}
             onSave={(id, payload) => updateScannerMutation.mutate({ id, payload })}
