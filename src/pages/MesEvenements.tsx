@@ -47,7 +47,7 @@ function ConfirmModal({
     >
       <motion.div
         initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
-        className={`glass-card p-6 w-full max-w-md border ${colors.border}`}
+        className={`glass-card p-6 w-full max-w-md border ${colors.border} max-h-[90vh] overflow-y-auto`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between mb-3">
@@ -1747,7 +1747,7 @@ export default function MesEvenements() {
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              className="glass-card p-6 w-full max-w-md border border-rose-neon/30"
+              className="glass-card p-6 w-full max-w-md border border-rose-neon/30 max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <h3 className="font-bebas text-2xl tracking-wider text-rose-neon mb-1">ANNULER L'ÉVÉNEMENT</h3>

@@ -7,6 +7,7 @@ import {
   CGU, CGV, Confidentialite, MentionsLegales, ForgotPassword,
   ResetPassword, VerifyEmail, OrganizerPublicPage, Notifications,
   OrganizerLayout, Versements, MesEvenements, MonCompte,
+  ContratOrganisateur, GoogleAuthCallback, Spinner,
 } from './routes';
 
 export const router = createBrowserRouter(
@@ -34,6 +35,8 @@ export const router = createBrowserRouter(
         { path: 'cgv', element: <CGV /> },
         { path: 'confidentialite', element: <Confidentialite /> },
         { path: 'mentions-legales', element: <MentionsLegales /> },
+        { path: 'contrat-organisateur', element: <ContratOrganisateur /> },
+        { path: 'auth/google/success', element: <GoogleAuthCallback /> },
         { path: 'mot-de-passe-oublie', element: <ForgotPassword /> },
         { path: 'reset-password', element: <ResetPassword /> },
         { path: 'verify-email', element: <VerifyEmail /> },

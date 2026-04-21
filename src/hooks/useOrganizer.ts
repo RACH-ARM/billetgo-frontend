@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { organizerService, type CreateScannerPayload, type CreateEventPayload } from '../services/organizerService';
+import { organizerService, type CreateScannerPayload, type CreateEventPayload, type OrganizerDebt } from '../services/organizerService';
 import api from '../services/api';
 
 export interface PlatformRates {
@@ -7,6 +7,10 @@ export interface PlatformRates {
   intermediateCommission: number;
   premiumCommission: number;
   freeTicketFee: number;
+  airtelPayinRate: number;
+  moovPayinRate: number;
+  airtelPayoutRate: number;
+  moovPayoutRate: number;
 }
 
 const FALLBACK_RATES: PlatformRates = {
@@ -14,6 +18,10 @@ const FALLBACK_RATES: PlatformRates = {
   intermediateCommission: 0.10,
   premiumCommission: 0.10,
   freeTicketFee: 500,
+  airtelPayinRate: 0.025,
+  moovPayinRate: 0.025,
+  airtelPayoutRate: 0.005,
+  moovPayoutRate: 0.010,
 };
 
 export const usePlatformRates = () =>
@@ -245,6 +253,18 @@ export const useDeleteEventGalleryPhoto = () => {
         );
       },
     }
+  );
+};
+
+export const useOrganizerDebts = () =>
+  useQuery<OrganizerDebt[]>('organizer-debts', organizerService.getMyDebts, { staleTime: 30_000 });
+
+export const useRetryDebtCollect = () => {
+  const qc = useQueryClient();
+  return useMutation(
+    ({ debtId, phone }: { debtId: string; phone?: string }) =>
+      organizerService.retryDebtCollect(debtId, phone),
+    { onSuccess: () => qc.invalidateQueries('organizer-debts') }
   );
 };
 

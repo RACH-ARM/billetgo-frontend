@@ -4,17 +4,34 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   CheckCircle2, XCircle, Clock, Ticket,
   CalendarDays, MapPin, HelpCircle, RefreshCw, Share2, Mail,
+  Smartphone, AlertCircle, Check,
 } from 'lucide-react';
 import { paymentService } from '../services/paymentService';
 import { useQueryClient } from 'react-query';
 import { formatEventDate } from '../utils/formatDate';
 import { playPaymentSuccess } from '../utils/sounds';
 import { formatPrice } from '../utils/formatPrice';
+import { normalizeGabonPhone, isValidGabonPhone, isPhoneMatchingProvider } from '../utils/phone';
 import Button from '../components/common/Button';
 import type { PaymentProvider } from '../types/ticket';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
-type ConfirmationState = 'WAITING' | 'SUCCESS' | 'FAILURE' | 'TIMEOUT' | 'UNAUTHORIZED';
+type ConfirmationState = 'WAITING' | 'SUCCESS' | 'FAILURE' | 'RETRYABLE_FAILURE' | 'TIMEOUT' | 'UNAUTHORIZED';
+
+type FailureType = 'insufficient_funds' | 'user_cancelled' | 'other';
+
+function classifyClientFailure(failureReason: string | null): FailureType {
+  if (!failureReason) return 'other';
+  const r = failureReason.toUpperCase();
+  if (r.includes('INSUFFI') || r.includes('SOLDE') || r.includes('BALANCE')) return 'insufficient_funds';
+  if (r.includes('CANCEL') || r.includes('ANNUL')) return 'user_cancelled';
+  return 'other';
+}
+
+const PROVIDERS = [
+  { id: 'AIRTEL_MONEY' as const, name: 'Airtel Money', color: 'text-rose-neon', border: 'border-rose-neon', bg: 'bg-rose-neon/10' },
+  { id: 'MOOV_MONEY' as const, name: 'Moov Money', color: 'text-cyan-neon', border: 'border-cyan-neon', bg: 'bg-cyan-neon/10' },
+];
 
 interface OrderItem {
   name: string;
@@ -151,6 +168,14 @@ function OrderConfirmationInner() {
   const state = location.state as NavState;
 
   const [confirmationState, setConfirmationState] = useState<ConfirmationState>('WAITING');
+  const [failureType, setFailureType] = useState<FailureType>('other');
+  const [currentPaymentId, setCurrentPaymentId] = useState<string | null>(state?.paymentId ?? null);
+
+  // Retry form state
+  const [retryProvider, setRetryProvider] = useState<'AIRTEL_MONEY' | 'MOOV_MONEY' | null>(state?.provider ?? null);
+  const [retryPhone, setRetryPhone] = useState('');
+  const [retryLoading, setRetryLoading] = useState(false);
+  const [retryError, setRetryError] = useState<string | null>(null);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -160,12 +185,12 @@ function OrderConfirmationInner() {
     if (confirmationState !== 'WAITING') return;
 
     // No paymentId — fallback to 2-min timer
-    if (!state?.paymentId) {
+    if (!currentPaymentId) {
       timeoutRef.current = setTimeout(() => setConfirmationState('TIMEOUT'), MAX_WAIT_MS);
       return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
     }
 
-    const { paymentId } = state;
+    const paymentId = currentPaymentId;
     let attempts = 0;
     const MAX_ATTEMPTS = Math.floor(MAX_WAIT_MS / POLL_INTERVAL_MS);
 
@@ -180,7 +205,14 @@ function OrderConfirmationInner() {
           queryClient.invalidateQueries('my-tickets');
         } else if (result.status === 'FAILED' || result.status === 'CANCELLED') {
           clearInterval(pollRef.current!);
-          setConfirmationState('FAILURE');
+          const ft = classifyClientFailure(result.failureReason);
+          setFailureType(ft);
+          // Retryable = order still PENDING (pas POLLING_TIMEOUT) + pas expiré
+          const isRetryable =
+            result.orderStatus === 'PENDING' &&
+            !result.failureReason?.includes('POLLING_TIMEOUT') &&
+            (result.orderExpiresAt ? new Date(result.orderExpiresAt) > new Date() : false);
+          setConfirmationState(isRetryable ? 'RETRYABLE_FAILURE' : 'FAILURE');
         } else if (attempts >= MAX_ATTEMPTS) {
           clearInterval(pollRef.current!);
           setConfirmationState('TIMEOUT');
@@ -191,7 +223,32 @@ function OrderConfirmationInner() {
     }, POLL_INTERVAL_MS);
 
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [confirmationState]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [confirmationState, currentPaymentId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleRetry = async () => {
+    if (!orderId || !retryProvider || !isValidGabonPhone(retryPhone) || !isPhoneMatchingProvider(retryPhone, retryProvider)) return;
+    setRetryLoading(true);
+    setRetryError(null);
+    try {
+      const result = await paymentService.initiatePayment({
+        orderId,
+        method: retryProvider,
+        phone: normalizeGabonPhone(retryPhone) ?? retryPhone,
+      });
+      setCurrentPaymentId(result?.paymentId ?? null);
+      setConfirmationState('WAITING');
+    } catch (err: unknown) {
+      const errData = (err as { response?: { data?: { message?: string; code?: string } } })?.response?.data;
+      if (errData?.code === 'NO_STOCK') {
+        // Plus de places disponibles — rediriger vers la liste des événements
+        navigate('/evenements', { replace: true });
+        return;
+      }
+      setRetryError(errData?.message || 'Erreur lors du paiement. Réessayez.');
+    } finally {
+      setRetryLoading(false);
+    }
+  };
 
   const supportUrl = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`Problème commande ${orderId ?? ''}`)}&body=${encodeURIComponent(`Bonjour BilletGo,\n\nJ'ai un problème avec ma commande ${orderId ?? ''}.\n\nPouvez-vous m'aider ?\n\nMerci`)}`;
 
@@ -417,7 +474,122 @@ function OrderConfirmationInner() {
             </motion.div>
           )}
 
-          {/* ── FAILURE ── */}
+          {/* ── RETRYABLE FAILURE (solde insuffisant / annulé) ── */}
+          {confirmationState === 'RETRYABLE_FAILURE' && (
+            <motion.div
+              key="retryable-failure"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-5"
+            >
+              {/* Alerte contextuelle */}
+              <div className="flex items-start gap-3 p-4 rounded-xl bg-rose-neon/10 border border-rose-neon/30">
+                <AlertCircle className="w-5 h-5 text-rose-neon flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-rose-neon font-semibold text-sm">
+                    {failureType === 'insufficient_funds' ? 'Solde insuffisant' :
+                     failureType === 'user_cancelled' ? 'Paiement annulé' : 'Paiement non abouti'}
+                  </p>
+                  <p className="text-white/55 text-sm mt-0.5 leading-relaxed">
+                    {failureType === 'insufficient_funds'
+                      ? 'Votre compte Mobile Money ne dispose pas de fonds suffisants. Rechargez votre compte puis retentez le paiement ci-dessous.'
+                      : failureType === 'user_cancelled'
+                      ? 'Vous avez annulé la confirmation. Vos places sont toujours réservées — retentez le paiement ci-dessous.'
+                      : 'Le paiement n\'a pas abouti. Vos places sont toujours réservées — retentez ci-dessous ou changez d\'opérateur.'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Formulaire de retry */}
+              <div className="glass-card p-5 space-y-4">
+                <h2 className="font-bebas text-xl tracking-wider text-white">Retenter le paiement</h2>
+
+                {/* Opérateur */}
+                <div>
+                  <label className="text-xs text-white/50 uppercase tracking-widest block mb-2">
+                    Opérateur <span className="text-rose-neon">*</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {PROVIDERS.map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => { setRetryProvider(p.id); setRetryPhone(''); }}
+                        className={`relative flex items-center gap-2 p-3 rounded-xl border-2 transition-all ${
+                          retryProvider === p.id ? `${p.border} ${p.bg}` : 'border-white/10 hover:border-violet-neon/30'
+                        }`}
+                      >
+                        {retryProvider === p.id && (
+                          <div className="absolute top-1.5 right-1.5 w-4 h-4 bg-neon-gradient rounded-full flex items-center justify-center">
+                            <Check className="w-2.5 h-2.5 text-white" />
+                          </div>
+                        )}
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center ${p.bg}`}>
+                          <Smartphone className={`w-3.5 h-3.5 ${p.color}`} />
+                        </div>
+                        <span className={`font-bebas text-sm tracking-wider ${p.color}`}>{p.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Numéro */}
+                {retryProvider && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <label className="text-xs text-white/50 uppercase tracking-widest block mb-2">
+                      Numéro {retryProvider === 'AIRTEL_MONEY' ? 'Airtel' : 'Moov'} <span className="text-rose-neon">*</span>
+                    </label>
+                    <div className="flex gap-2">
+                      <div className="flex items-center gap-2 bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white/60 text-sm flex-shrink-0">
+                        <span>🇬🇦</span><span>+241</span>
+                      </div>
+                      <input
+                        value={retryPhone}
+                        onChange={(e) => setRetryPhone(e.target.value)}
+                        type="tel"
+                        autoFocus
+                        placeholder={retryProvider === 'AIRTEL_MONEY' ? '07X XXX XXX' : '06X XXX XXX'}
+                        className="flex-1 bg-bg-secondary border border-violet-neon/20 rounded-xl px-4 py-2.5 text-white placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors"
+                      />
+                    </div>
+                    {retryPhone.length >= 2 && isValidGabonPhone(retryPhone) && !isPhoneMatchingProvider(retryPhone, retryProvider) && (
+                      <p className="text-xs text-rose-neon mt-1">
+                        Ce numéro ne correspond pas à {retryProvider === 'AIRTEL_MONEY' ? 'Airtel (07X...)' : 'Moov (06X...)'}
+                      </p>
+                    )}
+                  </motion.div>
+                )}
+
+                {retryError && (
+                  <div className="flex items-start gap-2 p-3 rounded-xl bg-rose-neon/10 border border-rose-neon/30">
+                    <XCircle className="w-4 h-4 text-rose-neon flex-shrink-0 mt-0.5" />
+                    <p className="text-rose-neon text-sm">{retryError}</p>
+                  </div>
+                )}
+
+                <Button
+                  variant="primary"
+                  size="lg"
+                  onClick={handleRetry}
+                  disabled={!retryProvider || !isValidGabonPhone(retryPhone) || !isPhoneMatchingProvider(retryPhone, retryProvider ?? 'AIRTEL_MONEY')}
+                  isLoading={retryLoading}
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Payer {state?.amount != null ? formatPrice(state.amount) : ''}
+                </Button>
+              </div>
+
+              {orderId && <p className="text-white/15 font-mono text-xs text-center">Réf : {orderId}</p>}
+
+              <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
+                Annuler — Retour à l'accueil
+              </Button>
+            </motion.div>
+          )}
+
+          {/* ── FAILURE (définitif — timeout polling) ── */}
           {confirmationState === 'FAILURE' && (
             <motion.div
               key="failure"
@@ -452,7 +624,7 @@ function OrderConfirmationInner() {
               <div className="flex flex-col gap-3">
                 <Button variant="primary" size="lg" onClick={() => navigate('/checkout')}>
                   <RefreshCw className="w-4 h-4" />
-                  Réessayer le paiement
+                  Recommencer l'achat
                 </Button>
                 <a
                   href={supportUrl}

@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, CalendarDays, TrendingUp, Clock, CheckCircle, XCircle,
-  ShieldAlert, LayoutDashboard, ListChecks, X, LogOut, Banknote, Phone,
+  ShieldAlert, LayoutDashboard, ListChecks, X, LogOut, Banknote,
   Star, Flame, Ban, Sparkles, ScanLine, Plus, Eye, EyeOff, Pencil, MessageSquare, FileSearch, RotateCcw, ScrollText, Settings,
   Square, CheckSquare, BadgeCheck, Award, Zap, Shield,
 } from 'lucide-react';
@@ -16,7 +16,7 @@ import { formatPrice } from '../utils/formatPrice';
 import { formatEventDate } from '../utils/formatDate';
 import toast from 'react-hot-toast';
 
-type TabType = 'dashboard' | 'events' | 'vitrine' | 'users' | 'payouts' | 'scanners' | 'refunds' | 'audit' | 'settings';
+type TabType = 'dashboard' | 'events' | 'vitrine' | 'users' | 'retraits' | 'scanners' | 'refunds' | 'audit' | 'settings';
 
 // ── Types ─────────────────────────────────────────────────────
 interface AuditLogEntry {
@@ -56,26 +56,6 @@ interface AdminPayoutOrganizer {
   isApproved?: boolean;
   isCertified?: boolean;
   isPremium?: boolean;
-}
-
-interface AdminPayoutSchedule {
-  id: string;
-  tranche: number;
-  tier: string;
-  percentage: number;
-  scheduledDate: string;
-  status: 'PENDING' | 'RELEASED' | 'CANCELLED';
-  amountReleased: number | null;
-  isEligible: boolean;
-  trancheAmount: number;
-  totalOrganizerAmount: number;
-  event: { id: string; title: string; eventDate: string };
-  organizer: {
-    id: string;
-    companyName: string;
-    mobileMoneyNumber: string | null;
-    user: { firstName: string; lastName: string; email: string };
-  };
 }
 
 // ── Role badge ────────────────────────────────────────────────
@@ -143,7 +123,7 @@ function RejectModal({ eventTitle, onConfirm, onCancel }: {
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.95, y: 20 }}
         onClick={(e) => e.stopPropagation()}
-        className="glass-card p-6 w-full max-w-md border border-rose-neon/30"
+        className="glass-card p-6 w-full max-w-md border border-rose-neon/30 max-h-[90vh] overflow-y-auto"
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-bebas text-xl tracking-wider text-rose-neon">REFUSER L'ÉVÉNEMENT</h3>
@@ -194,7 +174,7 @@ function RevisionModal({ eventTitle, onConfirm, onCancel }: {
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.95, y: 20 }}
         onClick={(e) => e.stopPropagation()}
-        className="glass-card p-6 w-full max-w-md border border-yellow-400/30"
+        className="glass-card p-6 w-full max-w-md border border-yellow-400/30 max-h-[90vh] overflow-y-auto"
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-bebas text-xl tracking-wider text-yellow-400">DEMANDER UNE RÉVISION</h3>
@@ -234,28 +214,24 @@ interface ScannerRow {
   validScanCount: number;
   lastScanAt: string | null;
   user: { id: string; firstName: string; lastName: string; phone: string | null; email: string | null; isActive: boolean; createdAt: string; scannerPassword: string | null };
-  event: { id: string; title: string; eventDate: string; venueCity?: string; organizer?: { companyName: string } };
+  events: { id: string; title: string; eventDate: string; venueCity?: string; organizer?: { companyName: string } }[];
   assignedByUser?: { firstName: string; lastName: string };
 }
 
 function EditScannerModal({
   scanner,
-  allScanners,
   events,
   onClose,
   onSave,
   isLoading,
 }: {
   scanner: ScannerRow;
-  allScanners: ScannerRow[];
   events: { id: string; title: string }[];
   onClose: () => void;
   onSave: (id: string, data: Record<string, unknown>) => void;
   isLoading: boolean;
 }) {
-  const currentEventIds = allScanners
-    .filter((s) => s.user.id === scanner.user.id)
-    .map((s) => s.event.id);
+  const currentEventIds = scanner.events.map((e) => e.id);
 
   const [firstName, setFirstName] = useState(scanner.user.firstName);
   const [lastName, setLastName] = useState(scanner.user.lastName);
@@ -499,7 +475,7 @@ export default function AdminBackoffice() {
         qc.invalidateQueries('admin-dashboard'); qc.invalidateQueries('admin-counts');
         toast.success('Modifications approuvées et appliquées');
       },
-      onError: () => toast.error('Erreur lors de l\'approbation'),
+      onError: () => { toast.error('Erreur lors de l\'approbation'); },
     }
   );
 
@@ -513,7 +489,7 @@ export default function AdminBackoffice() {
         qc.invalidateQueries('admin-counts');
         toast.success('Modifications refusées');
       },
-      onError: () => toast.error('Erreur lors du refus'),
+      onError: () => { toast.error('Erreur lors du refus'); },
     }
   );
 
@@ -525,49 +501,7 @@ export default function AdminBackoffice() {
       const { data } = await api.get('/admin/payouts');
       return data.data as AdminPayoutOrganizer[];
     },
-    { enabled: tab === 'payouts', staleTime: 0 }
-  );
-
-  const [payoutFormOrgId, setPayoutFormOrgId] = useState<string | null>(null);
-  const [payoutForm, setPayoutForm] = useState({ amountSent: '', mobileMoney: '', operator: 'AIRTEL_MONEY', transactionRef: '', noteAdmin: '' });
-
-  const createPayout = useMutation(
-    async ({ organizerId, ...body }: { organizerId: string; amountSent: string; mobileMoney: string; operator: string; transactionRef: string; noteAdmin: string }) => {
-      await api.post(`/admin/payouts/${organizerId}`, { ...body, amountSent: Number(body.amountSent) });
-    },
-    {
-      onSuccess: () => {
-        refetchPayouts();
-        setPayoutFormOrgId(null);
-        setPayoutForm({ amountSent: '', mobileMoney: '', operator: 'AIRTEL_MONEY', transactionRef: '', noteAdmin: '' });
-        toast.success('Virement enregistré — notification envoyée à l\'organisateur');
-      },
-      onError: () => toast.error('Erreur lors de l\'enregistrement'),
-    }
-  );
-
-  const { data: payoutSchedules, refetch: refetchSchedules } = useQuery(
-    'admin-payout-schedules',
-    async () => {
-      const { data } = await api.get('/admin/payout-schedules');
-      return data.data as AdminPayoutSchedule[];
-    },
-    { enabled: tab === 'payouts', staleTime: 0 }
-  );
-
-  const releaseSchedule = useMutation(
-    async ({ scheduleId, transactionRef }: { scheduleId: string; transactionRef?: string }) => {
-      await api.post(`/admin/payout-schedules/${scheduleId}/release`, { transactionRef });
-    },
-    {
-      onSuccess: () => {
-        refetchSchedules();
-        refetchPayouts();
-        toast.success('Tranche libérée — notification envoyée à l\'organisateur');
-      },
-      onError: (err: { response?: { data?: { message?: string } } }) =>
-        toast.error(err?.response?.data?.message ?? 'Erreur lors de la libération'),
-    }
+    { enabled: tab === 'retraits', staleTime: 0 }
   );
 
   const updateOrgTier = useMutation(
@@ -580,7 +514,7 @@ export default function AdminBackoffice() {
         refetchPayouts();
         toast.success(data.message ?? 'Tier mis à jour');
       },
-      onError: () => toast.error('Erreur lors de la mise à jour du tier'),
+      onError: () => { toast.error('Erreur lors de la mise à jour du tier'); },
     }
   );
 
@@ -599,7 +533,7 @@ export default function AdminBackoffice() {
     },
     {
       onSuccess: () => { qc.invalidateQueries('admin-events'); qc.invalidateQueries('admin-events-completed'); qc.invalidateQueries('admin-dashboard'); qc.invalidateQueries('admin-counts'); toast.success('Statut mis à jour'); },
-      onError: () => toast.error('Erreur lors de la mise à jour'),
+      onError: () => { toast.error('Erreur lors de la mise à jour'); },
     }
   );
 
@@ -609,7 +543,7 @@ export default function AdminBackoffice() {
     },
     {
       onSuccess: () => { qc.invalidateQueries(['admin-users', userRoleFilter]); toast.success('Utilisateur mis à jour'); },
-      onError: () => toast.error('Erreur'),
+      onError: () => { toast.error('Erreur'); },
     }
   );
 
@@ -619,7 +553,7 @@ export default function AdminBackoffice() {
     },
     {
       onSuccess: () => { qc.invalidateQueries(['admin-users', userRoleFilter]); qc.invalidateQueries('admin-payouts'); toast.success('Statut organisateur mis à jour'); },
-      onError: () => toast.error('Erreur'),
+      onError: () => { toast.error('Erreur'); },
     }
   );
 
@@ -629,7 +563,7 @@ export default function AdminBackoffice() {
     },
     {
       onSuccess: (_, { isCertified }) => { qc.invalidateQueries(['admin-users', userRoleFilter]); toast.success(isCertified ? 'Organisateur certifié' : 'Certification retirée'); },
-      onError: () => toast.error('Erreur'),
+      onError: () => { toast.error('Erreur'); },
     }
   );
 
@@ -639,7 +573,7 @@ export default function AdminBackoffice() {
     },
     {
       onSuccess: (_, { isCertified }) => { qc.invalidateQueries('admin-events'); toast.success(isCertified ? 'Événement certifié' : 'Certification retirée'); },
-      onError: () => toast.error('Erreur'),
+      onError: () => { toast.error('Erreur'); },
     }
   );
 
@@ -654,7 +588,7 @@ export default function AdminBackoffice() {
     },
     {
       onSuccess: () => { qc.invalidateQueries('admin-vitrine'); toast.success('Mise en avant mise à jour'); },
-      onError: () => toast.error('Erreur'),
+      onError: () => { toast.error('Erreur'); },
     }
   );
 
@@ -664,7 +598,7 @@ export default function AdminBackoffice() {
     },
     {
       onSuccess: () => { qc.invalidateQueries('admin-vitrine'); qc.invalidateQueries('admin-dashboard'); qc.invalidateQueries('admin-counts'); toast.success('Événement retiré de la vitrine'); },
-      onError: () => toast.error('Erreur'),
+      onError: () => { toast.error('Erreur'); },
     }
   );
 
@@ -701,7 +635,7 @@ export default function AdminBackoffice() {
     },
     {
       onSuccess: () => { qc.invalidateQueries('admin-scanners'); toast.success('Statut mis à jour'); },
-      onError: () => toast.error('Erreur'),
+      onError: () => { toast.error('Erreur'); },
     }
   );
 
@@ -749,7 +683,7 @@ export default function AdminBackoffice() {
         toast.success(vars.action === 'approve' ? 'Remboursement approuvé' : 'Demande rejetée');
         qc.invalidateQueries('admin-ticket-refunds');
       },
-      onError: () => toast.error('Erreur lors du traitement'),
+      onError: () => { toast.error('Erreur lors du traitement'); },
     }
   );
 
@@ -769,17 +703,23 @@ export default function AdminBackoffice() {
 
   const { data: platformConfig, isLoading: configLoading } = useQuery(
     'admin-platform-config',
-    () => api.get('/admin/settings').then((r) => r.data.data as { freeTicketFee: number; updatedAt: string }),
+    () => api.get('/admin/settings').then((r) => r.data.data as {
+      freeTicketFee: number; updatedAt: string;
+      airtelPayinRate?: number; moovPayinRate?: number;
+      airtelPayoutRate?: number; moovPayoutRate?: number;
+    }),
     { enabled: tab === 'settings', staleTime: 0 }
   );
   const [freeTicketFeeInput, setFreeTicketFeeInput] = useState('');
+  const [rateInputs, setRateInputs] = useState({ airtelPayinRate: '', moovPayinRate: '', airtelPayoutRate: '', moovPayoutRate: '' });
   const updateConfigMutation = useMutation(
-    (payload: { freeTicketFee: number }) => api.patch('/admin/settings', payload).then((r) => r.data),
+    (payload: Record<string, number>) => api.patch('/admin/settings', payload).then((r) => r.data),
     {
       onSuccess: () => {
         toast.success('Configuration mise à jour');
         qc.invalidateQueries('admin-platform-config');
         setFreeTicketFeeInput('');
+        setRateInputs({ airtelPayinRate: '', moovPayinRate: '', airtelPayoutRate: '', moovPayoutRate: '' });
       },
       onError: (err: { response?: { data?: { message?: string } } }) => {
         toast.error(err?.response?.data?.message || 'Erreur lors de la mise à jour');
@@ -794,7 +734,7 @@ export default function AdminBackoffice() {
         toast.success('Données personnelles anonymisées');
         qc.invalidateQueries('admin-users');
       },
-      onError: () => toast.error('Erreur lors de l\'anonymisation'),
+      onError: () => { toast.error('Erreur lors de l\'anonymisation'); },
     }
   );
 
@@ -806,7 +746,7 @@ export default function AdminBackoffice() {
         toast.success(vars.action === 'approve' ? 'Remboursement approuvé' : 'Demande rejetée');
         qc.invalidateQueries('admin-refunds');
       },
-      onError: () => toast.error('Erreur lors du traitement'),
+      onError: () => { toast.error('Erreur lors du traitement'); },
     }
   );
 
@@ -821,7 +761,7 @@ export default function AdminBackoffice() {
         setSelectedUserIds(new Set());
         toast.success(data.message);
       },
-      onError: () => toast.error('Erreur lors de l\'action en masse'),
+      onError: () => { toast.error('Erreur lors de l\'action en masse'); },
     }
   );
 
@@ -836,7 +776,7 @@ export default function AdminBackoffice() {
         setSelectedRefundIds(new Set());
         toast.success(data.message);
       },
-      onError: () => toast.error('Erreur lors de l\'action en masse'),
+      onError: () => { toast.error('Erreur lors de l\'action en masse'); },
     }
   );
 
@@ -851,7 +791,7 @@ export default function AdminBackoffice() {
         setSelectedTicketRefundIds(new Set());
         toast.success(data.message);
       },
-      onError: () => toast.error('Erreur lors de l\'action en masse'),
+      onError: () => { toast.error('Erreur lors de l\'action en masse'); },
     }
   );
 
@@ -867,7 +807,7 @@ export default function AdminBackoffice() {
     { key: 'vitrine' as TabType, label: 'Vitrine', Icon: Sparkles },
     { key: 'scanners' as TabType, label: 'Scanners', Icon: ScanLine },
     { key: 'users' as TabType, label: 'Utilisateurs', Icon: Users },
-    { key: 'payouts' as TabType, label: 'Virements', Icon: Banknote, badge: adminCounts?.pendingPayouts || undefined },
+    { key: 'retraits' as TabType, label: 'Retraits', Icon: Banknote, badge: adminCounts?.pendingPayouts || undefined },
     { key: 'refunds' as TabType, label: 'Remboursements', Icon: RotateCcw, badge: adminCounts?.pendingRefunds || undefined },
     { key: 'audit' as TabType, label: 'Audit', Icon: ScrollText },
     { key: 'settings' as TabType, label: 'Paramètres', Icon: Settings },
@@ -1066,7 +1006,7 @@ export default function AdminBackoffice() {
                     )}
                     <span>Par : <span className="text-white/60">{orgUser.firstName as string} {orgUser.lastName as string}</span></span>
                     <span className="text-violet-neon">{orgUser.email as string}</span>
-                    {event.offer && (
+                    {Boolean(event.offer) && (
                       <span className="flex items-center gap-1">
                         Forfait :
                         <span className={`font-semibold ${event.offer === 'PREMIUM' ? 'text-rose-neon' : event.offer === 'INTERMEDIAIRE' ? 'text-yellow-400' : 'text-cyan-neon'}`}>
@@ -1511,7 +1451,7 @@ export default function AdminBackoffice() {
                         <td className="px-5 py-4">
                           <p className="text-white font-semibold">{u.firstName as string} {u.lastName as string}</p>
                           <p className="text-white/40 text-xs">{u.email as string}</p>
-                          {(u.role as string) === 'ORGANIZER' && (u as Record<string, unknown>).organizer && (
+                          {(u.role as string) === 'ORGANIZER' && Boolean((u as Record<string, unknown>).organizer) && (
                             <p className="text-violet-neon/70 text-xs mt-0.5">
                               {((u as Record<string, unknown>).organizer as Record<string, unknown>).companyName as string}
                             </p>
@@ -1533,7 +1473,7 @@ export default function AdminBackoffice() {
                             ) : (
                               <span className="text-xs px-2.5 py-1 rounded-full bg-rose-neon/20 text-rose-neon font-semibold">Bloqué</span>
                             )}
-                            {(u.role as string) === 'ORGANIZER' && (u as Record<string, unknown>).organizer && (
+                            {(u.role as string) === 'ORGANIZER' && Boolean((u as Record<string, unknown>).organizer) && (
                               ((u as Record<string, unknown>).organizer as Record<string, unknown>).isApproved ? (
                                 <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-neon/10 text-cyan-neon font-semibold">Approuvé</span>
                               ) : (
@@ -1568,7 +1508,7 @@ export default function AdminBackoffice() {
                                 )}
                               </>
                             )}
-                            {(u.role as string) === 'ORGANIZER' && (u as Record<string, unknown>).organizer && (() => {
+                            {(u.role as string) === 'ORGANIZER' && Boolean((u as Record<string, unknown>).organizer) && (() => {
                               const org = (u as Record<string, unknown>).organizer as Record<string, unknown>;
                               return (
                                 <>
@@ -1661,264 +1601,6 @@ export default function AdminBackoffice() {
         </div>
       )}
 
-      {/* ── Payouts tab ── */}
-      {tab === 'payouts' && (
-        payoutsLoading ? (
-          <div className="space-y-4">
-            {[1,2,3].map((i) => <SkeletonCard key={i} lines={5} />)}
-          </div>
-        ) :
-        <div className="space-y-6">
-          {/* ── Planning de versements éligibles ── */}
-          {(payoutSchedules ?? []).filter((s) => s.isEligible && s.status === 'PENDING').length > 0 && (
-            <div className="space-y-3">
-              <h2 className="font-bebas text-2xl tracking-wider text-yellow-400 flex items-center gap-2">
-                <Clock className="w-5 h-5" /> Tranches éligibles au versement
-              </h2>
-              {(payoutSchedules ?? []).filter((s) => s.isEligible && s.status === 'PENDING').map((s) => (
-                <motion.div
-                  key={s.id}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="glass-card p-4 border border-yellow-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                >
-                  <div className="min-w-0">
-                    <p className="text-xs text-white/40 truncate">{s.organizer.companyName}</p>
-                    <p className="text-sm font-semibold text-white">
-                      {s.event.title} — Tranche {s.tranche} (jusqu'à {Math.round(s.percentage * 100)}% des ventes)
-                    </p>
-                    <p className="text-xs text-white/30 mt-0.5 font-mono">
-                      Prévu : {new Date(s.scheduledDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
-                      {s.organizer.mobileMoneyNumber && <> · {s.organizer.mobileMoneyNumber}</>}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    {s.totalOrganizerAmount > 0 ? (
-                      <p className="font-mono font-bold text-yellow-400 text-base">{formatPrice(s.trancheAmount, 'FCFA')}</p>
-                    ) : (
-                      <p className="text-xs text-white/30">Aucune vente</p>
-                    )}
-                    {s.totalOrganizerAmount > 0 && (
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        isLoading={releaseSchedule.isLoading}
-                        onClick={() => releaseSchedule.mutate({ scheduleId: s.id })}
-                      >
-                        <CheckCircle className="w-4 h-4" /> Libérer
-                      </Button>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          )}
-
-          {/* ── Organisateurs ── */}
-        <div className="space-y-4">
-          {!payoutsData?.length ? (
-            <div className="glass-card p-16 text-center">
-              <Banknote className="w-12 h-12 text-green-400/20 mx-auto mb-3" />
-              <p className="text-white/40">Aucun organisateur actif</p>
-            </div>
-          ) : payoutsData.map((org) => (
-            <motion.div
-              key={org.organizerId}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="glass-card overflow-hidden border border-white/5"
-            >
-              {/* En-tête organisateur */}
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 p-5">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                    <h3 className="font-bebas text-xl tracking-wide text-white">{org.companyName}</h3>
-                    {/* Tier badge */}
-                    {(() => {
-                      const tierMap: Record<string, { label: string; color: string; Icon: React.ComponentType<{ className?: string }> }> = {
-                        NEW:       { label: 'Nouveau',  color: 'text-white/40',    Icon: Star   },
-                        APPROVED:  { label: 'Approuvé', color: 'text-cyan-neon',   Icon: Shield },
-                        CERTIFIED: { label: 'Certifié', color: 'text-violet-neon', Icon: Award  },
-                        PREMIUM:   { label: 'Premium',  color: 'text-yellow-400',  Icon: Zap    },
-                      };
-                      const isPremium   = org.isPremium;
-                      const isCertified = org.isCertified;
-                      const isApproved  = org.isApproved;
-                      const tier = isPremium ? 'PREMIUM' : isCertified ? 'CERTIFIED' : isApproved ? 'APPROVED' : 'NEW';
-                      const meta = tierMap[tier];
-                      const { Icon } = meta;
-                      return (
-                        <span className={`flex items-center gap-1 text-xs font-semibold ${meta.color}`}>
-                          <Icon className="w-3 h-3" /> {meta.label}
-                        </span>
-                      );
-                    })()}
-                  </div>
-                  <p className="text-white/40 text-xs mt-0.5">
-                    {org.user.firstName} {org.user.lastName}
-                    {org.user.phone && <span className="ml-2 font-mono text-cyan-neon/70">{org.user.phone}</span>}
-                  </p>
-                  {org.mobileMoneyNumber
-                    ? <p className="flex items-center gap-1 text-xs text-cyan-neon mt-1"><Phone className="w-3 h-3" /> {org.mobileMoneyNumber}</p>
-                    : <p className="text-xs text-rose-neon/60 mt-1">Numéro Mobile Money non renseigné</p>
-                  }
-                  {/* Tier selector */}
-                  <div className="flex items-center gap-1.5 mt-2">
-                    <p className="text-xs text-white/30">Tier :</p>
-                    {[
-                      { key: 'APPROVED',  label: 'Approuvé', flags: { isApproved: true,  isCertified: false, isPremium: false } },
-                      { key: 'CERTIFIED', label: 'Certifié', flags: { isApproved: true,  isCertified: true,  isPremium: false } },
-                      { key: 'PREMIUM',   label: 'Premium',  flags: { isApproved: true,  isCertified: true,  isPremium: true  } },
-                    ].map((t) => {
-                      const currentTier = org.isPremium ? 'PREMIUM' : org.isCertified ? 'CERTIFIED' : org.isApproved ? 'APPROVED' : 'NEW';
-                      const isActive = currentTier === t.key;
-                      return (
-                        <button
-                          key={t.key}
-                          onClick={() => !isActive && updateOrgTier.mutate({ organizerId: org.organizerId, ...t.flags })}
-                          className={`text-xs px-2.5 py-1 rounded-lg font-semibold transition-all ${isActive ? 'bg-violet-neon/20 text-violet-neon border border-violet-neon/30' : 'text-white/30 hover:text-white hover:bg-white/5 border border-transparent'}`}
-                        >
-                          {t.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-                {/* Soldes */}
-                <div className="flex flex-wrap sm:flex-nowrap gap-3 flex-shrink-0">
-                  {[
-                    { label: 'Collecté', val: formatPrice(org.totalCollected, 'FCFA', '0 FCFA'), color: 'text-white/70' },
-                    { label: 'Net org.', val: formatPrice(org.totalNetAmount, 'FCFA', '0 FCFA'), color: 'text-cyan-neon' },
-                    { label: 'Déjà viré', val: formatPrice(org.totalPaid, 'FCFA', '0 FCFA'), color: 'text-green-400' },
-                    { label: 'Restant', val: formatPrice(org.balanceDue, 'FCFA', '0 FCFA'), color: org.balanceDue > 0 ? 'text-yellow-400' : 'text-white/30' },
-                  ].map((s) => (
-                    <div key={s.label} className="text-center bg-white/[0.04] rounded-xl px-3 py-2 min-w-[80px]">
-                      <p className="text-xs text-white/30 uppercase tracking-widest mb-0.5">{s.label}</p>
-                      <p className={`font-mono font-bold text-sm ${s.color}`}>{s.val}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Événements */}
-              {org.events.length > 0 && (
-                <div className="border-t border-white/5 px-5 py-3 flex flex-wrap gap-2">
-                  {org.events.map((ev) => (
-                    <span key={ev.id} className="text-xs bg-white/[0.04] border border-white/10 rounded-full px-3 py-1 text-white/50">{ev.title}</span>
-                  ))}
-                </div>
-              )}
-
-              {/* Historique virements */}
-              {org.payoutHistory.length > 0 && (
-                <div className="border-t border-white/5 px-5 py-3 space-y-2">
-                  <p className="text-xs text-white/30 uppercase tracking-widest mb-2">Virements effectués</p>
-                  {org.payoutHistory.map((p) => (
-                    <div key={p.id} className="flex items-center justify-between text-xs bg-white/[0.03] rounded-lg px-3 py-2">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
-                        <span className="font-mono font-bold text-green-400">{formatPrice(p.amountSent)}</span>
-                        <span className="text-white/30">{p.operator} · {p.mobileMoney}</span>
-                        {p.transactionRef && <span className="font-mono text-white/20">#{p.transactionRef}</span>}
-                      </div>
-                      <div className="text-right text-white/25">
-                        <div>{new Date(p.processedAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
-                        <div>par {p.processedBy}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Formulaire de virement */}
-              <div className="border-t border-white/5 p-5">
-                {payoutFormOrgId === org.organizerId ? (
-                  <div className="space-y-3">
-                    <p className="text-xs text-white/50 uppercase tracking-widest mb-2">Enregistrer un nouveau virement</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="text-xs text-white/40 uppercase tracking-widest block mb-1">Montant (FCFA) <span className="text-rose-neon">*</span></label>
-                        <input
-                          type="number"
-                          value={payoutForm.amountSent}
-                          onChange={(e) => setPayoutForm((f) => ({ ...f, amountSent: e.target.value }))}
-                          placeholder={`Suggestion : ${formatPrice(org.balanceDue)}`}
-                          className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-4 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs text-white/40 uppercase tracking-widest block mb-1">Numéro Mobile Money <span className="text-rose-neon">*</span></label>
-                        <input
-                          type="tel"
-                          value={payoutForm.mobileMoney}
-                          onChange={(e) => setPayoutForm((f) => ({ ...f, mobileMoney: e.target.value }))}
-                          placeholder={org.mobileMoneyNumber ?? 'Ex: 074000000'}
-                          className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-4 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs text-white/40 uppercase tracking-widest block mb-1">Opérateur <span className="text-rose-neon">*</span></label>
-                        <select
-                          value={payoutForm.operator}
-                          onChange={(e) => setPayoutForm((f) => ({ ...f, operator: e.target.value }))}
-                          className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-violet-neon transition-colors"
-                        >
-                          <option value="AIRTEL_MONEY">Airtel Money</option>
-                          <option value="MOOV_MONEY">Moov Money</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-xs text-white/40 uppercase tracking-widest block mb-1">Référence transaction</label>
-                        <input
-                          value={payoutForm.transactionRef}
-                          onChange={(e) => setPayoutForm((f) => ({ ...f, transactionRef: e.target.value }))}
-                          placeholder="Ex: TXN-XXXXX (optionnel)"
-                          className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-4 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors"
-                        />
-                      </div>
-                      <div className="sm:col-span-2">
-                        <label className="text-xs text-white/40 uppercase tracking-widest block mb-1">Note admin</label>
-                        <input
-                          value={payoutForm.noteAdmin}
-                          onChange={(e) => setPayoutForm((f) => ({ ...f, noteAdmin: e.target.value }))}
-                          placeholder="Ex: Versement post-événement (optionnel)"
-                          className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-4 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex gap-3 pt-1">
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        isLoading={createPayout.isLoading}
-                        onClick={() => createPayout.mutate({ organizerId: org.organizerId, ...payoutForm })}
-                        disabled={!payoutForm.amountSent || !payoutForm.mobileMoney}
-                      >
-                        <CheckCircle className="w-4 h-4" /> Confirmer le virement
-                      </Button>
-                      <Button variant="secondary" size="sm" onClick={() => setPayoutFormOrgId(null)}>
-                        <X className="w-4 h-4" /> Annuler
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => {
-                      setPayoutFormOrgId(org.organizerId);
-                      setPayoutForm((f) => ({ ...f, mobileMoney: org.mobileMoneyNumber ?? '' }));
-                    }}
-                  >
-                    <Banknote className="w-4 h-4" /> Enregistrer un virement
-                  </Button>
-                )}
-              </div>
-            </motion.div>
-          ))}
-        </div>
-        </div>
-      )}
 
       {/* ── Scanners tab ── */}
       {tab === 'scanners' && (
@@ -2152,9 +1834,8 @@ export default function AdminBackoffice() {
                     <tr className="border-b border-white/5 text-white/40 text-xs uppercase tracking-widest">
                       <th className="text-left px-5 py-3">Agent</th>
                       <th className="text-left px-5 py-3">Téléphone</th>
-                      <th className="text-left px-5 py-3">Événement</th>
-                      <th className="text-left px-5 py-3 hidden md:table-cell">Organisateur</th>
-                      <th className="text-left px-5 py-3 hidden md:table-cell">Date événement</th>
+                      <th className="text-left px-5 py-3">Événements assignés</th>
+                      <th className="text-center px-5 py-3">Scans</th>
                       <th className="text-center px-5 py-3">Statut</th>
                       <th className="px-5 py-3" />
                     </tr>
@@ -2162,13 +1843,32 @@ export default function AdminBackoffice() {
                   <tbody>
                     {scannersData.map((s) => (
                       <tr key={s.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-                        <td className="px-5 py-4 text-white font-semibold">{s.user.firstName} {s.user.lastName}</td>
+                        <td className="px-5 py-4">
+                          <p className="text-white font-semibold">{s.user.firstName} {s.user.lastName}</p>
+                          {s.user.email && <p className="text-white/30 text-xs mt-0.5">{s.user.email}</p>}
+                        </td>
                         <td className="px-5 py-4 text-white/60 text-xs font-mono">{s.user.phone || '—'}</td>
-                        <td className="px-5 py-4 text-white/80 max-w-[180px] truncate">{s.event.title}</td>
-                        <td className="px-5 py-4 text-white/40 text-xs hidden md:table-cell">{s.event.organizer?.companyName}</td>
-                        <td className="px-5 py-4 text-white/40 text-xs hidden md:table-cell">{formatEventDate(s.event.eventDate)}</td>
+                        <td className="px-5 py-4">
+                          <div className="flex flex-wrap gap-1 max-w-[260px]">
+                            {s.events.slice(0, 3).map((ev) => (
+                              <span key={ev.id} className="text-[11px] px-2 py-0.5 rounded-full bg-violet-neon/10 text-violet-neon border border-violet-neon/20 truncate max-w-[140px]" title={ev.title}>
+                                {ev.title}
+                              </span>
+                            ))}
+                            {s.events.length > 3 && (
+                              <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/5 text-white/40">
+                                +{s.events.length - 3}
+                              </span>
+                            )}
+                            {s.events.length === 0 && <span className="text-white/20 text-xs">Aucun</span>}
+                          </div>
+                        </td>
                         <td className="px-5 py-4 text-center">
-                          {s.isActive ? (
+                          <p className="text-white font-semibold">{s.scanCount}</p>
+                          <p className="text-white/30 text-xs">{s.validScanCount} valides</p>
+                        </td>
+                        <td className="px-5 py-4 text-center">
+                          {s.user.isActive ? (
                             <span className="text-xs px-2.5 py-1 rounded-full bg-green-500/20 text-green-400 font-semibold">Actif</span>
                           ) : (
                             <span className="text-xs px-2.5 py-1 rounded-full bg-rose-neon/20 text-rose-neon font-semibold">Bloqué</span>
@@ -2177,12 +1877,12 @@ export default function AdminBackoffice() {
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-2 justify-end">
                             <Button
-                              variant={s.isActive ? 'danger' : 'secondary'}
+                              variant={s.user.isActive ? 'danger' : 'secondary'}
                               size="sm"
-                              onClick={() => toggleScannerMutation.mutate({ id: s.id, isActive: !s.isActive })}
+                              onClick={() => toggleScannerMutation.mutate({ id: s.id, isActive: !s.user.isActive })}
                               isLoading={toggleScannerMutation.isLoading}
                             >
-                              {s.isActive ? 'Bloquer' : 'Activer'}
+                              {s.user.isActive ? 'Bloquer' : 'Activer'}
                             </Button>
                             <Button
                               variant="secondary"
@@ -2448,6 +2148,193 @@ export default function AdminBackoffice() {
         </div>
       )}
 
+      {/* ── Retraits tab ── */}
+      {tab === 'retraits' && (() => {
+        const allPayouts = (payoutsData ?? [])
+          .flatMap((org) => (org.payoutHistory ?? []).map((p) => ({ ...p, companyName: org.companyName })))
+          .sort((a, b) => new Date(b.processedAt).getTime() - new Date(a.processedAt).getTime());
+
+        const totalVersé = allPayouts.reduce((s, p) => s + p.amountSent, 0);
+        const totalDû    = (payoutsData ?? []).reduce((s, org) => s + org.balanceDue, 0);
+        const totalBrut  = (payoutsData ?? []).reduce((s, org) => s + org.totalNetAmount, 0);
+
+        return (
+          <div className="space-y-8">
+
+            {/* ── KPIs ── */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[
+                { label: 'Total versé', value: formatPrice(totalVersé, 'FCFA', '0 FCFA'), color: 'text-green-400', border: 'border-green-500/20' },
+                { label: 'Net dû organisateurs', value: formatPrice(totalBrut, 'FCFA', '0 FCFA'), color: 'text-cyan-neon', border: 'border-cyan-neon/20' },
+                { label: 'Solde restant', value: formatPrice(totalDû, 'FCFA', '0 FCFA'), color: totalDû > 0 ? 'text-yellow-400' : 'text-white/30', border: totalDû > 0 ? 'border-yellow-500/20' : 'border-white/5' },
+              ].map((k) => (
+                <div key={k.label} className={`glass-card p-4 border ${k.border}`}>
+                  <p className="text-xs text-white/40 uppercase tracking-widest mb-1">{k.label}</p>
+                  <p className={`font-mono font-bold text-xl ${k.color}`}>{k.value}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* ── 3. Soldes & tier par organisateur ── */}
+            {payoutsLoading ? (
+              <div className="space-y-4">{[1,2,3].map((i) => <SkeletonCard key={i} lines={4} />)}</div>
+            ) : (payoutsData ?? []).length === 0 ? (
+              <div className="glass-card p-16 text-center">
+                <Banknote className="w-12 h-12 text-white/10 mx-auto mb-3" />
+                <p className="text-white/40">Aucun organisateur actif</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <h2 className="font-bebas text-xl tracking-wider text-white/60">Organisateurs</h2>
+                {(payoutsData ?? []).map((org) => (
+                  <motion.div
+                    key={org.organizerId}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="glass-card overflow-hidden border border-white/5"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 p-5">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                          <h3 className="font-bebas text-xl tracking-wide text-white">{org.companyName}</h3>
+                          {(() => {
+                            const tierMap: Record<string, { label: string; color: string; Icon: React.ComponentType<{ className?: string }> }> = {
+                              NEW:       { label: 'Nouveau',  color: 'text-white/40',    Icon: Star   },
+                              APPROVED:  { label: 'Approuvé', color: 'text-cyan-neon',   Icon: Shield },
+                              CERTIFIED: { label: 'Certifié', color: 'text-violet-neon', Icon: Award  },
+                              PREMIUM:   { label: 'Premium',  color: 'text-yellow-400',  Icon: Zap    },
+                            };
+                            const tier = org.isPremium ? 'PREMIUM' : org.isCertified ? 'CERTIFIED' : org.isApproved ? 'APPROVED' : 'NEW';
+                            const meta = tierMap[tier];
+                            const { Icon } = meta;
+                            return <span className={`flex items-center gap-1 text-xs font-semibold ${meta.color}`}><Icon className="w-3 h-3" /> {meta.label}</span>;
+                          })()}
+                        </div>
+                        <p className="text-white/40 text-xs mt-0.5">
+                          {org.user.firstName} {org.user.lastName}
+                          {org.user.phone && <span className="ml-2 font-mono text-cyan-neon/70">{org.user.phone}</span>}
+                        </p>
+                                        {/* Tier selector */}
+                        <div className="flex items-center gap-1.5 mt-2">
+                          <p className="text-xs text-white/30">Tier :</p>
+                          {[
+                            { key: 'APPROVED',  label: 'Approuvé', flags: { isApproved: true,  isCertified: false, isPremium: false } },
+                            { key: 'CERTIFIED', label: 'Certifié', flags: { isApproved: true,  isCertified: true,  isPremium: false } },
+                            { key: 'PREMIUM',   label: 'Premium',  flags: { isApproved: true,  isCertified: true,  isPremium: true  } },
+                          ].map((t) => {
+                            const currentTier = org.isPremium ? 'PREMIUM' : org.isCertified ? 'CERTIFIED' : org.isApproved ? 'APPROVED' : 'NEW';
+                            const isActive = currentTier === t.key;
+                            return (
+                              <button
+                                key={t.key}
+                                onClick={() => !isActive && updateOrgTier.mutate({ organizerId: org.organizerId, ...t.flags })}
+                                className={`text-xs px-2.5 py-1 rounded-lg font-semibold transition-all ${isActive ? 'bg-violet-neon/20 text-violet-neon border border-violet-neon/30' : 'text-white/30 hover:text-white hover:bg-white/5 border border-transparent'}`}
+                              >
+                                {t.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      {/* Soldes */}
+                      <div className="flex flex-wrap sm:flex-nowrap gap-3 flex-shrink-0">
+                        {[
+                          { label: 'Collecté', val: org.totalCollected, color: 'text-white/70' },
+                          { label: 'Net org.', val: org.totalNetAmount, color: 'text-cyan-neon' },
+                          { label: 'Déjà viré', val: org.totalPaid, color: 'text-green-400' },
+                          { label: 'Restant', val: org.balanceDue, color: org.balanceDue > 0 ? 'text-yellow-400' : 'text-white/30' },
+                        ].map((s) => (
+                          <div key={s.label} className="text-center bg-white/[0.04] rounded-xl px-3 py-2 min-w-[80px]">
+                            <p className="text-xs text-white/30 uppercase tracking-widest mb-0.5">{s.label}</p>
+                            <p className={`font-mono font-bold text-sm ${s.color}`}>{formatPrice(s.val, 'FCFA', '0 FCFA')}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Événements */}
+                    {org.events.length > 0 && (
+                      <div className="border-t border-white/5 px-5 py-3 flex flex-wrap gap-2">
+                        {org.events.map((ev) => (
+                          <span key={ev.id} className="text-xs bg-white/[0.04] border border-white/10 rounded-full px-3 py-1 text-white/50">{ev.title}</span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Historique virements */}
+                    {org.payoutHistory.length > 0 && (
+                      <div className="border-t border-white/5 px-5 py-3 space-y-2">
+                        <p className="text-xs text-white/30 uppercase tracking-widest mb-2">Virements effectués</p>
+                        {org.payoutHistory.map((p) => (
+                          <div key={p.id} className="flex items-center justify-between text-xs bg-white/[0.03] rounded-lg px-3 py-2">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
+                              <span className="font-mono font-bold text-green-400">{formatPrice(p.amountSent)}</span>
+                              <span className="text-white/30">{p.operator} · {p.mobileMoney}</span>
+                              {p.transactionRef && <span className="font-mono text-white/20">#{p.transactionRef}</span>}
+                            </div>
+                            <div className="text-right text-white/25">
+                              <div>{new Date(p.processedAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+                              <div>par {p.processedBy}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            )}
+
+            {/* ── 4. Journal global des transactions ── */}
+            {allPayouts.length > 0 && (
+              <div>
+                <h2 className="font-bebas text-xl tracking-wider text-white/60 mb-3">Journal des transactions</h2>
+                <div className="glass-card overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-white/5 text-white/40 text-xs uppercase tracking-widest">
+                          <th className="text-left px-5 py-3">Date</th>
+                          <th className="text-left px-5 py-3">Organisateur</th>
+                          <th className="text-left px-5 py-3">Montant net</th>
+                          <th className="text-left px-5 py-3 hidden sm:table-cell">Opérateur</th>
+                          <th className="text-left px-5 py-3 hidden md:table-cell">N° Mobile Money</th>
+                          <th className="text-left px-5 py-3 hidden lg:table-cell">Réf.</th>
+                          <th className="text-left px-5 py-3 hidden xl:table-cell">Par</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {allPayouts.map((p) => (
+                          <tr key={p.id} className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors">
+                            <td className="px-5 py-3 text-white/50 text-xs whitespace-nowrap">
+                              {new Date(p.processedAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            </td>
+                            <td className="px-5 py-3 text-white font-semibold text-xs">{p.companyName}</td>
+                            <td className="px-5 py-3 font-mono font-bold text-green-400">{formatPrice(p.amountSent, 'FCFA')}</td>
+                            <td className="px-5 py-3 hidden sm:table-cell">
+                              <span className={`text-xs font-semibold ${p.operator === 'AIRTEL_MONEY' ? 'text-rose-neon' : 'text-cyan-neon'}`}>{p.operator.replace('_MONEY', '')}</span>
+                            </td>
+                            <td className="px-5 py-3 hidden md:table-cell font-mono text-xs text-white/50">{p.mobileMoney}</td>
+                            <td className="px-5 py-3 hidden lg:table-cell font-mono text-xs text-white/30">{p.transactionRef ?? '—'}</td>
+                            <td className="px-5 py-3 hidden xl:table-cell text-white/30 text-xs">{p.processedBy}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="px-5 py-3 border-t border-white/5 flex items-center justify-between">
+                    <p className="text-xs text-white/25">{allPayouts.length} virement{allPayouts.length > 1 ? 's' : ''} au total</p>
+                    <p className="text-xs font-mono text-green-400 font-bold">Total : {formatPrice(totalVersé, 'FCFA')}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+          </div>
+        );
+      })()}
+
       {/* ── Audit logs tab ── */}
       {tab === 'audit' && (
         <div>
@@ -2630,6 +2517,54 @@ export default function AdminBackoffice() {
             </div>
           )}
 
+          {/* PayIn / PayOut rates */}
+          {configLoading ? (
+            <SkeletonCard lines={4} />
+          ) : (
+            <div className="glass-card p-6 border border-cyan-neon/20 space-y-5">
+              <div>
+                <h3 className="font-bebas text-xl tracking-wider text-white/60 mb-0.5">Frais opérateurs Mobile Money</h3>
+                <p className="text-white/30 text-xs">PayIn = frais à la charge de l'acheteur. PayOut = frais déduits du virement organisateur.</p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {([
+                  { key: 'airtelPayinRate',  label: 'Airtel PayIn (%)',   current: platformConfig?.airtelPayinRate  },
+                  { key: 'moovPayinRate',    label: 'Moov PayIn (%)',     current: platformConfig?.moovPayinRate    },
+                  { key: 'airtelPayoutRate', label: 'Airtel PayOut (%)',  current: platformConfig?.airtelPayoutRate },
+                  { key: 'moovPayoutRate',   label: 'Moov PayOut (%)',    current: platformConfig?.moovPayoutRate   },
+                ] as { key: keyof typeof rateInputs; label: string; current?: number }[]).map(({ key, label, current }) => (
+                  <div key={key}>
+                    <label className="block text-xs text-white/50 uppercase tracking-widest mb-1.5">{label}</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="50"
+                      step="0.1"
+                      value={rateInputs[key]}
+                      onChange={(e) => setRateInputs((r) => ({ ...r, [key]: e.target.value }))}
+                      placeholder={current !== undefined ? `Actuel : ${(current * 100).toFixed(1)} %` : 'ex: 2.5'}
+                      className="w-full bg-bg-card border border-cyan-neon/20 rounded-xl px-4 py-2.5 text-white placeholder-white/25 focus:outline-none focus:border-cyan-neon transition-colors text-sm"
+                    />
+                  </div>
+                ))}
+              </div>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  const payload: Record<string, number> = {};
+                  for (const [k, v] of Object.entries(rateInputs)) {
+                    if (v !== '') payload[k] = parseFloat(v) / 100;
+                  }
+                  if (Object.keys(payload).length === 0) { toast.error('Aucune valeur à modifier'); return; }
+                  updateConfigMutation.mutate(payload);
+                }}
+                isLoading={updateConfigMutation.isLoading}
+              >
+                <CheckCircle className="w-4 h-4" /> Enregistrer les taux
+              </Button>
+            </div>
+          )}
+
         </div>
       )}
 
@@ -2680,7 +2615,6 @@ export default function AdminBackoffice() {
         {editingScanner && (
           <EditScannerModal
             scanner={editingScanner}
-            allScanners={scannersData ?? []}
             events={publishedEventsData ?? []}
             onClose={() => setEditingScanner(null)}
             onSave={(id, payload) => updateScannerMutation.mutate({ id, payload })}

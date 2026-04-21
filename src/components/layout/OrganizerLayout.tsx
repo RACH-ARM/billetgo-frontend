@@ -54,7 +54,6 @@ function NavItems({ onClose }: { onClose: () => void }) {
 
 function SidebarContent({ onClose }: { onClose: () => void }) {
   const { user, logout } = useAuthStore();
-  const navigate = useNavigate();
 
   return (
     <div className="flex flex-col h-full">
@@ -88,10 +87,7 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
 
       <div className="px-3 py-4 border-t border-white/5 flex-shrink-0">
         <button
-          onClick={async () => {
-            await logout();
-            navigate('/login');
-          }}
+          onClick={() => { logout(); }}
           className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-white/40 hover:text-rose-neon hover:bg-rose-neon/5 transition-all w-full"
         >
           <LogOut className="w-4 h-4 flex-shrink-0" />

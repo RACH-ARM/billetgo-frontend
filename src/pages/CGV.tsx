@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Download, Loader2 } from 'lucide-react';
+import api from '../services/api';
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <div className="mb-8">
@@ -9,6 +11,25 @@ const Section = ({ title, children }: { title: string; children: React.ReactNode
 );
 
 export default function CGV() {
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      const response = await api.get('/utils/cgv.pdf', { responseType: 'blob' });
+      const url = URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'cgv-billetgo.pdf';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // silencieux
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-bg py-20 px-4">
       <div className="max-w-3xl mx-auto">
@@ -16,8 +37,20 @@ export default function CGV() {
           <ChevronLeft className="w-4 h-4" /> Retour à l'accueil
         </Link>
 
-        <h1 className="font-bebas text-5xl tracking-wider text-gradient mb-2">Conditions Générales de Vente</h1>
-        <p className="text-white/30 text-xs mb-10">Dernière mise à jour : 23 mars 2026</p>
+        <div className="flex items-center justify-between gap-4 flex-wrap mb-10">
+          <div>
+            <h1 className="font-bebas text-5xl tracking-wider text-gradient mb-2">Conditions Générales de Vente</h1>
+            <p className="text-white/30 text-xs">Dernière mise à jour : 16 avril 2026</p>
+          </div>
+          <button
+            onClick={handleDownload}
+            disabled={downloading}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white/50 text-sm hover:text-white hover:bg-white/10 transition-all flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            {downloading ? 'Génération...' : 'Télécharger PDF'}
+          </button>
+        </div>
 
         <div className="glass-card p-8 border border-violet-neon/20">
 
@@ -114,7 +147,7 @@ export default function CGV() {
 
             <p className="text-white/80 font-medium mt-2">Remboursement en cas d'annulation officielle</p>
             <ul className="list-disc list-inside space-y-1 pl-2">
-              <li>En cas d'annulation officielle d'un événement par l'organisateur, BilletGo procède au remboursement intégral du prix d'achat à tous les acheteurs concernés.</li>
+              <li>En cas d'annulation officielle d'un événement par l'organisateur, BilletGo génère automatiquement les demandes de remboursement pour tous les acheteurs concernés et les notifie immédiatement.</li>
               <li>Le remboursement est garanti dans la limite des fonds retenus en séquestre par BilletGo au moment de l'annulation.</li>
               <li>Pour les montants excédant les fonds en séquestre (si des tranches avaient déjà été versées à l'organisateur), la responsabilité de l'indemnisation incombe à l'organisateur.</li>
               <li>Les notifications d'annulation et de remboursement sont envoyées automatiquement par email et notification in-app.</li>

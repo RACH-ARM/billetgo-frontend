@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Download, Loader2 } from 'lucide-react';
+import api from '../services/api';
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <div className="mb-8">
@@ -16,6 +18,25 @@ const Row = ({ label, value }: { label: string; value: React.ReactNode }) => (
 );
 
 export default function MentionsLegales() {
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      const response = await api.get('/utils/mentions-legales.pdf', { responseType: 'blob' });
+      const url = URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'mentions-legales-billetgo.pdf';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      // silencieux
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-bg py-20 px-4">
       <div className="max-w-3xl mx-auto">
@@ -23,8 +44,20 @@ export default function MentionsLegales() {
           <ChevronLeft className="w-4 h-4" /> Retour à l'accueil
         </Link>
 
-        <h1 className="font-bebas text-5xl tracking-wider text-gradient mb-2">Mentions Légales</h1>
-        <p className="text-white/30 text-xs mb-10">Dernière mise à jour : 23 mars 2026</p>
+        <div className="flex items-center justify-between gap-4 flex-wrap mb-10">
+          <div>
+            <h1 className="font-bebas text-5xl tracking-wider text-gradient mb-2">Mentions Légales</h1>
+            <p className="text-white/30 text-xs">Dernière mise à jour : 16 avril 2026</p>
+          </div>
+          <button
+            onClick={handleDownload}
+            disabled={downloading}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white/50 text-sm hover:text-white hover:bg-white/10 transition-all flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            {downloading ? 'Génération...' : 'Télécharger PDF'}
+          </button>
+        </div>
 
         <div className="glass-card p-8 border border-violet-neon/20 space-y-2">
 
@@ -71,6 +104,7 @@ export default function MentionsLegales() {
           </Section>
 
           <Section title="Traitement des paiements">
+            <Row label="Passerelle" value="PVit (agrégateur Mobile Money certifié)" />
             <Row label="Opérateurs" value="Airtel Money Gabon, Moov Money Gabon" />
             <p>
               Les paiements sont traités directement par les opérateurs de téléphonie mobile.
@@ -85,7 +119,7 @@ export default function MentionsLegales() {
           </Section>
 
           <Section title="Communications">
-            <Row label="Email transactionnel" value="Nodemailer / SMTP (confirmations, billets, notifications)" />
+            <Row label="Email transactionnel" value="Resend (SMTP) — confirmations, billets, notifications" />
             <Row label="SMS" value="Via opérateurs gabonais (notifications critiques)" />
             <p>
               Les communications envoyées par BilletGo sont exclusivement transactionnelles (confirmations

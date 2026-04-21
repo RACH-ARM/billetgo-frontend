@@ -315,6 +315,9 @@ export default function MyTickets() {
             .map((item: any) => `${item.quantity}× ${item.category.name}`)
             .join(', ');
           const isCompleted = order.status === 'COMPLETED';
+          const ticketsSubtotal: number = (order.orderItems ?? []).reduce(
+            (s: number, i: any) => s + Number(i.unitPrice) * i.quantity, 0
+          );
 
           return (
             <motion.div
@@ -361,7 +364,7 @@ export default function MyTickets() {
                       {totalItems}
                     </span>
                     <span className="font-mono text-cyan-neon text-sm font-bold">
-                      {formatPrice(order.totalAmount)}
+                      {formatPrice(ticketsSubtotal)}
                     </span>
                   </div>
 
@@ -422,7 +425,7 @@ export default function MyTickets() {
                           coverImageUrl={order.event.coverImageUrl}
                           buyerName={user ? `${user.firstName} ${user.lastName}` : undefined}
                           buyerEmail={user?.email ?? undefined}
-                          price={order.totalAmount}
+                          price={ticketsSubtotal}
                           disabled={
                             order.status === 'REFUNDED' ||
                             (order.tickets ?? []).every((t: any) => t.status === 'REFUNDED' || t.status === 'CANCELLED')
@@ -559,7 +562,7 @@ export default function MyTickets() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="glass-card p-6 max-w-md w-full border border-rose-neon/20"
+              className="glass-card p-6 max-w-md w-full border border-rose-neon/20 max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-4">
@@ -617,7 +620,7 @@ export default function MyTickets() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="glass-card p-6 max-w-md w-full border border-cyan-neon/20"
+              className="glass-card p-6 max-w-md w-full border border-cyan-neon/20 max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-4">

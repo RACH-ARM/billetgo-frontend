@@ -6,17 +6,16 @@ import {
   AreaChart, Area,
 } from 'recharts';
 import {
-  CalendarDays, Ticket, TrendingUp, TrendingDown, Users,
-  LogOut, AlertTriangle, Check, Clock, Upload, FileCheck, Phone, X,
-  Star, Shield, Award, Zap, UserCircle, Minus,
+  CalendarDays, Ticket, TrendingUp, TrendingDown,
+  LogOut, Check, Clock, Upload, FileCheck,
+  Star, Shield, Award, Zap, UserCircle, Minus, Banknote,
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
-import { useOrganizerStats, useOrganizerProfile, useUpdateProfile, useOrganizerAnalytics, useUploadKYC } from '../hooks/useOrganizer';
+import { useOrganizerStats, useOrganizerProfile, useOrganizerAnalytics, useUploadKYC, useOrganizerPayouts } from '../hooks/useOrganizer';
 import { type OrganizerEventStat } from '../services/organizerService';
 import { formatPrice } from '../utils/formatPrice';
 import Spinner from '../components/common/Spinner';
 import { SkeletonKpiGrid, SkeletonCard, SkeletonTable } from '../components/common/Skeleton';
-import Button from '../components/common/Button';
 import toast from 'react-hot-toast';
 
 // ── KPI Card ──────────────────────────────────────────────────
@@ -241,80 +240,6 @@ function AnalyticsSection({ events }: { events: OrganizerEventStat[] }) {
   );
 }
 
-// ── Mobile Money banner ───────────────────────────────────────
-function MobileMoneyBanner() {
-  const { data: profile } = useOrganizerProfile();
-  const updateProfile = useUpdateProfile();
-  const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState('');
-
-  if (!profile) return null;
-
-  const handleSave = async () => {
-    try {
-      await updateProfile.mutateAsync({ mobileMoneyNumber: value });
-      toast.success('Numéro enregistré');
-      setEditing(false);
-    } catch {
-      toast.error('Numéro invalide (8 à 15 chiffres)');
-    }
-  };
-
-  if (profile.mobileMoneyNumber && !editing) {
-    return (
-      <div className="flex items-center gap-3 px-4 py-3 mb-6 glass-card border border-green-500/20 rounded-xl">
-        <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center flex-shrink-0">
-          <Check className="w-4 h-4 text-green-400" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-xs text-white/40 uppercase tracking-widest">Numéro Mobile Money (virements)</p>
-          <p className="text-sm text-white font-mono font-semibold">{profile.mobileMoneyNumber}</p>
-        </div>
-        <button
-          onClick={() => { setValue(profile.mobileMoneyNumber!); setEditing(true); }}
-          className="text-xs text-white/30 hover:text-white transition-colors flex-shrink-0"
-        >
-          Modifier
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 px-4 py-3 mb-6 glass-card border border-rose-neon/30 rounded-xl">
-      <div className="w-8 h-8 rounded-lg bg-rose-neon/10 flex items-center justify-center flex-shrink-0">
-        <AlertTriangle className="w-4 h-4 text-rose-neon" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm text-white font-semibold">Numéro Mobile Money manquant</p>
-        <p className="text-xs text-white/40">Renseignez votre numéro Airtel ou Moov pour recevoir vos virements.</p>
-      </div>
-      {editing ? (
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <input
-            type="tel"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            placeholder="Ex: 074000000"
-            className="w-full sm:w-40 bg-bg-secondary border border-violet-neon/30 rounded-xl px-3 py-2 text-white text-sm placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors"
-            autoFocus
-          />
-          <Button size="sm" variant="primary" onClick={handleSave} isLoading={updateProfile.isLoading}>
-            <Check className="w-3.5 h-3.5" />
-          </Button>
-          <button onClick={() => setEditing(false)} className="text-white/30 hover:text-white transition-colors">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      ) : (
-        <Button size="sm" variant="primary" onClick={() => setEditing(true)}>
-          <Phone className="w-3.5 h-3.5" /> Ajouter
-        </Button>
-      )}
-    </div>
-  );
-}
-
 // ── Pending approval screen (with KYC upload) ─────────────────
 interface OrganizerProfile {
   isApproved: boolean;
@@ -442,6 +367,7 @@ export default function OrganizerDashboard() {
   const { data, isLoading } = useOrganizerStats();
   const { data: profile, isLoading: profileLoading } = useOrganizerProfile();
   const { data: analytics60 } = useOrganizerAnalytics(60);
+  const { data: payoutsData } = useOrganizerPayouts();
 
   // Calcul de tendance : 30 derniers jours vs 30 jours précédents
   const computeTrend = (key: 'tickets' | 'revenue'): number | undefined => {
@@ -511,6 +437,13 @@ export default function OrganizerDashboard() {
             <span className="hidden sm:inline">Mon compte</span>
           </Link>
           <Link
+            to="/versements"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm border transition-all text-cyan-neon border-cyan-neon/30 hover:bg-cyan-neon/10"
+          >
+            <Banknote className="w-4 h-4" />
+            <span className="hidden sm:inline">Versements</span>
+          </Link>
+          <Link
             to="/mes-evenements"
             className="neon-button text-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5"
           >
@@ -520,14 +453,20 @@ export default function OrganizerDashboard() {
         </div>
       </div>
 
-      <MobileMoneyBanner />
-
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <KpiCard title="Événements" value={data?.eventsCount ?? 0} subtitle="Total créés" Icon={CalendarDays} color="violet" />
         <KpiCard title="Billets vendus" value={(data?.globalSold ?? 0).toLocaleString('fr-FR')} subtitle="vs 30j précédents" Icon={Ticket} color="cyan" trend={trendTickets} />
         <KpiCard title="Revenus nets" value={formatPrice(data?.globalRevenue ?? 0, 'FCFA', '0 FCFA')} subtitle="vs 30j précédents" Icon={TrendingUp} color="green" trend={trendRevenue} />
-        <KpiCard title="Acheteurs" value={(data?.globalSold ?? 0).toLocaleString('fr-FR')} subtitle="Billets générés" Icon={Users} color="rose" />
+        <Link to="/versements" className="block group">
+          <KpiCard
+            title="Solde à verser"
+            value={formatPrice(payoutsData?.balanceDue ?? 0, 'FCFA', '0 FCFA')}
+            subtitle="Voir mes versements"
+            Icon={Banknote}
+            color="rose"
+          />
+        </Link>
       </div>
 
       {/* Chart */}

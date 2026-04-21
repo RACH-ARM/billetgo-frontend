@@ -174,12 +174,17 @@ export default function Checkout() {
     : 0;
   const finalTotal = Math.max(0, rawTotal - discountAmount);
 
-  // Frais de traitement pour billets gratuits uniquement (500 FCFA/billet, à la charge de l'acheteur)
+  // Frais de traitement pour billets gratuits uniquement (500 FCFA/billet)
   const FREE_TICKET_FEE = 500;
   const freeTicketFee = items.reduce((acc, item) => {
     return acc + (item.category.price === 0 ? item.quantity * FREE_TICKET_FEE : 0);
   }, 0);
-  const totalToPay = Math.max(0, finalTotal + freeTicketFee);
+  // Frais de service PayIn (2.5%) — couvre les frais Mobile Money à la charge de l'acheteur
+  // Base = prix billets après remise + frais billets gratuits
+  const PAYIN_RATE = 0.025;
+  const payinBase = Math.max(0, finalTotal + freeTicketFee);
+  const serviceFee = payinBase > 0 ? Math.round(payinBase * PAYIN_RATE) : 0;
+  const totalToPay = payinBase + serviceFee;
 
   const applyPromo = async () => {
     if (!promoInput.trim()) return;
@@ -226,6 +231,7 @@ export default function Checkout() {
         buyerName: buyerInfo.name,
         buyerEmail: buyerInfo.email || undefined,
         cgvAcceptedAt: new Date().toISOString(),
+        provider: provider ?? undefined,
         ...(promoApplied && { promoCode: promoApplied.code }),
       });
 
@@ -460,6 +466,15 @@ export default function Checkout() {
                           <span className="font-mono">{formatPrice(freeTicketFee)}</span>
                         </div>
                       )}
+                      {serviceFee > 0 && (
+                        <div className="flex justify-between items-center text-sm text-white/40">
+                          <span className="flex items-center gap-1.5">
+                            <Info className="w-3.5 h-3.5" />
+                            Frais de service Mobile Money (2.5%)
+                          </span>
+                          <span className="font-mono">{formatPrice(serviceFee)}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between items-center pt-2 border-t border-white/10">
                         <span className="font-semibold text-white">Total à payer</span>
                         <span className="font-mono text-lg font-bold text-gradient">{formatPrice(totalToPay)}</span>
@@ -691,6 +706,12 @@ export default function Checkout() {
                   <div className="flex justify-between text-xs text-white/35">
                     <span>Frais traitement billets gratuits</span>
                     <span className="font-mono">{formatPrice(freeTicketFee)}</span>
+                  </div>
+                )}
+                {serviceFee > 0 && (
+                  <div className="flex justify-between text-xs text-white/35">
+                    <span>Frais Mobile Money (2.5%)</span>
+                    <span className="font-mono">{formatPrice(serviceFee)}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-center pt-1.5 border-t border-white/5">

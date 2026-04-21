@@ -44,6 +44,8 @@ export interface Order {
   totalAmount: number;
   platformFee: number;
   organizerAmount: number;
+  serviceFee: number;
+  payinRate: number;
   status: OrderStatus;
   buyerName: string;
   buyerEmail: string | null;
@@ -65,12 +67,14 @@ export interface CreateOrderPayload {
   items: { categoryId: string; quantity: number }[];
   buyerName: string;
   buyerEmail?: string;
-  buyerPhone: string;
+  buyerPhone?: string;
   cgvAcceptedAt?: string;
   utmSource?: string;
   utmMedium?: string;
   utmCampaign?: string;
   referrer?: string;
+  provider?: 'AIRTEL_MONEY' | 'MOOV_MONEY';
+  promoCode?: string;
 }
 
 export interface InitiatePaymentPayload {

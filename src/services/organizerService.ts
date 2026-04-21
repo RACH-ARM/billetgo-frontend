@@ -100,9 +100,10 @@ export interface PayoutScheduleEntry {
   tier: string;
   percentage: number;
   scheduledDate: string;
-  status: 'PENDING' | 'RELEASED' | 'CANCELLED';
+  status: 'PENDING' | 'RELEASED' | 'CANCELLED' | 'PROCESSING';
   amountReleased: number | null;
   releasedAt: string | null;
+  requestedAt: string | null;
   isEligible: boolean;
   trancheAmount: number;
   totalOrganizerAmount: number;
@@ -115,11 +116,13 @@ export interface OrganizerPayoutSchedules {
 
 export interface OrganizerPayout {
   id: string;
-  amountSent: number;
+  amountSent: number;       // montant brut soldé de la balance
+  amountReceived: number;   // montant net reçu sur le téléphone (après frais PVit)
   mobileMoney: string;
   operator: string;
   transactionRef: string | null;
   processedAt: string;
+  pvitStatus: string;
 }
 
 export interface OrganizerPayoutSummary {
@@ -129,6 +132,20 @@ export interface OrganizerPayoutSummary {
   totalPaid: number;
   balanceDue: number;
   payouts: OrganizerPayout[];
+}
+
+export interface OrganizerDebt {
+  id: string;
+  eventId: string;
+  eventTitle: string;
+  eventDate: string;
+  amount: number;
+  totalDue: number;
+  status: 'PENDING' | 'COLLECT_INITIATED' | 'PAID' | 'COLLECT_FAILED' | 'WAIVED';
+  collectAttempts: number;
+  lastAttemptAt: string | null;
+  paidAt: string | null;
+  createdAt: string;
 }
 
 export const organizerService = {
@@ -265,5 +282,15 @@ export const organizerService = {
       headers: { 'Content-Type': undefined },
     });
     return data.data;
+  },
+
+  getMyDebts: async (): Promise<OrganizerDebt[]> => {
+    const { data } = await api.get('/organizer/debts');
+    return data.data;
+  },
+
+  retryDebtCollect: async (debtId: string, phone?: string): Promise<{ message: string }> => {
+    const { data } = await api.post(`/organizer/debts/${debtId}/retry`, phone ? { phone } : {});
+    return data;
   },
 };

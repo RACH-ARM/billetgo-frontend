@@ -14,7 +14,13 @@ export const paymentService = {
     return data.data;
   },
 
-  getPaymentStatus: async (paymentId: string): Promise<{ status: string; orderId: string }> => {
+  getPaymentStatus: async (paymentId: string): Promise<{
+    status: string;
+    orderId: string;
+    failureReason: string | null;
+    orderStatus: string;
+    orderExpiresAt: string | null;
+  }> => {
     const { data } = await api.get(`/payments/${paymentId}/status`);
     return data.data;
   },

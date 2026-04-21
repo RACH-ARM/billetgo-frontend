@@ -30,6 +30,8 @@ export const OrganizerLayout = lazy(() => import('../components/layout/Organizer
 export const Versements = lazy(() => import('../pages/Versements'));
 export const MesEvenements = lazy(() => import('../pages/MesEvenements'));
 export const MonCompte = lazy(() => import('../pages/MonCompte'));
+export const ContratOrganisateur = lazy(() => import('../pages/ContratOrganisateur'));
+export const GoogleAuthCallback = lazy(() => import('../pages/GoogleAuthCallback'));
 export const PublicLayout = lazy(() => import('../components/layout/PageLayout'));
 
 export const Spinner = () => (

@@ -4,6 +4,7 @@ import type { User, LoginPayload, RegisterPayload } from '../types/user';
 import api from '../services/api';
 import { useCartStore } from './cartStore';
 import { queryClient } from '../lib/queryClient';
+import { Sentry } from '../lib/sentry';
 
 interface AuthState {
   user: User | null;
@@ -40,6 +41,7 @@ export const useAuthStore = create<AuthState>()(
           localStorage.setItem('accessToken', accessToken);
           localStorage.setItem('refreshToken', refreshToken);
           set({ user, accessToken, refreshToken, isAuthenticated: true, isLoading: false });
+          Sentry.setUser({ id: user.id, email: user.email, username: `${user.firstName} ${user.lastName}` });
         } catch (err) {
           set({ isLoading: false });
           throw err;
@@ -55,6 +57,7 @@ export const useAuthStore = create<AuthState>()(
           localStorage.setItem('accessToken', accessToken);
           localStorage.setItem('refreshToken', refreshToken);
           set({ user, accessToken, refreshToken, isAuthenticated: true, isLoading: false });
+          Sentry.setUser({ id: user.id, email: user.email, username: `${user.firstName} ${user.lastName}` });
         } catch (err) {
           set({ isLoading: false });
           throw err;
@@ -65,6 +68,7 @@ export const useAuthStore = create<AuthState>()(
         const { refreshToken } = get();
         // 1. Vider le store et le panier de façon synchrone, avant la redirection
         set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false });
+        Sentry.setUser(null);
         useCartStore.getState().clearCart();
         // 2. Purger tout le cache React Query — aucune donnée de l'ancienne session ne survit
         queryClient.clear();
