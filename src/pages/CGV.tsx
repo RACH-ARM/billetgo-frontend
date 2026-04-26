@@ -210,7 +210,7 @@ export default function CGV() {
           <Section title="12. Contact et réclamations">
             <p>
               Pour toute réclamation relative à un achat :{' '}
-              <a href="mailto:contact@billetgo.ga" className="text-violet-neon hover:underline">contact@billetgo.ga</a>
+              <a href="mailto:contact@billetgo.net" className="text-violet-neon hover:underline">contact@billetgo.net</a>
               {' '}ou par téléphone au +241 62 557 655.
             </p>
             <p>Nos équipes vous répondent du lundi au samedi de 08h00 à 20h00 (heure de Libreville).</p>

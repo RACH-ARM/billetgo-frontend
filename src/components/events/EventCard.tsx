@@ -135,39 +135,41 @@ export default function EventCard({ event }: { event: Event }) {
         </div>
 
         {/* Body */}
-        <div className="p-2 sm:p-4">
-          <h3 className="font-bebas text-sm sm:text-xl tracking-wide text-white group-hover:text-rose-neon transition-colors line-clamp-2 sm:line-clamp-1 leading-tight">
+        <div className="p-3 sm:p-4">
+          <h3 className="font-bebas text-base sm:text-xl tracking-wide text-white group-hover:text-rose-neon transition-colors line-clamp-2 leading-tight">
             {event.title}
           </h3>
 
           {/* Prix — toujours visible */}
           <div className="mt-1.5 flex items-center justify-between gap-1">
             {isTotallySoldOut ? (
-              <span className="font-mono text-white/30 font-bold text-[10px] sm:text-sm">COMPLET</span>
+              <span className="font-mono text-white/30 font-bold text-xs sm:text-sm">COMPLET</span>
             ) : (
-              <span className="font-mono text-cyan-neon font-bold text-[10px] sm:text-base whitespace-nowrap">
+              <span className="font-mono text-cyan-neon font-bold text-xs sm:text-base whitespace-nowrap">
                 {formatPrice(minPrice)}
               </span>
             )}
             {(event.isCertified || event.organizer?.isCertified) && (
-              <span className="hidden sm:block"><CertifiedBadge /></span>
+              <CertifiedBadge />
             )}
           </div>
 
-          {/* Détails — masqués sur mobile (3 col trop étroit) */}
+          {/* Date — visible partout */}
+          <p className="text-[11px] sm:text-xs text-white/50 mt-1 truncate">{formatEventDate(event.eventDate)}</p>
+
+          {/* Compte à rebours — visible partout */}
+          <div className="mt-2">
+            {isLive
+              ? <LiveRemaining eventDate={event.eventDate} doorsOpenAt={event.doorsOpenAt} endDate={event.endDate} />
+              : isComingSoon
+                ? <span className="text-[11px] sm:text-xs font-semibold text-cyan-neon">Ouverture imminente</span>
+                : <CountdownTimer date={event.eventDate} />
+            }
+          </div>
+
+          {/* Lieu + barre de vente — masqués sur mobile */}
           <div className="hidden sm:block">
-            <p className="text-xs text-white/50 mt-1">{formatEventDate(event.eventDate)}</p>
             <p className="text-xs text-white/40 mt-0.5 truncate">{event.venueName} — {event.venueCity}</p>
-
-            <div className="mt-3">
-              {isLive
-                ? <LiveRemaining eventDate={event.eventDate} doorsOpenAt={event.doorsOpenAt} endDate={event.endDate} />
-                : isComingSoon
-                  ? <span className="text-xs font-semibold text-cyan-neon">Ouverture dans quelques instants</span>
-                  : <CountdownTimer date={event.eventDate} />
-              }
-            </div>
-
             <div className="mt-3">
               <div className="flex justify-between text-xs mb-1">
                 <span className={occupancy >= 85 ? 'text-rose-neon font-semibold' : 'text-white/40'}>
@@ -189,18 +191,12 @@ export default function EventCard({ event }: { event: Event }) {
                 />
               </div>
             </div>
-
             {event.organizer && (
               <div className="mt-3 flex items-center gap-1.5 min-w-0">
                 <span className="text-xs text-white/40 truncate">{event.organizer.companyName}</span>
               </div>
             )}
           </div>
-
-          {/* Date courte sur mobile */}
-          <p className="sm:hidden text-[10px] text-white/35 mt-0.5 truncate leading-tight">
-            {formatEventDate(event.eventDate)}
-          </p>
         </div>
       </Link>
     </motion.div>

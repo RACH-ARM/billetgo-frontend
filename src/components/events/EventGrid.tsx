@@ -25,7 +25,7 @@ interface EventGridProps {
 export default function EventGrid({ events, isLoading }: EventGridProps) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 items-start">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 items-start">
         {Array.from({ length: 8 }).map((_, i) => <SkeletonEventCard key={i} />)}
       </div>
     );
@@ -41,7 +41,7 @@ export default function EventGrid({ events, isLoading }: EventGridProps) {
   }
 
   return (
-    <div className="grid grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4 items-start">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 items-start">
       {events.map((event) => (
         <EventCard key={event.id} event={event} />
       ))}

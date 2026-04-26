@@ -9,7 +9,7 @@ import EventCard from '../components/events/EventCard';
 import CertifiedBadge from '../components/common/CertifiedBadge';
 import type { Event } from '../types/event';
 
-const SITE_URL = 'https://billetgo.ga';
+const SITE_URL = 'https://billetgo.net';
 
 interface OrganizerPublicData {
   id: string;

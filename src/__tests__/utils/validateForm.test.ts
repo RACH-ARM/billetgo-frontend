@@ -6,7 +6,7 @@ import { loginSchema, registerSchema, checkoutSchema } from '../../utils/validat
 // ---------------------------------------------------------------------------
 describe('loginSchema', () => {
   it('accepte email + password valides', () => {
-    const result = loginSchema.safeParse({ email: 'user@billetgo.ga', password: 'secret123' });
+    const result = loginSchema.safeParse({ email: 'user@billetgo.net', password: 'secret123' });
     expect(result.success).toBe(true);
   });
 
@@ -25,7 +25,7 @@ describe('loginSchema', () => {
   });
 
   it('rejette un password trop court (< 6 caractères)', () => {
-    const result = loginSchema.safeParse({ email: 'user@billetgo.ga', password: '123' });
+    const result = loginSchema.safeParse({ email: 'user@billetgo.net', password: '123' });
     expect(result.success).toBe(false);
     if (!result.success) {
       const messages = result.error.issues.map((i) => i.message);
@@ -65,7 +65,7 @@ describe('registerSchema', () => {
   const validPayload = {
     firstName: 'Tiamiyou',
     lastName: 'Arèmou',
-    email: 'tiami@billetgo.ga',
+    email: 'tiami@billetgo.net',
     password: 'MotDePasse8!',
     confirmPassword: 'MotDePasse8!',
   };

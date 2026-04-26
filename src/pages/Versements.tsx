@@ -574,10 +574,10 @@ export default function Versements() {
         </div>
         <div>
           <p className="text-sm font-semibold text-white">Une question sur vos versements ?</p>
-          <a href="mailto:support@billetgo.ga"
+          <a href="mailto:support@billetgo.net"
             className="text-xs text-violet-neon hover:text-violet-neon/70 underline underline-offset-2 transition-colors"
           >
-            support@billetgo.ga
+            support@billetgo.net
           </a>
         </div>
       </motion.div>

@@ -5,7 +5,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://res.cloudinary.com; connect-src 'self' https://api.billetgo.ga https://*.sentry.io https://fonts.googleapis.com; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none'"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://browser.sentry-cdn.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://res.cloudinary.com; connect-src 'self' https://api.billetgo.net https://*.sentry.io https://fonts.googleapis.com; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none'"
         },
         {
           "key": "X-Frame-Options",
@@ -29,7 +29,7 @@
   "rewrites": [
     {
       "source": "/sitemap.xml",
-      "destination": "https://api.billetgo.ga/sitemap.xml"
+      "destination": "https://api.billetgo.net/sitemap.xml"
     },
     {
       "source": "/((?!api/).*)",

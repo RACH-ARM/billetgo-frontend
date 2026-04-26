@@ -37,7 +37,7 @@ import type { User } from '../../types/user';
 function makeUser(overrides: Partial<User> = {}): User {
   return {
     id: 'user-abc',
-    email: 'tiami@billetgo.ga',
+    email: 'tiami@billetgo.net',
     phone: null,
     firstName: 'Tiamiyou',
     lastName: 'Arèmou',
@@ -85,7 +85,7 @@ describe('authStore — login', () => {
       data: { data: { user, accessToken: 'access-123', refreshToken: 'refresh-456' } },
     });
 
-    await useAuthStore.getState().login({ email: 'tiami@billetgo.ga', password: 'secret123' });
+    await useAuthStore.getState().login({ email: 'tiami@billetgo.net', password: 'secret123' });
 
     const state = useAuthStore.getState();
     expect(state.isAuthenticated).toBe(true);
@@ -101,7 +101,7 @@ describe('authStore — login', () => {
       data: { data: { user, accessToken: 'access-123', refreshToken: 'refresh-456' } },
     });
 
-    await useAuthStore.getState().login({ email: 'tiami@billetgo.ga', password: 'secret123' });
+    await useAuthStore.getState().login({ email: 'tiami@billetgo.net', password: 'secret123' });
 
     expect(localStorage.getItem('accessToken')).toBe('access-123');
     expect(localStorage.getItem('refreshToken')).toBe('refresh-456');
@@ -112,7 +112,7 @@ describe('authStore — login', () => {
     (api.post as ReturnType<typeof vi.fn>).mockRejectedValueOnce(error);
 
     await expect(
-      useAuthStore.getState().login({ email: 'mauvais@billetgo.ga', password: 'wrong' })
+      useAuthStore.getState().login({ email: 'mauvais@billetgo.net', password: 'wrong' })
     ).rejects.toThrow('Identifiants incorrects');
 
     expect(useAuthStore.getState().isLoading).toBe(false);

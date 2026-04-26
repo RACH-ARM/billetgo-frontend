@@ -19,7 +19,7 @@ import type { TicketCategory } from '../types/event';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 
-const SITE_URL = 'https://billetgo.ga';
+const SITE_URL = 'https://billetgo.net';
 
 export default function EventDetail() {
   const { id } = useParams<{ id: string }>();
