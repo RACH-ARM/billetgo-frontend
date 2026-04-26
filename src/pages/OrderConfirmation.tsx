@@ -54,7 +54,7 @@ interface NavState {
 // ─── Config ───────────────────────────────────────────────────────────────────
 const MAX_WAIT_MS = 2 * 60 * 1000; // 2 minutes
 const POLL_INTERVAL_MS = 3000;
-const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL || 'support@billetgo.net';
+const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL || 'support@billetgab.com';
 
 // ─── Waiting animation ────────────────────────────────────────────────────────
 function WaitingRings() {

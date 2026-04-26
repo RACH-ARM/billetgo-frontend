@@ -32,7 +32,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="border-t border-violet-neon/10 mt-10 pt-6 text-center text-xs text-white/30">
-          BilletGo © 2026 — Tous droits réservés | billetgo.net
+          BilletGo © 2026 — Tous droits réservés | billetgab.com
         </div>
       </div>
     </footer>

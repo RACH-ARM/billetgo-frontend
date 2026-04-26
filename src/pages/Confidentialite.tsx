@@ -62,7 +62,7 @@ export default function Confidentialite() {
             </p>
             <p>
               Contact :{' '}
-              <a href="mailto:contact@billetgo.net" className="text-violet-neon hover:underline">contact@billetgo.net</a>
+              <a href="mailto:contact@billetgab.com" className="text-violet-neon hover:underline">contact@billetgab.com</a>
             </p>
           </Section>
 
@@ -202,7 +202,7 @@ export default function Confidentialite() {
             </ul>
             <p>
               Pour exercer ces droits, contactez-nous à{' '}
-              <a href="mailto:contact@billetgo.net" className="text-violet-neon hover:underline">contact@billetgo.net</a>.
+              <a href="mailto:contact@billetgab.com" className="text-violet-neon hover:underline">contact@billetgab.com</a>.
               Nous répondons dans un délai de 30 jours.
             </p>
           </Section>
@@ -227,7 +227,7 @@ export default function Confidentialite() {
           <Section title="10. Contact">
             <p>
               Pour toute question relative à la protection de vos données personnelles :{' '}
-              <a href="mailto:contact@billetgo.net" className="text-violet-neon hover:underline">contact@billetgo.net</a>
+              <a href="mailto:contact@billetgab.com" className="text-violet-neon hover:underline">contact@billetgab.com</a>
               {' '}ou par téléphone au +241 62 557 655.
             </p>
           </Section>

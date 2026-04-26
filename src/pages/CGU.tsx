@@ -67,7 +67,7 @@ export default function CGU() {
               BilletGo et reversés progressivement aux organisateurs selon les conditions définies aux présentes.
             </p>
             <p>
-              L'accès à la plateforme est disponible à l'adresse billetgo.net et via l'application web progressive (PWA).
+              L'accès à la plateforme est disponible à l'adresse billetgab.com et via l'application web progressive (PWA).
             </p>
           </Section>
 
@@ -264,7 +264,7 @@ export default function CGU() {
           <Section title="16. Contact">
             <p>
               Pour toute question relative aux présentes CGU :{' '}
-              <a href="mailto:contact@billetgo.net" className="text-violet-neon hover:underline">contact@billetgo.net</a>
+              <a href="mailto:contact@billetgab.com" className="text-violet-neon hover:underline">contact@billetgab.com</a>
               {' '}ou par téléphone au +241 62 557 655.
             </p>
           </Section>

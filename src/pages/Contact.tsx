@@ -5,7 +5,7 @@ import api from '../services/api';
 
 const CONTACT_INFO = [
   { icon: Phone,   label: 'WhatsApp',  value: '+241 62 557 655',         href: 'https://wa.me/24162557655' },
-  { icon: Mail,    label: 'Email',     value: 'contact@billetgo.net',    href: 'mailto:contact@billetgo.net' },
+  { icon: Mail,    label: 'Email',     value: 'contact@billetgab.com',    href: 'mailto:contact@billetgab.com' },
   { icon: MapPin,  label: 'Adresse',   value: 'Libreville, Gabon',      href: null },
 ];
 

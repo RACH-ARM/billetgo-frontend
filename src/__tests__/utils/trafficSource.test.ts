@@ -45,13 +45,13 @@ describe('captureTrafficSource', () => {
   });
 
   it('ne stocke rien pour du trafic direct (pas d\'UTM, pas de referrer)', () => {
-    setLocation('https://billetgo.net/');
+    setLocation('https://billetgab.com/');
     captureTrafficSource();
     expect(sessionStorage.getItem('billetgo_traffic')).toBeNull();
   });
 
   it('capture utm_source et utm_campaign', () => {
-    setLocation('https://billetgo.net/?utm_source=facebook&utm_campaign=manshow');
+    setLocation('https://billetgab.com/?utm_source=facebook&utm_campaign=manshow');
     captureTrafficSource();
     const data = getTrafficSource();
     expect(data.utmSource).toBe('facebook');
@@ -59,21 +59,21 @@ describe('captureTrafficSource', () => {
   });
 
   it('capture utm_medium', () => {
-    setLocation('https://billetgo.net/?utm_source=instagram&utm_medium=story');
+    setLocation('https://billetgab.com/?utm_source=instagram&utm_medium=story');
     captureTrafficSource();
     expect(getTrafficSource().utmMedium).toBe('story');
   });
 
   it('capture le referrer externe', () => {
-    setLocation('https://billetgo.net/');
+    setLocation('https://billetgab.com/');
     setReferrer('https://facebook.com/evenement/123');
     captureTrafficSource();
     expect(getTrafficSource().referrer).toBe('https://facebook.com/evenement/123');
   });
 
   it('ignore le referrer de la même origine', () => {
-    setLocation('https://billetgo.net/checkout');
-    setReferrer('https://billetgo.net/events');
+    setLocation('https://billetgab.com/checkout');
+    setReferrer('https://billetgab.com/events');
     captureTrafficSource();
     // Pas d'UTM non plus → rien stocké
     expect(sessionStorage.getItem('billetgo_traffic')).toBeNull();
@@ -81,11 +81,11 @@ describe('captureTrafficSource', () => {
 
   it('ne remplace pas une source déjà capturée dans la session (first-touch)', () => {
     // Première visite
-    setLocation('https://billetgo.net/?utm_source=facebook');
+    setLocation('https://billetgab.com/?utm_source=facebook');
     captureTrafficSource();
 
     // Deuxième visite dans la même session avec une autre source
-    setLocation('https://billetgo.net/?utm_source=google');
+    setLocation('https://billetgab.com/?utm_source=google');
     captureTrafficSource();
 
     // La source d'origine (facebook) doit être conservée

@@ -137,7 +137,7 @@ export default function ContratPrint() {
       {/* Art. 7 */}
       <section style={{ marginBottom: 20 }}>
         <h2 style={h2Style}>Article 7 — Annulation d'événement — Procédure obligatoire</h2>
-        <p>En cas d'annulation ou de report, l'Organisateur doit notifier BilletGo par email à <strong>support@billetgo.net</strong> dans les <strong>24 heures</strong> suivant la décision, et utiliser la fonctionnalité « Annuler l'événement » depuis son tableau de bord.</p>
+        <p>En cas d'annulation ou de report, l'Organisateur doit notifier BilletGo par email à <strong>support@billetgab.com</strong> dans les <strong>24 heures</strong> suivant la décision, et utiliser la fonctionnalité « Annuler l'événement » depuis son tableau de bord.</p>
         <p>BilletGo procède au remboursement des acheteurs dans un délai de 5 à 10 jours ouvrables. Toute annulation non signalée ou tentative de détournement sera poursuivie pénalement sur le fondement de l'abus de confiance (article 247 du Code pénal gabonais).</p>
       </section>
 
@@ -178,7 +178,7 @@ export default function ContratPrint() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 16 }}>
           <div style={{ borderTop: '1px solid #999', paddingTop: 8 }}>
             <p style={{ margin: 0, fontSize: 12, color: '#555' }}>Pour BilletGo</p>
-            <p style={{ margin: '4px 0 0', fontSize: 12 }}>BilletGo — billetgo.net</p>
+            <p style={{ margin: '4px 0 0', fontSize: 12 }}>BilletGo — billetgab.com</p>
           </div>
           <div style={{ borderTop: '1px solid #999', paddingTop: 8 }}>
             <p style={{ margin: 0, fontSize: 12, color: '#555' }}>L'Organisateur (signature électronique)</p>
@@ -188,7 +188,7 @@ export default function ContratPrint() {
       </div>
 
       <p style={{ marginTop: 24, fontSize: 11, color: '#888', textAlign: 'center' }}>
-        BilletGo — support@billetgo.net — billetgo.net — Document généré le {now}
+        BilletGo — support@billetgab.com — billetgab.com — Document généré le {now}
       </p>
     </div>
   );

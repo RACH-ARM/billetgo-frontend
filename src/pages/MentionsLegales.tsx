@@ -68,7 +68,7 @@ export default function MentionsLegales() {
             <Row label="N° RCCM" value="[À compléter — Registre du Commerce de Libreville]" />
             <Row label="Siège social" value="Libreville, Gabon" />
             <Row label="Directeur de publication" value="Tiamiyou Arèmou" />
-            <Row label="Email de contact" value={<a href="mailto:contact@billetgo.net" className="text-violet-neon hover:underline">contact@billetgo.net</a>} />
+            <Row label="Email de contact" value={<a href="mailto:contact@billetgab.com" className="text-violet-neon hover:underline">contact@billetgab.com</a>} />
             <Row label="Téléphone" value="+241 62 557 655" />
           </Section>
 
@@ -130,7 +130,7 @@ export default function MentionsLegales() {
 
           <Section title="Propriété intellectuelle">
             <p>
-              Le site billetgo.net, son contenu, son design, ses logos et l'ensemble du code source
+              Le site billetgab.com, son contenu, son design, ses logos et l'ensemble du code source
               sont la propriété exclusive de Tiamiyou Arèmou, concepteur et exploitant de BilletGo.
               Toute reproduction totale ou partielle est interdite sans autorisation écrite préalable.
             </p>
