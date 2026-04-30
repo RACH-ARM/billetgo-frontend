@@ -20,7 +20,7 @@ export default function CGU() {
       const url = URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'cgu-billetgo.pdf';
+      a.download = 'cgu-billetgab.pdf';
       a.click();
       URL.revokeObjectURL(url);
     } catch {
@@ -56,15 +56,15 @@ export default function CGU() {
 
           <Section title="1. Présentation de la plateforme">
             <p>
-              BilletGo est une plateforme de billetterie événementielle en ligne conçue et exploitée par{' '}
+              BilletGab est une plateforme de billetterie événementielle en ligne conçue et exploitée par{' '}
               <span className="text-white">Tiamiyou Arèmou</span>, basée à Libreville, Gabon.
               Elle permet aux utilisateurs d'acheter des billets pour des événements organisés au Gabon,
               aux organisateurs de créer et gérer leurs événements, et aux scanners de valider les billets à l'entrée.
             </p>
             <p>
-              BilletGo agit en qualité d'intermédiaire technique et de séquestre (escrow) entre les acheteurs
+              BilletGab agit en qualité d'intermédiaire technique et de séquestre (escrow) entre les acheteurs
               et les organisateurs d'événements. Les fonds collectés auprès des acheteurs sont détenus par
-              BilletGo et reversés progressivement aux organisateurs selon les conditions définies aux présentes.
+              BilletGab et reversés progressivement aux organisateurs selon les conditions définies aux présentes.
             </p>
             <p>
               L'accès à la plateforme est disponible à l'adresse billetgab.com et via l'application web progressive (PWA).
@@ -73,7 +73,7 @@ export default function CGU() {
 
           <Section title="2. Acceptation des CGU">
             <p>
-              L'utilisation de BilletGo implique l'acceptation pleine et entière des présentes Conditions Générales
+              L'utilisation de BilletGab implique l'acceptation pleine et entière des présentes Conditions Générales
               d'Utilisation. Toute personne qui ne les accepte pas doit s'abstenir d'utiliser la plateforme.
             </p>
             <p>
@@ -90,8 +90,8 @@ export default function CGU() {
             </p>
             <p>Quatre types de comptes existent sur la plateforme :</p>
             <ul className="list-disc list-inside space-y-1 pl-2">
-              <li><span className="text-white">Acheteur (BUYER)</span> — peut acheter des billets, accéder à ses commandes, demander des remboursements ou transférer ses billets.</li>
-              <li><span className="text-white">Organisateur (ORGANIZER)</span> — peut créer des événements après validation KYC et approbation par l'équipe BilletGo.</li>
+              <li><span className="text-white">Acheteur (BUYER)</span> — peut acheter des billets, accéder à ses commandes et transférer ses billets.</li>
+              <li><span className="text-white">Organisateur (ORGANIZER)</span> — peut créer des événements après validation KYC et approbation par l'équipe BilletGab.</li>
               <li><span className="text-white">Scanner</span> — peut valider les billets à l'entrée des événements auxquels il est assigné par un organisateur ou un administrateur.</li>
               <li><span className="text-white">Administrateur (ADMIN)</span> — gère la plateforme, valide les événements, traite les remboursements et libère les versements (usage interne uniquement).</li>
             </ul>
@@ -102,7 +102,7 @@ export default function CGU() {
           </Section>
 
           <Section title="4. Utilisation de la plateforme">
-            <p>L'utilisateur s'engage à utiliser BilletGo de manière loyale et conforme aux lois en vigueur au Gabon. Sont notamment interdits :</p>
+            <p>L'utilisateur s'engage à utiliser BilletGab de manière loyale et conforme aux lois en vigueur au Gabon. Sont notamment interdits :</p>
             <ul className="list-disc list-inside space-y-1 pl-2">
               <li>La revente de billets à des prix supérieurs au prix d'achat (scalping).</li>
               <li>La création de comptes fictifs ou l'utilisation d'identités usurpées.</li>
@@ -116,7 +116,7 @@ export default function CGU() {
 
           <Section title="5. Conditions spécifiques aux organisateurs">
             <p>
-              Pour devenir organisateur sur BilletGo, toute personne physique ou morale doit :
+              Pour devenir organisateur sur BilletGab, toute personne physique ou morale doit :
             </p>
             <ul className="list-disc list-inside space-y-1 pl-2">
               <li>Soumettre un document d'identité valide (CNI, passeport ou RCCM) via la procédure KYC de la plateforme.</li>
@@ -124,8 +124,8 @@ export default function CGU() {
               <li>Accepter les présentes CGU et les CGV, y compris les conditions de versement progressif.</li>
             </ul>
             <p>
-              Tout compte organisateur est soumis à validation par l'équipe BilletGo avant d'être autorisé à publier
-              des événements. BilletGo se réserve le droit de refuser ou de suspendre tout compte organisateur
+              Tout compte organisateur est soumis à validation par l'équipe BilletGab avant d'être autorisé à publier
+              des événements. BilletGab se réserve le droit de refuser ou de suspendre tout compte organisateur
               sans justification préalable, notamment en cas de suspicion de fraude ou de non-conformité.
             </p>
             <p>
@@ -137,58 +137,39 @@ export default function CGU() {
 
           <Section title="6. Validation et publication des événements">
             <p>
-              Tout événement créé sur BilletGo est soumis à une procédure de validation avant publication :
+              Tout événement créé sur BilletGab est soumis à une procédure de validation avant publication :
             </p>
             <ol className="list-decimal list-inside space-y-1 pl-2">
               <li>L'organisateur soumet l'événement (statut : En révision).</li>
-              <li>L'équipe BilletGo examine l'événement dans un délai de 24 à 72 heures.</li>
+              <li>L'équipe BilletGab examine l'événement dans un délai de 24 à 72 heures.</li>
               <li>L'événement est approuvé, publié ou retourné pour modifications.</li>
             </ol>
             <p>
-              BilletGo se réserve le droit de refuser tout événement contraire aux lois gabonaises,
+              BilletGab se réserve le droit de refuser tout événement contraire aux lois gabonaises,
               aux bonnes mœurs, ou aux présentes CGU. La publication différée (date programmée) est disponible
               pour les organisateurs approuvés.
             </p>
           </Section>
 
-          <Section title="7. Séquestre et versements progressifs">
+          <Section title="7. Séquestre et versements">
             <p>
-              BilletGo collecte l'intégralité des fonds des acheteurs et les conserve en qualité de séquestre
-              (escrow) jusqu'au reversement à l'organisateur selon un calendrier progressif défini par le
-              niveau de confiance (tier) de l'organisateur :
-            </p>
-            <ul className="list-disc list-inside space-y-1 pl-2">
-              <li><span className="text-white">Nouveau</span> — jusqu'à 70% à J-3, solde à J+7.</li>
-              <li><span className="text-white">Approuvé</span> — jusqu'à 40% à J-14, 80% à J-3, 100% à J+7.</li>
-              <li><span className="text-white">Certifié</span> — jusqu'à 60% à J-14, 90% à J-3, 100% à J+7.</li>
-              <li><span className="text-white">Premium</span> — jusqu'à 80% à J-14, 95% à J-3, 100% à J+7.</li>
-            </ul>
-            <p>
-              Les montants de chaque versement sont calculés sur la base des ventes réelles au moment
-              du versement, déduction faite des tranches précédemment versées. BilletGo se réserve le droit
-              de retarder ou de suspendre un versement en cas de litige, de demandes de remboursement en cours,
-              ou de suspicion de fraude.
-            </p>
-            <p>
-              En cas d'annulation d'un événement par l'organisateur après qu'une ou plusieurs tranches ont
-              été versées, l'organisateur s'engage à rembourser BilletGo des sommes nécessaires à l'indemnisation
-              complète des acheteurs. BilletGo se réserve le droit de poursuivre l'organisateur par toute voie
-              de droit pour recouvrer les sommes dues, conformément au droit OHADA.
+              BilletGab collecte l'intégralité des fonds des acheteurs et les conserve en qualité de séquestre
+              (escrow) jusqu'au reversement à l'organisateur. Les organisateurs peuvent demander un virement
+              de leur solde disponible depuis la page Versements. BilletGab se réserve le droit
+              de retarder ou de suspendre un versement en cas de litige ou de suspicion de fraude.
             </p>
           </Section>
 
-          <Section title="8. Remboursements et transferts de billets">
+          <Section title="8. Transferts de billets">
             <p>
-              Les acheteurs peuvent, selon les conditions définies aux CGV :
+              Les acheteurs peuvent transférer un billet à une autre personne via la fonctionnalité de transfert
+              disponible dans leur espace « Mes Billets ». Le transfert invalide l'ancien QR Code et génère
+              un nouveau QR Code au nom du destinataire.
             </p>
-            <ul className="list-disc list-inside space-y-1 pl-2">
-              <li>Soumettre une demande de remboursement volontaire, soumise à approbation par BilletGo.</li>
-              <li>Transférer un billet à une autre personne via la fonctionnalité de transfert de la plateforme.</li>
-            </ul>
             <p>
-              En cas d'annulation officielle d'un événement par l'organisateur, BilletGo génère automatiquement
-              les demandes de remboursement pour tous les acheteurs concernés et les notifie immédiatement.
-              Le remboursement intégral du prix d'achat est garanti dans la limite des fonds retenus en séquestre.
+              <span className="text-white font-semibold">Les billets sont non remboursables.</span>{' '}
+              En cas d'annulation d'un événement, les acheteurs doivent contacter directement l'organisateur
+              pour toute demande de remboursement. BilletGab n'intervient pas dans le traitement des remboursements.
             </p>
           </Section>
 
@@ -196,16 +177,16 @@ export default function CGU() {
             <p>
               Pour les événements complets (sold-out), les utilisateurs peuvent s'inscrire sur une liste d'attente
               en fournissant leur email et/ou numéro de téléphone. En cas de libération d'une place, les personnes
-              inscrites sur la liste d'attente sont notifiées par ordre d'inscription (FIFO). BilletGo ne garantit
+              inscrites sur la liste d'attente sont notifiées par ordre d'inscription (FIFO). BilletGab ne garantit
               pas l'obtention d'un billet aux inscrits sur liste d'attente.
             </p>
           </Section>
 
           <Section title="10. QR Codes et sécurité des billets">
             <p>
-              Chaque billet généré sur BilletGo est associé à un QR Code unique, signé cryptographiquement
+              Chaque billet généré sur BilletGab est associé à un QR Code unique, signé cryptographiquement
               par un algorithme HMAC-SHA256. Tout QR Code falsifié, dupliqué ou altéré sera détecté lors du
-              scan à l'entrée et le billet correspondant sera invalide. BilletGo ne saurait être tenu responsable
+              scan à l'entrée et le billet correspondant sera invalide. BilletGab ne saurait être tenu responsable
               de l'accès refusé résultant d'un billet frauduleux ou partagé à des tiers.
             </p>
             <p>
@@ -217,37 +198,37 @@ export default function CGU() {
 
           <Section title="11. Propriété intellectuelle">
             <p>
-              L'ensemble des éléments de la plateforme BilletGo (logo, design, textes, code source, base de données)
-              est la propriété exclusive de Tiamiyou Arèmou, concepteur et exploitant de BilletGo.
+              L'ensemble des éléments de la plateforme BilletGab (logo, design, textes, code source, base de données)
+              est la propriété exclusive de Tiamiyou Arèmou, concepteur et exploitant de BilletGab.
               Toute reproduction, même partielle, est interdite sans autorisation préalable écrite.
             </p>
           </Section>
 
           <Section title="12. Disponibilité du service">
             <p>
-              BilletGo s'efforce d'assurer la disponibilité de la plateforme 24h/24 et 7j/7. Toutefois,
-              des interruptions pour maintenance ou pour des raisons techniques peuvent survenir. BilletGo ne
+              BilletGab s'efforce d'assurer la disponibilité de la plateforme 24h/24 et 7j/7. Toutefois,
+              des interruptions pour maintenance ou pour des raisons techniques peuvent survenir. BilletGab ne
               saurait être tenu responsable des conséquences d'une interruption de service.
             </p>
           </Section>
 
           <Section title="13. Responsabilité">
             <p>
-              BilletGo agit en tant qu'intermédiaire technique et séquestre entre les acheteurs et les organisateurs.
-              BilletGo ne saurait être tenu responsable du contenu des événements, des annulations décidées
+              BilletGab agit en tant qu'intermédiaire technique entre les acheteurs et les organisateurs.
+              BilletGab ne saurait être tenu responsable du contenu des événements, des annulations décidées
               par les organisateurs, ni des problèmes survenant lors des événements eux-mêmes (incidents,
               blessures, force majeure, etc.).
             </p>
             <p>
-              En cas d'annulation d'événement imputable à un organisateur, la responsabilité financière
-              de BilletGo est limitée aux fonds effectivement retenus en séquestre au moment de l'annulation.
-              Pour toute somme excédentaire, la responsabilité incombe exclusivement à l'organisateur.
+              En cas d'annulation d'un événement, la responsabilité du remboursement des acheteurs incombe
+              exclusivement à l'organisateur. BilletGab n'assume aucune obligation de remboursement
+              et n'intervient pas dans le traitement des indemnisations entre acheteurs et organisateurs.
             </p>
           </Section>
 
           <Section title="14. Modifications des CGU">
             <p>
-              BilletGo se réserve le droit de modifier les présentes CGU à tout moment. Les utilisateurs seront
+              BilletGab se réserve le droit de modifier les présentes CGU à tout moment. Les utilisateurs seront
               informés de toute modification significative par notification sur la plateforme ou par email.
               La poursuite de l'utilisation de la plateforme après notification vaut acceptation des nouvelles conditions.
             </p>

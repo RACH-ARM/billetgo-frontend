@@ -107,7 +107,7 @@ const STEPS = [
     num: '03',
     Icon: Share2,
     title: 'Publiez et vendez immédiatement',
-    desc: 'Votre événement est live sur BilletGo. Partagez le lien sur vos réseaux et regardez les ventes décoller.',
+    desc: 'Votre événement est live sur BilletGab. Partagez le lien sur vos réseaux et regardez les ventes décoller.',
     color: 'cyan' as const,
   },
   {
@@ -184,7 +184,7 @@ export default function OrganizerLanding() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="text-white/50 text-base max-w-2xl mx-auto mb-7 leading-relaxed"
           >
-            BilletGo transforme la gestion de vos événements : billetterie en ligne, paiement Mobile Money instantané, contrôle des entrées par QR code. Tout ce qu'il vous faut pour remplir vos salles au Gabon.
+            BilletGab transforme la gestion de vos événements : billetterie en ligne, paiement Mobile Money instantané, contrôle des entrées par QR code. Tout ce qu'il vous faut pour remplir vos salles au Gabon.
           </motion.p>
 
           <motion.div
@@ -324,9 +324,9 @@ export default function OrganizerLanding() {
             viewport={{ once: true }}
             className="text-center mb-8"
           >
-            <p className="text-xs text-rose-neon uppercase tracking-widest font-semibold mb-3">Ce que BilletGo règle définitivement</p>
+            <p className="text-xs text-rose-neon uppercase tracking-widest font-semibold mb-3">Ce que BilletGab règle définitivement</p>
             <h2 className="font-bebas text-3xl sm:text-4xl tracking-wider text-white mb-2">Les problèmes résolus</h2>
-            <p className="text-white/40 text-sm max-w-xl mx-auto">Chaque organisateur au Gabon a déjà vécu au moins un de ces problèmes. BilletGo les règle tous.</p>
+            <p className="text-white/40 text-sm max-w-xl mx-auto">Chaque organisateur au Gabon a déjà vécu au moins un de ces problèmes. BilletGab les règle tous.</p>
           </motion.div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -369,7 +369,7 @@ export default function OrganizerLanding() {
           >
             <p className="text-xs text-violet-neon uppercase tracking-widest font-semibold mb-3">Tarification</p>
             <h2 className="font-bebas text-3xl sm:text-4xl tracking-wider text-white mb-2">Une seule commission. Tout inclus.</h2>
-            <p className="text-white/40 text-sm max-w-xl mx-auto">Pas d'abonnement. Pas de frais de création. Pas de niveaux confus. Une règle simple : BilletGo perçoit 10% uniquement sur les billets que vous vendez.</p>
+            <p className="text-white/40 text-sm max-w-xl mx-auto">Pas d'abonnement. Pas de frais de création. Pas de niveaux confus. Une règle simple : BilletGab perçoit 10% uniquement sur les billets que vous vendez.</p>
           </motion.div>
 
           <div className="glass-card border border-violet-neon/30 overflow-hidden">
@@ -417,7 +417,7 @@ export default function OrganizerLanding() {
                   </div>
                   <div>
                     <p className="font-mono text-2xl text-red-400 font-bold">− 750 000</p>
-                    <p className="text-white/30 text-xs mt-1">FCFA — commission BilletGo (10%)</p>
+                    <p className="text-white/30 text-xs mt-1">FCFA — commission BilletGab (10%)</p>
                   </div>
                   <div>
                     <p className="font-mono text-2xl text-green-400 font-bold">6 750 000</p>
@@ -432,7 +432,7 @@ export default function OrganizerLanding() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-white/60 text-center">
                 {[
                   { Icon: CalendarDays, text: 'Commission par événement — aucun abonnement annuel' },
-                  { Icon: Banknote,     text: 'Versement organisé directement par BilletGo en Mobile Money' },
+                  { Icon: Banknote,     text: 'Versement organisé directement par BilletGab en Mobile Money' },
                   { Icon: BarChart2,    text: 'Relevé de ventes disponible en temps réel dans votre dashboard' },
                 ].map((item, i) => (
                   <div key={i} className="flex flex-col items-center gap-2">
@@ -486,15 +486,15 @@ export default function OrganizerLanding() {
                   <span className="text-rose-neon">Disick Man Show</span>
                 </h2>
                 <p className="text-white/50 text-sm leading-relaxed mb-4">
-                  BilletGo est connecté à Disick Man Show (DMS), le collectif événementiel le plus actif au Gabon. Si vous souhaitez travailler avec leurs influenceurs et créateurs de contenu pour promouvoir votre événement, BilletGo peut vous mettre directement en contact.
+                  BilletGab est connecté à Disick Man Show (DMS), le collectif événementiel le plus actif au Gabon. Si vous souhaitez travailler avec leurs influenceurs et créateurs de contenu pour promouvoir votre événement, BilletGab peut vous mettre directement en contact.
                 </p>
                 <p className="text-white/40 text-xs leading-relaxed mb-4">
-                  DMS et leurs influenceurs restent indépendants — ils définissent leurs propres tarifs et conditions. BilletGo facilite uniquement la mise en relation. Ce que vous négociez avec eux vous appartient.
+                  DMS et leurs influenceurs restent indépendants — ils définissent leurs propres tarifs et conditions. BilletGab facilite uniquement la mise en relation. Ce que vous négociez avec eux vous appartient.
                 </p>
 
                 <ul className="space-y-3">
                   {[
-                    'Mise en relation directe avec l\'équipe DMS via BilletGo',
+                    'Mise en relation directe avec l\'équipe DMS via BilletGab',
                     'Accès à des créateurs de contenu actifs dans l\'événementiel gabonais',
                     'Collaboration sur Instagram, TikTok et réseaux communautaires locaux',
                     'Conditions et tarifs négociés directement entre vous et les influenceurs',
@@ -513,7 +513,7 @@ export default function OrganizerLanding() {
                   <span className="font-bebas text-3xl tracking-widest text-white leading-none">DMS</span>
                   <span className="font-bebas text-sm tracking-widest text-rose-neon">DISICK MAN SHOW</span>
                 </div>
-                <span className="text-xs text-white/30 text-center max-w-[180px]">Réseau influenceurs — mise en contact via BilletGo</span>
+                <span className="text-xs text-white/30 text-center max-w-[180px]">Réseau influenceurs — mise en contact via BilletGab</span>
               </div>
             </div>
           </motion.div>
@@ -530,7 +530,7 @@ export default function OrganizerLanding() {
                 Vos clients paient comme ils le font déjà — avec leur téléphone.
               </h2>
               <p className="text-white/50 text-sm leading-relaxed mb-4">
-                Fini les files d'attente aux guichets, les billets perdus et les faux billets. BilletGo s'appuie sur Airtel Money et Moov Money — les solutions que vos clients utilisent déjà chaque jour.
+                Fini les files d'attente aux guichets, les billets perdus et les faux billets. BilletGab s'appuie sur Airtel Money et Moov Money — les solutions que vos clients utilisent déjà chaque jour.
               </p>
               <ul className="space-y-3">
                 {[
@@ -577,7 +577,7 @@ export default function OrganizerLanding() {
               Prêt à remplir votre prochain événement ?
             </h2>
             <p className="text-white/40 text-sm mb-7">
-              Rejoignez les organisateurs qui font confiance à BilletGo. Inscription gratuite, premier événement en ligne en moins d'une heure.
+              Rejoignez les organisateurs qui font confiance à BilletGab. Inscription gratuite, premier événement en ligne en moins d'une heure.
             </p>
             <Link to={ctaPath}>
               <motion.button
@@ -602,7 +602,7 @@ export default function OrganizerLanding() {
         <span>·</span>
         <Link to="/contact" className="hover:text-white/70 transition-colors">Contact</Link>
         <span>·</span>
-        <span>BilletGo © 2026</span>
+        <span>BilletGab © 2026</span>
       </div>
 
     </div>

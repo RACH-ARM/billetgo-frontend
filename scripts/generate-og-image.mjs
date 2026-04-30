@@ -12,12 +12,12 @@ const publicDir = resolve(__dirname, '../public');
 // Essaie d'importer puppeteer depuis le backend voisin
 let puppeteer;
 try {
-  puppeteer = (await import('../../billetgo-backend/node_modules/puppeteer/lib/esm/puppeteer/puppeteer.js')).default;
+  puppeteer = (await import('../../billetgab-backend/node_modules/puppeteer/lib/esm/puppeteer/puppeteer.js')).default;
 } catch {
   try {
     puppeteer = (await import('puppeteer')).default;
   } catch {
-    console.error('Puppeteer introuvable. Lance : cd ../billetgo-backend && npm install');
+    console.error('Puppeteer introuvable. Lance : cd ../billetgab-backend && npm install');
     process.exit(1);
   }
 }

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, ArrowDownToLine, Loader2, CheckCircle2,
-  AlertTriangle, ChevronRight, Banknote, Receipt, Smartphone, Check,
+  AlertTriangle, ChevronRight, Receipt, Smartphone, Check,
 } from 'lucide-react';
 import { formatPrice } from '../../utils/formatPrice';
 import { normalizeGabonPhone, isValidGabonPhone, isPhoneMatchingProvider } from '../../utils/phone';
@@ -10,7 +10,8 @@ import { normalizeGabonPhone, isValidGabonPhone, isPhoneMatchingProvider } from 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface WithdrawContext {
-  grossAmount: number;
+  grossAmount: number;       // solde total disponible (max retiable)
+  presetAmount?: number;     // montant pré-rempli (ex: gains d'un événement)
   airtelPayoutRate: number;
   moovPayoutRate: number;
   label: string;
@@ -36,6 +37,8 @@ const CHUNK_MAX = 500_000;
 
 // ─── Step 1 : Choix montant + opérateur + numéro ─────────────────────────────
 
+const MIN_AMOUNT = 1_000;
+
 function PaymentStep({
   ctx,
   onNext,
@@ -45,16 +48,31 @@ function PaymentStep({
   onNext: (phone: string, operator: 'AIRTEL_MONEY' | 'MOOV_MONEY', amount: number) => void;
   onClose: () => void;
 }) {
-  const amount = ctx.grossAmount;
+  const [amount, setAmount]     = useState(ctx.presetAmount ?? ctx.grossAmount);
+  const [rawInput, setRawInput] = useState(String(ctx.presetAmount ?? ctx.grossAmount));
   const [provider, setProvider] = useState<'AIRTEL_MONEY' | 'MOOV_MONEY' | null>(null);
   const [phone, setPhone]       = useState('');
 
-  const phoneValid = provider !== null && isValidGabonPhone(phone) && isPhoneMatchingProvider(phone, provider);
+  const amountError = amount < MIN_AMOUNT
+    ? `Montant minimum : ${formatPrice(MIN_AMOUNT, 'FCFA')}`
+    : amount > ctx.grossAmount
+    ? `Dépasse le solde disponible (${formatPrice(ctx.grossAmount, 'FCFA')})`
+    : null;
+  const amountValid = amount >= MIN_AMOUNT && amount <= ctx.grossAmount;
+
+  const phoneValid = provider !== null && amountValid && isValidGabonPhone(phone) && isPhoneMatchingProvider(phone, provider);
   const mismatch   = provider !== null && phone.length >= 2 && isValidGabonPhone(phone) && !isPhoneMatchingProvider(phone, provider);
 
   const rate = provider === 'MOOV_MONEY' ? ctx.moovPayoutRate : ctx.airtelPayoutRate;
   const fee  = Math.round(amount * rate);
   const net  = amount - fee;
+
+  const handleAmountChange = (val: string) => {
+    setRawInput(val);
+    const n = parseInt(val.replace(/\D/g, ''), 10);
+    if (!isNaN(n)) setAmount(n);
+    else if (val === '') setAmount(0);
+  };
 
   return (
     <div className="space-y-5">
@@ -63,24 +81,54 @@ function PaymentStep({
         <p className="font-semibold text-white truncate">{ctx.label}</p>
       </div>
 
-      {/* Récap montant fixe */}
-      <div className="rounded-2xl bg-white/[0.03] border border-white/[0.07] overflow-hidden divide-y divide-white/[0.06]">
-        <div className="flex items-center justify-between px-4 py-3">
-          <span className="flex items-center gap-2 text-sm text-white/50"><Banknote className="w-4 h-4 text-white/25" />Montant disponible</span>
-          <span className="font-mono font-bold text-white">{formatPrice(amount, 'FCFA', '0 FCFA')}</span>
+      {/* Saisie montant */}
+      <div>
+        <p className="text-xs text-white/50 uppercase tracking-widest mb-2">
+          Montant à retirer <span className="text-rose-neon">*</span>
+        </p>
+        <div className={`flex items-center gap-2 bg-white/5 rounded-xl border transition-colors ${amountError ? 'border-rose-neon/60' : 'border-white/10 focus-within:border-violet-neon/60'}`}>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={rawInput}
+            onChange={(e) => handleAmountChange(e.target.value)}
+            placeholder="Ex : 50 000"
+            className="flex-1 bg-transparent px-4 py-3 text-white placeholder-white/20 font-mono text-lg focus:outline-none"
+          />
+          <span className="pr-4 text-white/30 text-sm font-mono flex-shrink-0">FCFA</span>
         </div>
-        <div className="flex items-center justify-between px-4 py-3">
-          <span className="flex items-center gap-2 text-sm text-white/50"><Receipt className="w-4 h-4 text-white/25" />Frais PVit ({Math.round(rate * 100)}%)</span>
-          <span className="font-mono text-rose-neon/70">− {formatPrice(fee, 'FCFA', '0 FCFA')}</span>
-        </div>
-        <div className="flex items-center justify-between px-4 py-3.5 bg-violet-neon/[0.04]">
-          <span className="text-sm font-bold text-white">Vous recevez</span>
-          <span className="font-mono font-bold text-xl text-violet-neon">{formatPrice(net, 'FCFA', '0 FCFA')}</span>
-        </div>
+        {amountError ? (
+          <p className="text-xs text-rose-neon mt-1.5">{amountError}</p>
+        ) : (
+          <p className="text-xs text-white/25 mt-1.5">Solde disponible : {formatPrice(ctx.grossAmount, 'FCFA')}</p>
+        )}
+        {/* Raccourci "Tout retirer" */}
+        {amount !== ctx.grossAmount && ctx.grossAmount > 0 && (
+          <button
+            onClick={() => { setAmount(ctx.grossAmount); setRawInput(String(ctx.grossAmount)); }}
+            className="mt-2 text-xs text-violet-neon hover:text-violet-neon/70 underline underline-offset-2 transition-colors"
+          >
+            Tout retirer ({formatPrice(ctx.grossAmount, 'FCFA')})
+          </button>
+        )}
       </div>
 
+      {/* Récap frais (visible seulement si opérateur sélectionné et montant valide) */}
+      {provider && amountValid && (
+        <div className="rounded-2xl bg-white/[0.03] border border-white/[0.07] overflow-hidden divide-y divide-white/[0.06]">
+          <div className="flex items-center justify-between px-4 py-3">
+            <span className="flex items-center gap-2 text-sm text-white/50"><Receipt className="w-4 h-4 text-white/25" />Frais {provider === 'AIRTEL_MONEY' ? 'Airtel Money' : 'Moov Money'} ({Math.round(rate * 100)}%)</span>
+            <span className="font-mono text-rose-neon/70">− {formatPrice(fee, 'FCFA', '0 FCFA')}</span>
+          </div>
+          <div className="flex items-center justify-between px-4 py-3.5 bg-violet-neon/[0.04]">
+            <span className="text-sm font-bold text-white">Vous recevez</span>
+            <span className="font-mono font-bold text-xl text-violet-neon">{formatPrice(net, 'FCFA', '0 FCFA')}</span>
+          </div>
+        </div>
+      )}
+
       {/* Notes limites opérateur */}
-      {provider && amount > CHUNK_MAX && (() => {
+      {provider && amountValid && amount > CHUNK_MAX && (() => {
         const dailyLimit = DAILY_LIMITS[provider];
         const chunks = Math.ceil(amount / CHUNK_MAX);
         const exceedsDaily = amount > dailyLimit;
@@ -193,7 +241,7 @@ function PaymentStep({
         <button
           onClick={() => {
             const normalized = normalizeGabonPhone(phone);
-            if (provider && normalized) onNext(normalized, provider, amount);
+            if (provider && normalized && amountValid) onNext(normalized, provider, amount);
           }}
           disabled={!phoneValid}
           className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-violet-neon text-white font-bold text-sm hover:bg-violet-neon/85 active:scale-[0.98] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
@@ -267,7 +315,7 @@ function ConfirmStep({
           <span className="font-mono text-white text-sm">{phone}</span>
         </div>
         <div className="flex items-center justify-between px-4 py-3">
-          <span className="text-sm text-white/50">Frais PVit</span>
+          <span className="text-sm text-white/50">Frais {opMeta.name}</span>
           <span className="font-mono text-rose-neon/70 text-sm">− {formatPrice(fee, 'FCFA')}</span>
         </div>
         <div className="flex items-center justify-between px-4 py-4 bg-violet-neon/[0.04]">

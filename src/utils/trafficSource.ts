@@ -1,4 +1,4 @@
-const SESSION_KEY = 'billetgo_traffic';
+const SESSION_KEY = 'billetgab_traffic';
 
 export interface TrafficSource {
   utmSource?: string;

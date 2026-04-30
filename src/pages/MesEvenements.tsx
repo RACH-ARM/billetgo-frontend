@@ -4,9 +4,9 @@ import {
   CalendarDays, Ticket, Download, Search,
   ChevronRight, ArrowLeft, Phone, Mail, CreditCard,
   Plus, Trash2, AlertTriangle, Check,
-  Pencil, Clock, Ban, Tag, X, Banknote, Images, ImagePlus, MapPin,
+  Pencil, Clock, Ban, X, Banknote, Images, ImagePlus, MapPin,
 } from 'lucide-react';
-import { useOrganizerStats, useEventBuyers, useCreateEvent, useUpdateEvent, useProposeChanges, useResubmitEvent, useCancelEvent, useEventPromos, useCreatePromoCode, useDeletePromoCode, useOrganizerProfile, useEventDetails, useEventWaitlist, useUploadEventGallery, useDeleteEventGalleryPhoto } from '../hooks/useOrganizer';
+import { useOrganizerStats, useEventBuyers, useCreateEvent, useUpdateEvent, useProposeChanges, useResubmitEvent, useCancelEvent, useOrganizerProfile, useEventDetails, useEventWaitlist, useUploadEventGallery, useDeleteEventGalleryPhoto } from '../hooks/useOrganizer';
 import { organizerService, type OrganizerEventStat, type CreateEventTicketCategory } from '../services/organizerService';
 import { formatPrice } from '../utils/formatPrice';
 import { formatEventDate } from '../utils/formatDate';
@@ -112,26 +112,6 @@ function parseMapsCoords(url: string): { lat: number; lng: number } | null {
   if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
   m = url.match(/[?&]ll=(-?\d+\.?\d+),(-?\d+\.?\d+)/);
   if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
-  return null;
-}
-
-// ── Payout planning helpers ────────────────────────────────────
-const TIER_SCHEDULES: Record<string, { dayOffset: number; cumPct: number }[]> = {
-  NEW:       [{ dayOffset: -3,  cumPct: 0.70 }, { dayOffset:  7, cumPct: 1.00 }],
-  APPROVED:  [{ dayOffset: -14, cumPct: 0.40 }, { dayOffset: -3, cumPct: 0.80 }, { dayOffset: 7, cumPct: 1.00 }],
-  CERTIFIED: [{ dayOffset: -14, cumPct: 0.60 }, { dayOffset: -3, cumPct: 0.90 }, { dayOffset: 7, cumPct: 1.00 }],
-  PREMIUM:   [{ dayOffset: -14, cumPct: 0.80 }, { dayOffset: -3, cumPct: 0.95 }, { dayOffset: 7, cumPct: 1.00 }],
-};
-
-function getNextPayout(eventDate: string, tier: string): { date: Date; cumPct: number } | null {
-  const base = new Date(eventDate);
-  const now = new Date();
-  const schedule = TIER_SCHEDULES[tier] ?? TIER_SCHEDULES.NEW;
-  for (const { dayOffset, cumPct } of schedule) {
-    const d = new Date(base.getTime());
-    d.setDate(d.getDate() + dayOffset);
-    if (d > now) return { date: d, cumPct };
-  }
   return null;
 }
 
@@ -363,248 +343,6 @@ function WaitlistPanel({ event, onBack }: { event: OrganizerEventStat; onBack: (
   );
 }
 
-// ── Promo codes panel ─────────────────────────────────────────
-interface PromoCode {
-  id: string;
-  code: string;
-  discountType: string;
-  discountValue: string | number;
-  maxUses: number | null;
-  usedCount: number;
-  expiresAt: string | null;
-  isActive: boolean;
-  stats: { completedOrders: number; totalRevenue: number; totalDiscount: number };
-}
-
-function PromoPanel({ event, onBack }: { event: OrganizerEventStat; onBack: () => void }) {
-  const { data: promos, isLoading } = useEventPromos(event.eventId);
-  const createPromo = useCreatePromoCode(event.eventId);
-  const deletePromo = useDeletePromoCode(event.eventId);
-  const [form, setForm] = useState({
-    code: '',
-    discountType: 'PERCENT',
-    discountValue: '',
-    maxUses: '',
-    expiresAt: '',
-  });
-
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.code || !form.discountValue) {
-      toast.error('Code et valeur requis');
-      return;
-    }
-    try {
-      await createPromo.mutateAsync({
-        code: form.code.toUpperCase().trim(),
-        discountType: form.discountType,
-        discountValue: Number(form.discountValue),
-        maxUses: form.maxUses ? Number(form.maxUses) : undefined,
-        expiresAt: form.expiresAt || undefined,
-      });
-      toast.success('Code promo créé');
-      setForm({ code: '', discountType: 'PERCENT', discountValue: '', maxUses: '', expiresAt: '' });
-    } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(msg || 'Erreur lors de la création');
-    }
-  };
-
-  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
-
-  const handleDelete = async (promoId: string) => {
-    try {
-      await deletePromo.mutateAsync(promoId);
-      toast.success('Code désactivé');
-      setDeleteTarget(null);
-    } catch {
-      toast.error('Erreur');
-    }
-  };
-
-  return (
-    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-      <div className="flex flex-wrap items-center gap-4 mb-6">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 text-white/50 hover:text-white transition-colors text-sm"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Retour
-        </button>
-        <div className="flex-1 min-w-0">
-          <h2 className="font-bebas text-2xl tracking-wider text-white truncate">{event.title}</h2>
-          <p className="text-white/40 text-xs">Codes promo · {formatEventDate(event.eventDate)}</p>
-        </div>
-      </div>
-
-      {/* Create form */}
-      <div className="glass-card p-6 mb-6">
-        <h3 className="font-bebas text-lg tracking-wider text-white border-b border-white/5 pb-3 mb-4">Nouveau code promo</h3>
-        <form onSubmit={handleCreate} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className={labelCls}>Code <span className="text-rose-neon">*</span></label>
-              <input
-                value={form.code}
-                onChange={(e) => setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))}
-                placeholder="Ex: VIPNIGHT"
-                className={inputCls + ' font-mono tracking-widest uppercase'}
-              />
-            </div>
-            <div>
-              <label className={labelCls}>Type de réduction</label>
-              <select
-                value={form.discountType}
-                onChange={(e) => setForm((f) => ({ ...f, discountType: e.target.value }))}
-                className={inputCls}
-              >
-                <option value="PERCENT">Pourcentage (%)</option>
-                <option value="FIXED">Montant fixe (FCFA)</option>
-              </select>
-            </div>
-            <div>
-              <label className={labelCls}>Valeur <span className="text-rose-neon">*</span></label>
-              <input
-                type="number"
-                min={0}
-                max={form.discountType === 'PERCENT' ? 100 : undefined}
-                value={form.discountValue}
-                onChange={(e) => setForm((f) => ({ ...f, discountValue: e.target.value }))}
-                placeholder={form.discountType === 'PERCENT' ? '20' : '1000'}
-                className={inputCls}
-              />
-            </div>
-            <div>
-              <label className={labelCls}>Utilisations max (vide = illimité)</label>
-              <input
-                type="number"
-                min={1}
-                value={form.maxUses}
-                onChange={(e) => setForm((f) => ({ ...f, maxUses: e.target.value }))}
-                placeholder="Ex: 50"
-                className={inputCls}
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className={labelCls}>Date d'expiration (vide = aucune)</label>
-              <input
-                type="datetime-local"
-                value={form.expiresAt}
-                onChange={(e) => setForm((f) => ({ ...f, expiresAt: e.target.value }))}
-                className={inputCls}
-              />
-            </div>
-          </div>
-          <Button type="submit" variant="primary" size="md" isLoading={createPromo.isLoading}>
-            <Plus className="w-4 h-4" /> Créer le code
-          </Button>
-        </form>
-      </div>
-
-      {/* List */}
-      {isLoading ? (
-        <div className="flex justify-center py-12"><Spinner size="lg" /></div>
-      ) : !promos || (promos as PromoCode[]).length === 0 ? (
-        <div className="text-center py-12 text-white/30 glass-card">Aucun code promo créé</div>
-      ) : (
-        <div className="glass-card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-white/5 text-white/40 text-xs uppercase tracking-widest">
-                  <th className="text-left px-5 py-3">Code</th>
-                  <th className="text-left px-5 py-3">Réduction</th>
-                  <th className="text-left px-5 py-3 hidden sm:table-cell">Utilisations</th>
-                  <th className="text-left px-5 py-3 hidden lg:table-cell">CA généré</th>
-                  <th className="text-left px-5 py-3 hidden lg:table-cell">Remises</th>
-                  <th className="text-left px-5 py-3 hidden md:table-cell">Expiration</th>
-                  <th className="text-left px-5 py-3">Statut</th>
-                  <th className="px-3 py-3" />
-                </tr>
-              </thead>
-              <tbody>
-                {(promos as PromoCode[]).map((promo) => (
-                  <tr key={promo.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-                    <td className="px-5 py-4 font-mono font-bold text-violet-neon tracking-widest text-sm">
-                      {promo.code}
-                    </td>
-                    <td className="px-5 py-4 font-mono font-bold text-cyan-neon">
-                      {promo.discountType === 'PERCENT'
-                        ? `-${promo.discountValue}%`
-                        : `-${formatPrice(Number(promo.discountValue))}`}
-                    </td>
-                    <td className="px-5 py-4 hidden sm:table-cell">
-                      <div className="flex items-center gap-2">
-                        <span className="text-white/60 text-sm">
-                          {promo.usedCount}{promo.maxUses ? `/${promo.maxUses}` : ''}
-                        </span>
-                        {promo.maxUses && promo.maxUses > 0 && (
-                          <div className="w-16 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                            <div
-                              className="h-full rounded-full bg-violet-neon"
-                              style={{ width: `${Math.min((promo.usedCount / promo.maxUses) * 100, 100)}%` }}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-5 py-4 hidden lg:table-cell">
-                      <span className="font-mono text-cyan-neon text-xs">
-                        {promo.stats?.completedOrders > 0 ? formatPrice(promo.stats.totalRevenue) : '—'}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 hidden lg:table-cell">
-                      <span className="font-mono text-rose-neon/70 text-xs">
-                        {promo.stats?.totalDiscount > 0 ? `- ${formatPrice(promo.stats.totalDiscount)}` : '—'}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-white/40 text-xs hidden md:table-cell">
-                      {promo.expiresAt
-                        ? new Date(promo.expiresAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
-                        : '—'}
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${promo.isActive ? 'bg-green-500/20 text-green-400' : 'bg-white/10 text-white/30'}`}>
-                        {promo.isActive ? 'Actif' : 'Désactivé'}
-                      </span>
-                    </td>
-                    <td className="px-3 py-4">
-                      {promo.isActive && (
-                        <button
-                          onClick={() => setDeleteTarget(promo.id)}
-                          className="text-white/20 hover:text-rose-neon transition-colors"
-                          title="Désactiver ce code"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Confirmation suppression promo */}
-      <AnimatePresence>
-        {deleteTarget && (
-          <ConfirmModal
-            title="DÉSACTIVER LE CODE"
-            message="Ce code promo sera désactivé et ne pourra plus être utilisé. Cette action est irréversible."
-            confirmLabel="Désactiver"
-            onConfirm={() => handleDelete(deleteTarget)}
-            onCancel={() => setDeleteTarget(null)}
-            isLoading={deletePromo.isLoading}
-          />
-        )}
-      </AnimatePresence>
-    </motion.div>
-  );
-}
-
 // ── Create Event Form ──────────────────────────────────────────
 type CreateEventFormState = {
   title: string; subtitle: string; description: string; category: string;
@@ -614,7 +352,7 @@ type CreateEventFormState = {
   maxTicketsPerOrder: number;
 };
 
-const DRAFT_KEY = 'billetgo_create_event_draft';
+const DRAFT_KEY = 'billetgab_create_event_draft';
 
 function loadDraft() {
   try {
@@ -981,7 +719,7 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
             className="mt-0.5 accent-violet-500 w-4 h-4 flex-shrink-0"
           />
           <span className="text-xs text-white/50 leading-relaxed">
-            J'accepte les conditions de la plateforme BilletGo, notamment la commission de{' '}
+            J'accepte les conditions de la plateforme BilletGab, notamment la commission de{' '}
             <span className="text-white font-semibold">10%</span>{' '}
             prélevée sur chaque billet vendu.
             Je certifie être habilité à soumettre cet événement.
@@ -1481,7 +1219,6 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
 export default function MesEvenements() {
   const { data, isLoading } = useOrganizerStats();
   const { data: profile } = useOrganizerProfile();
-  const tier = profile?.tier ?? 'NEW';
   const [selectedEvent, setSelectedEvent] = useState<OrganizerEventStat | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
@@ -1489,7 +1226,6 @@ export default function MesEvenements() {
   const [editingEventStatus, setEditingEventStatus] = useState<string | null>(null);
   const [cancelTarget, setCancelTarget] = useState<{ id: string; title: string } | null>(null);
   const [cancelReason, setCancelReason] = useState('');
-  const [promoEvent, setPromoEvent] = useState<OrganizerEventStat | null>(null);
   const [waitlistEvent, setWaitlistEvent] = useState<OrganizerEventStat | null>(null);
   const cancelEvent = useCancelEvent();
 
@@ -1534,14 +1270,6 @@ export default function MesEvenements() {
             onSuccess={() => { setEditingEventId(null); setEditingEventNote(null); setEditingEventStatus(null); }}
           />
         </AnimatePresence>
-      </div>
-    );
-  }
-
-  if (promoEvent) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <PromoPanel event={promoEvent} onBack={() => setPromoEvent(null)} />
       </div>
     );
   }
@@ -1605,7 +1333,6 @@ export default function MesEvenements() {
               const hasPending = (event as any).pendingStatus === 'PENDING';
               const pendingRejected = (event as any).pendingStatus === 'REJECTED';
               const isEditable = !['CANCELLED', 'COMPLETED', 'PENDING_REVIEW'].includes(event.status);
-              const nextPayout = event.status === 'PUBLISHED' ? getNextPayout(event.eventDate, tier) : null;
               return (
                 <div
                   key={event.eventId}
@@ -1660,13 +1387,6 @@ export default function MesEvenements() {
                         Publication prévue le {new Date(event.scheduledPublishAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                       </p>
                     )}
-                    {nextPayout && (
-                      <p className="text-xs text-cyan-neon/50 mt-1.5 flex items-center gap-1">
-                        <Banknote className="w-3 h-3 flex-shrink-0" />
-                        Prochain versement : jusqu'à {Math.round(nextPayout.cumPct * 100)}% le {nextPayout.date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
-                      </p>
-                    )}
-
                     {/* Métriques + barre de remplissage */}
                     <div className="flex items-center gap-4 mt-3 flex-wrap">
                       <div className="flex items-center gap-1.5">
@@ -1703,12 +1423,6 @@ export default function MesEvenements() {
                           {['PUBLISHED', 'APPROVED'].includes(event.status) ? 'Proposer modif.' : 'Modifier'}
                         </button>
                       ) : null}
-                      <button
-                        onClick={() => setPromoEvent(event)}
-                        className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-white/5 text-white/40 hover:bg-violet-neon/10 hover:text-violet-neon border border-white/5 hover:border-violet-neon/20 transition-colors"
-                      >
-                        <Tag className="w-3 h-3" /> Promos
-                      </button>
                       <button
                         onClick={() => setWaitlistEvent(event)}
                         className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-white/5 text-white/40 hover:bg-cyan-neon/10 hover:text-cyan-neon border border-white/5 hover:border-cyan-neon/20 transition-colors"

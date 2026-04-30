@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import BilletGabLogo from '../common/BilletGabLogo';
 
 export default function Footer() {
   return (
@@ -6,7 +7,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           <div>
-            <img src="/logo.svg" alt="BilletGo" className="h-10 w-auto" />
+            <BilletGabLogo height={40} />
             <p className="mt-2 text-sm text-white/50">Ton événement. Ton ticket. Maintenant.</p>
             <p className="mt-1 text-xs text-white/30">Libreville, Gabon</p>
           </div>
@@ -32,7 +33,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="border-t border-violet-neon/10 mt-10 pt-6 text-center text-xs text-white/30">
-          BilletGo © 2026 — Tous droits réservés | billetgab.com
+          BilletGab © 2026 — Tous droits réservés | billetgab.com
         </div>
       </div>
     </footer>

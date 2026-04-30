@@ -20,7 +20,7 @@ export default function CGV() {
       const url = URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'cgv-billetgo.pdf';
+      a.download = 'cgv-billetgab.pdf';
       a.click();
       URL.revokeObjectURL(url);
     } catch {
@@ -57,13 +57,13 @@ export default function CGV() {
           <Section title="1. Objet">
             <p>
               Les présentes Conditions Générales de Vente (CGV) régissent l'ensemble des transactions
-              réalisées sur la plateforme BilletGo entre les acheteurs et les organisateurs d'événements.
-              BilletGo intervient en qualité d'intermédiaire technique et de séquestre (escrow) : les fonds
-              des acheteurs sont collectés et détenus par BilletGo, puis reversés progressivement aux
+              réalisées sur la plateforme BilletGab entre les acheteurs et les organisateurs d'événements.
+              BilletGab intervient en qualité d'intermédiaire technique et de séquestre (escrow) : les fonds
+              des acheteurs sont collectés et détenus par BilletGab, puis reversés progressivement aux
               organisateurs selon les conditions définies aux CGU.
             </p>
             <p>
-              Toute commande passée sur BilletGo implique l'acceptation pleine et entière des présentes CGV
+              Toute commande passée sur BilletGab implique l'acceptation pleine et entière des présentes CGV
               ainsi que des Conditions Générales d'Utilisation (CGU).
             </p>
           </Section>
@@ -74,7 +74,7 @@ export default function CGV() {
               (XAF), toutes taxes comprises (TTC).
             </p>
             <p>
-              BilletGo perçoit une commission sur chaque billet vendu, incluse dans le prix affiché à
+              BilletGab perçoit une commission sur chaque billet vendu, incluse dans le prix affiché à
               l'acheteur (l'acheteur ne paie pas de frais supplémentaires). Pour les billets gratuits, des
               frais fixes de service de <span className="text-white font-semibold">500 FCFA</span> par billet
               sont appliqués de manière systématique.
@@ -88,7 +88,7 @@ export default function CGV() {
           <Section title="3. Processus d'achat">
             <p>L'achat d'un ou plusieurs billets se déroule en deux étapes successives :</p>
             <ol className="list-decimal list-inside space-y-1 pl-2">
-              <li>Sélection des billets, récapitulatif de commande et application éventuelle d'un code promo.</li>
+              <li>Sélection des billets et récapitulatif de commande.</li>
               <li>Saisie des informations acheteur, choix de l'opérateur mobile money, saisie du numéro à débiter et confirmation.</li>
             </ol>
             <p>
@@ -100,7 +100,7 @@ export default function CGV() {
 
           <Section title="4. Moyens de paiement">
             <p>
-              BilletGo accepte uniquement les paiements par mobile money via les opérateurs gabonais :
+              BilletGab accepte uniquement les paiements par mobile money via les opérateurs gabonais :
             </p>
             <ul className="list-disc list-inside space-y-1 pl-2">
               <li><span className="text-white">Airtel Money</span></li>
@@ -108,7 +108,7 @@ export default function CGV() {
             </ul>
             <p>
               Les paiements sont traités via une passerelle sécurisée. Aucune donnée de paiement n'est
-              stockée sur les serveurs BilletGo. La confirmation de paiement s'effectue directement sur
+              stockée sur les serveurs BilletGab. La confirmation de paiement s'effectue directement sur
               votre téléphone via une notification de votre opérateur.
             </p>
           </Section>
@@ -132,31 +132,20 @@ export default function CGV() {
           <Section title="6. Politique de remboursement">
             <p>
               En raison de la nature des billets d'événements culturels et de loisirs à date déterminée,
-              <span className="text-white font-semibold"> les ventes sont en principe définitives</span>.
-              Toutefois, deux mécanismes de remboursement existent :
+              <span className="text-white font-semibold"> les ventes sont définitives et les billets sont non remboursables</span>.
+              L'acheteur est invité à vérifier soigneusement les informations de l'événement avant de confirmer sa commande.
             </p>
-
-            <p className="text-white/80 font-medium mt-2">Remboursement volontaire (à la demande de l'acheteur)</p>
-            <ul className="list-disc list-inside space-y-1 pl-2">
-              <li>L'acheteur peut soumettre une demande de remboursement depuis son espace « Mes Billets ».</li>
-              <li>La demande est soumise à approbation par l'équipe BilletGo.</li>
-              <li>En cas d'approbation, la commission BilletGo est retenue et seul le montant net reversé à l'organisateur est remboursé.</li>
-              <li>Le remboursement est effectué via mobile money dans un délai de 7 à 14 jours ouvrables.</li>
-              <li>Une demande précédemment refusée peut être soumise à nouveau.</li>
-            </ul>
-
-            <p className="text-white/80 font-medium mt-2">Remboursement en cas d'annulation officielle</p>
-            <ul className="list-disc list-inside space-y-1 pl-2">
-              <li>En cas d'annulation officielle d'un événement par l'organisateur, BilletGo génère automatiquement les demandes de remboursement pour tous les acheteurs concernés et les notifie immédiatement.</li>
-              <li>Le remboursement est garanti dans la limite des fonds retenus en séquestre par BilletGo au moment de l'annulation.</li>
-              <li>Pour les montants excédant les fonds en séquestre (si des tranches avaient déjà été versées à l'organisateur), la responsabilité de l'indemnisation incombe à l'organisateur.</li>
-              <li>Les notifications d'annulation et de remboursement sont envoyées automatiquement par email et notification in-app.</li>
-            </ul>
+            <p>
+              En cas d'annulation d'un événement, la responsabilité du remboursement incombe exclusivement
+              à l'organisateur. BilletGab notifie les acheteurs de l'annulation et leur communique les
+              coordonnées de l'organisateur pour toute demande. BilletGab n'est pas partie à ce remboursement
+              et ne peut en garantir l'exécution.
+            </p>
           </Section>
 
           <Section title="7. Transfert de billets">
             <p>
-              BilletGo permet à l'acheteur de transférer un billet à une autre personne via la fonctionnalité
+              BilletGab permet à l'acheteur de transférer un billet à une autre personne via la fonctionnalité
               de transfert disponible dans l'espace « Mes Billets ». Le transfert invalide l'ancien QR Code et
               génère un nouveau QR Code au nom du destinataire.
             </p>
@@ -171,7 +160,7 @@ export default function CGV() {
               Lorsqu'un événement est complet (sold-out), les utilisateurs peuvent s'inscrire sur une liste
               d'attente en fournissant leur email et/ou numéro de téléphone. En cas de libération d'une place
               (remboursement ou transfert annulé), les inscrits sont notifiés par ordre d'inscription (FIFO).
-              BilletGo ne garantit pas l'obtention d'un billet aux personnes inscrites sur liste d'attente.
+              BilletGab ne garantit pas l'obtention d'un billet aux personnes inscrites sur liste d'attente.
             </p>
           </Section>
 
@@ -179,14 +168,14 @@ export default function CGV() {
             <p>
               L'organisateur est seul responsable du contenu, de l'organisation, du déroulement et du respect
               de la réglementation applicable à son événement (autorisations administratives, sécurité, etc.).
-              BilletGo ne saurait être tenu responsable de l'annulation, du report, de la modification ou de la
+              BilletGab ne saurait être tenu responsable de l'annulation, du report, de la modification ou de la
               mauvaise exécution d'un événement par un organisateur.
             </p>
             <p>
-              En cas d'annulation après qu'une ou plusieurs tranches de versement ont été libérées à
-              l'organisateur, celui-ci s'engage à rembourser à BilletGo les sommes nécessaires à
-              l'indemnisation intégrale des acheteurs, conformément au droit OHADA et aux engagements
-              contractuels signés lors de son inscription.
+              En cas d'annulation d'un événement, l'organisateur est seul responsable du remboursement des
+              acheteurs. Il s'engage à les contacter directement et à les indemniser à sa discrétion,
+              conformément au droit OHADA et aux engagements contractuels signés lors de son inscription.
+              BilletGab ne peut être tenu pour responsable du défaut de remboursement de l'organisateur.
             </p>
           </Section>
 
@@ -194,7 +183,7 @@ export default function CGV() {
             <p>
               Conformément aux usages applicables aux services d'accès à des événements culturels et de loisirs
               dont la date est déterminée, <span className="text-white font-semibold">le droit de rétractation
-              ne s'applique pas</span> aux achats effectués sur BilletGo. L'acheteur est invité à vérifier
+              ne s'applique pas</span> aux achats effectués sur BilletGab. L'acheteur est invité à vérifier
               soigneusement les informations de l'événement avant de confirmer sa commande.
             </p>
           </Section>

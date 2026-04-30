@@ -177,30 +177,6 @@ export const useEventWaitlist = (eventId: string | null) =>
     { enabled: !!eventId, staleTime: 30_000 }
   );
 
-export const useEventPromos = (eventId: string | null) =>
-  useQuery(
-    ['organizer-promos', eventId],
-    () => api.get(`/organizer/events/${eventId}/promos`).then(r => r.data.data),
-    { enabled: !!eventId, staleTime: 30_000 }
-  );
-
-export const useCreatePromoCode = (eventId: string) => {
-  const qc = useQueryClient();
-  return useMutation(
-    (payload: { code: string; discountType: string; discountValue: number; maxUses?: number; expiresAt?: string }) =>
-      api.post(`/organizer/events/${eventId}/promos`, payload).then(r => r.data),
-    { onSuccess: () => qc.invalidateQueries(['organizer-promos', eventId]) }
-  );
-};
-
-export const useDeletePromoCode = (eventId: string) => {
-  const qc = useQueryClient();
-  return useMutation(
-    (promoId: string) => api.delete(`/organizer/events/${eventId}/promos/${promoId}`).then(r => r.data),
-    { onSuccess: () => qc.invalidateQueries(['organizer-promos', eventId]) }
-  );
-};
-
 export interface OrganizerNotification {
   id: string;
   type: string;

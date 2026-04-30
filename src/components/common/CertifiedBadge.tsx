@@ -12,7 +12,7 @@ export default function CertifiedBadge({ size = 'sm' }: CertifiedBadgeProps) {
   return (
     <span
       className={`inline-flex items-center gap-1 ${padding} rounded-full bg-cyan-neon/10 border border-cyan-neon/30 text-cyan-neon font-semibold ${textSize} whitespace-nowrap`}
-      title="Identité vérifiée par BilletGo"
+      title="Identité vérifiée par BilletGab"
     >
       <BadgeCheck className={iconSize} />
       Certifié

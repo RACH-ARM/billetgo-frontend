@@ -1,33 +1,47 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, ComponentType } from 'react';
 
-export const Home = lazy(() => import('../pages/Home'));
-export const EventDetail = lazy(() => import('../pages/EventDetail'));
-export const Checkout = lazy(() => import('../pages/Checkout'));
-export const MyTickets = lazy(() => import('../pages/MyTickets'));
-export const OrganizerDashboard = lazy(() => import('../pages/OrganizerDashboard'));
-export const AdminBackoffice = lazy(() => import('../pages/AdminBackoffice'));
-export const ScannerApp = lazy(() => import('../pages/ScannerApp'));
-export const Login = lazy(() => import('../pages/Login'));
-export const Register = lazy(() => import('../pages/Register'));
-export const OrganizerLanding = lazy(() => import('../pages/OrganizerLanding'));
-export const About = lazy(() => import('../pages/About'));
-export const ContactPage = lazy(() => import('../pages/Contact'));
-export const EventsPage = lazy(() => import('../pages/Events'));
-export const HowToUsePage = lazy(() => import('../pages/HowToUse'));
-export const OrderConfirmation = lazy(() => import('../pages/OrderConfirmation'));
-export const CGU = lazy(() => import('../pages/CGU'));
-export const CGV = lazy(() => import('../pages/CGV'));
-export const Confidentialite = lazy(() => import('../pages/Confidentialite'));
-export const MentionsLegales = lazy(() => import('../pages/MentionsLegales'));
-export const ForgotPassword = lazy(() => import('../pages/ForgotPassword'));
-export const ResetPassword = lazy(() => import('../pages/ResetPassword'));
-export const VerifyEmail = lazy(() => import('../pages/VerifyEmail'));
-export const OrganizerPublicPage = lazy(() => import('../pages/OrganizerPublicPage'));
-export const Notifications = lazy(() => import('../pages/Notifications'));
-export const OrganizerLayout = lazy(() => import('../components/layout/OrganizerLayout'));
-export const Versements = lazy(() => import('../pages/Versements'));
+// Quand Vite rebuild, les hashes de chunks changent. Si le navigateur essaie
+// de charger un ancien hash (chunk introuvable), on recharge la page une fois
+// pour récupérer les nouveaux chunks plutôt que de crasher.
+function lazyWithReload<T extends ComponentType<unknown>>(
+  factory: () => Promise<{ default: T }>
+) {
+  return lazy(() =>
+    factory().catch(() => {
+      window.location.reload();
+      return new Promise<{ default: T }>(() => {});
+    })
+  );
+}
+
+export const Home = lazyWithReload(() => import('../pages/Home'));
+export const EventDetail = lazyWithReload(() => import('../pages/EventDetail'));
+export const Checkout = lazyWithReload(() => import('../pages/Checkout'));
+export const MyTickets = lazyWithReload(() => import('../pages/MyTickets'));
+export const OrganizerDashboard = lazyWithReload(() => import('../pages/OrganizerDashboard'));
+export const AdminBackoffice = lazyWithReload(() => import('../pages/AdminBackoffice'));
+export const ScannerApp = lazyWithReload(() => import('../pages/ScannerApp'));
+export const Login = lazyWithReload(() => import('../pages/Login'));
+export const Register = lazyWithReload(() => import('../pages/Register'));
+export const OrganizerLanding = lazyWithReload(() => import('../pages/OrganizerLanding'));
+export const About = lazyWithReload(() => import('../pages/About'));
+export const ContactPage = lazyWithReload(() => import('../pages/Contact'));
+export const EventsPage = lazyWithReload(() => import('../pages/Events'));
+export const HowToUsePage = lazyWithReload(() => import('../pages/HowToUse'));
+export const OrderConfirmation = lazyWithReload(() => import('../pages/OrderConfirmation'));
+export const CGU = lazyWithReload(() => import('../pages/CGU'));
+export const CGV = lazyWithReload(() => import('../pages/CGV'));
+export const Confidentialite = lazyWithReload(() => import('../pages/Confidentialite'));
+export const MentionsLegales = lazyWithReload(() => import('../pages/MentionsLegales'));
+export const ForgotPassword = lazyWithReload(() => import('../pages/ForgotPassword'));
+export const ResetPassword = lazyWithReload(() => import('../pages/ResetPassword'));
+export const VerifyEmail = lazyWithReload(() => import('../pages/VerifyEmail'));
+export const OrganizerPublicPage = lazyWithReload(() => import('../pages/OrganizerPublicPage'));
+export const Notifications = lazyWithReload(() => import('../pages/Notifications'));
+export const OrganizerLayout = lazyWithReload(() => import('../components/layout/OrganizerLayout'));
+export const Versements = lazyWithReload(() => import('../pages/Versements'));
 export const MesEvenements = lazy(() => import('../pages/MesEvenements'));
 export const MonCompte = lazy(() => import('../pages/MonCompte'));
 export const ContratOrganisateur = lazy(() => import('../pages/ContratOrganisateur'));

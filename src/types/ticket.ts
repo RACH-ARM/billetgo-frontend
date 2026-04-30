@@ -74,7 +74,6 @@ export interface CreateOrderPayload {
   utmCampaign?: string;
   referrer?: string;
   provider?: 'AIRTEL_MONEY' | 'MOOV_MONEY';
-  promoCode?: string;
 }
 
 export interface InitiatePaymentPayload {

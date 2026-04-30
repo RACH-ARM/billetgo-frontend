@@ -27,7 +27,7 @@ export default function About() {
               <MapPin className="w-4 h-4" /> Libreville, Gabon
             </span>
             <h1 className="font-bebas text-5xl sm:text-7xl tracking-wider text-gradient mb-4">
-              À propos de BilletGo
+              À propos de BilletGab
             </h1>
             <p className="text-white/60 text-lg max-w-2xl mx-auto">
               La première plateforme de billetterie numérique conçue pour le Gabon.
@@ -44,7 +44,7 @@ export default function About() {
             <h2 className="section-title text-3xl mb-6">Notre histoire</h2>
             <div className="space-y-4 text-white/70 leading-relaxed">
               <p>
-                BilletGo est né d'un constat simple : à Libreville, acheter un billet pour un concert ou une soirée
+                BilletGab est né d'un constat simple : à Libreville, acheter un billet pour un concert ou une soirée
                 était encore une aventure — files d'attente, billets papier, risques de contrefaçon,
                 et surtout aucun moyen de payer en ligne sans carte bancaire.
               </p>
@@ -53,7 +53,7 @@ export default function About() {
                 billets QR Code sécurisés, et une interface pensée pour les smartphones africains.
               </p>
               <p>
-                Aujourd'hui, BilletGo accompagne les organisateurs dans la gestion complète de leurs événements :
+                Aujourd'hui, BilletGab accompagne les organisateurs dans la gestion complète de leurs événements :
                 de la création à la validation d'entrée, en passant par le suivi des ventes en temps réel.
               </p>
             </div>
@@ -102,7 +102,7 @@ export default function About() {
         <div className="max-w-2xl mx-auto">
           <Ticket className="w-12 h-12 text-violet-neon mx-auto mb-4" />
           <h2 className="font-bebas text-4xl text-gradient mb-4">Tu veux rejoindre l'aventure ?</h2>
-          <p className="text-white/50 mb-8">Organise ton prochain événement avec BilletGo et accède à des milliers d'acheteurs.</p>
+          <p className="text-white/50 mb-8">Organise ton prochain événement avec BilletGab et accède à des milliers d'acheteurs.</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/organisateurs" className="neon-button">Devenir organisateur</Link>
             <Link to="/contact" className="px-6 py-3 rounded-xl border border-white/20 text-white/70 hover:border-violet-neon/50 hover:text-white transition-all">

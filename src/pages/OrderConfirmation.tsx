@@ -126,7 +126,7 @@ function InfoBlock() {
           {
             n: '3',
             title: 'Durée d\'accès',
-            body: "Vos billets restent disponibles dans votre compte sans limite de temps, tant que votre compte BilletGo existe.",
+            body: "Vos billets restent disponibles dans votre compte sans limite de temps, tant que votre compte BilletGab existe.",
           },
         ].map(({ n, title, body }) => (
           <div key={n} className="flex gap-3">
@@ -250,7 +250,7 @@ function OrderConfirmationInner() {
     }
   };
 
-  const supportUrl = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`Problème commande ${orderId ?? ''}`)}&body=${encodeURIComponent(`Bonjour BilletGo,\n\nJ'ai un problème avec ma commande ${orderId ?? ''}.\n\nPouvez-vous m'aider ?\n\nMerci`)}`;
+  const supportUrl = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`Problème commande ${orderId ?? ''}`)}&body=${encodeURIComponent(`Bonjour BilletGab,\n\nJ'ai un problème avec ma commande ${orderId ?? ''}.\n\nPouvez-vous m'aider ?\n\nMerci`)}`;
 
 
   return (
@@ -399,7 +399,7 @@ function OrderConfirmationInner() {
                         `DTSTART:${fmt(start)}`,
                         `DTEND:${fmt(end)}`,
                         `LOCATION:${state.venueName}`,
-                        `DESCRIPTION:Billet BilletGo — Réf: ${orderId}`,
+                        `DESCRIPTION:Billet BilletGab — Réf: ${orderId}`,
                         'END:VEVENT', 'END:VCALENDAR',
                       ].join('\r\n');
                       const blob = new Blob([ics], { type: 'text/calendar' });
@@ -415,7 +415,7 @@ function OrderConfirmationInner() {
                   </button>
                   <button
                     onClick={() => {
-                      const text = `Je viens d'acheter mes billets pour ${state.eventName} ! Rejoins-moi sur BilletGo : ${window.location.origin}/evenements`;
+                      const text = `Je viens d'acheter mes billets pour ${state.eventName} ! Rejoins-moi sur BilletGab : ${window.location.origin}/evenements`;
                       if (navigator.share) {
                         navigator.share({ title: state.eventName, text }).catch(() => {});
                       } else {

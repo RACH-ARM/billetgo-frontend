@@ -3,6 +3,7 @@ import { NavLink, Link, useNavigate, Outlet, useLocation } from 'react-router-do
 import { LayoutDashboard, Banknote, CalendarDays, Bell, User, LogOut, Menu, X } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useNotifications, useOrganizerProfile } from '../../hooks/useOrganizer';
+import BilletGabLogo from '../common/BilletGabLogo';
 
 const APPROVAL_REQUIRED_PATHS = ['/mes-evenements', '/versements'];
 
@@ -59,7 +60,7 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
     <div className="flex flex-col h-full">
       <div className="px-5 py-6 border-b border-white/5 flex-shrink-0 flex justify-center pl-12">
         <Link to="/dashboard" onClick={onClose}>
-          <img src="/logo.svg" alt="BilletGo" className="h-8 w-auto" />
+          <BilletGabLogo height={32} />
         </Link>
       </div>
 
@@ -157,7 +158,7 @@ export default function OrganizerLayout() {
         </button>
 
         <Link to="/dashboard">
-          <img src="/logo.svg" alt="BilletGo" className="h-7 w-auto" />
+          <BilletGabLogo height={28} />
         </Link>
 
         <Link

@@ -8,7 +8,7 @@ import {
 import {
   CalendarDays, Ticket, TrendingUp, TrendingDown,
   LogOut, Check, Clock, Upload, FileCheck,
-  Star, Shield, Award, Zap, UserCircle, Minus, Banknote,
+  UserCircle, Minus, Banknote,
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useOrganizerStats, useOrganizerProfile, useOrganizerAnalytics, useUploadKYC, useOrganizerPayouts } from '../hooks/useOrganizer';
@@ -264,7 +264,7 @@ function PendingApprovalScreen({ profile, onLogout }: { profile: OrganizerProfil
     try {
       const result = await uploadKYC.mutateAsync(file);
       setKycUrl(result.data?.kycDocumentUrl ?? kycUrl);
-      toast.success('Document soumis — l\'équipe BilletGo va l\'examiner');
+      toast.success('Document soumis — l\'équipe BilletGab va l\'examiner');
     } catch {
       toast.error('Erreur lors de l\'upload. Format accepté : JPG, PNG, PDF (max 10MB)');
     }
@@ -279,7 +279,7 @@ function PendingApprovalScreen({ profile, onLogout }: { profile: OrganizerProfil
         <div>
           <h2 className="font-bebas text-4xl tracking-wider text-gradient mb-2">COMPTE EN ATTENTE D'APPROBATION</h2>
           <p className="text-white/50 text-sm leading-relaxed max-w-md mx-auto">
-            Votre compte organisateur est en cours de vérification par l'équipe BilletGo.
+            Votre compte organisateur est en cours de vérification par l'équipe BilletGab.
             Vous recevrez une notification dès que votre compte sera approuvé.
           </p>
         </div>
@@ -410,22 +410,6 @@ export default function OrganizerDashboard() {
           <h1 className="font-bebas text-4xl tracking-wider text-gradient leading-none">TABLEAU DE BORD</h1>
           <div className="flex items-center gap-2 mt-1">
             <p className="text-white/40 text-xs">Vue d'ensemble de vos événements et ventes</p>
-            {profile && (() => {
-              const tier = profile.tier ?? 'NEW';
-              const tierMap: Record<string, { label: string; color: string; Icon: React.ComponentType<{ className?: string }> }> = {
-                NEW:       { label: 'Nouveau',  color: 'text-white/40',    Icon: Star   },
-                APPROVED:  { label: 'Approuvé', color: 'text-cyan-neon',   Icon: Shield },
-                CERTIFIED: { label: 'Certifié', color: 'text-violet-neon', Icon: Award  },
-                PREMIUM:   { label: 'Premium',  color: 'text-yellow-400',  Icon: Zap    },
-              };
-              const meta = tierMap[tier] ?? tierMap.NEW;
-              const { Icon } = meta;
-              return (
-                <span className={`flex items-center gap-1 text-xs font-semibold ${meta.color}`}>
-                  <Icon className="w-3 h-3" /> {meta.label}
-                </span>
-              );
-            })()}
           </div>
         </div>
         <div className="flex items-center gap-2">

@@ -72,7 +72,7 @@ export default function ForgotPassword() {
                     className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl pl-10 pr-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors"
                   />
                 </div>
-                <p className="text-xs text-white/30 mt-1">Entrez l'email associé à votre compte BilletGo</p>
+                <p className="text-xs text-white/30 mt-1">Entrez l'email associé à votre compte BilletGab</p>
               </div>
 
               <Button type="submit" variant="primary" size="lg" isLoading={isLoading} className="w-full mt-2">

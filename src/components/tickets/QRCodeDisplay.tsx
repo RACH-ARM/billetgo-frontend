@@ -108,24 +108,23 @@ export default function QRCodeDisplay({
       });
 
       const blob: Blob = await new Promise(res => canvas.toBlob(b => res(b!), 'image/png'));
-      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-      const file = new File([blob], 'billet-billetgo.png', { type: 'image/png' });
+      const file = new File([blob], 'billet-billetgab.png', { type: 'image/png' });
 
-      if (isIOS && navigator.share && navigator.canShare?.({ files: [file] })) {
-        // iOS : feuille de partage native → l'utilisateur tape "Enregistrer l'image"
-        await navigator.share({ files: [file], title: 'Mon billet BilletGo' });
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        // iOS & Android Chrome 86+ : feuille de partage native → "Enregistrer l'image"
+        await navigator.share({ files: [file], title: 'Mon billet BilletGab' });
         toast.success('Billet enregistré dans votre galerie', { duration: 3000 });
       } else {
-        // Android + Desktop : téléchargement direct
+        // Desktop / navigateurs sans Web Share API
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'billet-billetgo.png';
+        a.download = 'billet-billetgab.png';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         setTimeout(() => URL.revokeObjectURL(url), 2000);
-        toast.success('Billet enregistré dans votre galerie', { duration: 3000 });
+        toast.success('Billet téléchargé', { duration: 3000 });
       }
     } catch (err) {
       if (err instanceof Error && err.name !== 'AbortError') {

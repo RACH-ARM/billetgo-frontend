@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Zap, X, ArrowRight, Minus, Plus, MapPin, Share2, Copy, Check as CheckIcon, Star, MessageSquare, Bell, BellOff } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
@@ -27,6 +27,7 @@ export default function EventDetail() {
   const { setEvent, addItem, getTotalItems, getTotalAmount } = useCartStore();
   const { isAuthenticated, user } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [activeGallery, setActiveGallery] = useState<string | null>(null);
@@ -206,7 +207,7 @@ export default function EventDetail() {
 
   const handleBuy = () => {
     if (!isAuthenticated) {
-      navigate('/login');
+      navigate(`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`);
       return;
     }
     navigate('/checkout');
@@ -218,7 +219,7 @@ export default function EventDetail() {
   ];
 
   const pageUrl = window.location.href;
-  const shareText = `${event.title} — ${new Date(event.eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} à ${event.venueName}, Libreville. Réserve ton billet sur BilletGo !`;
+  const shareText = `${event.title} — ${new Date(event.eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} à ${event.venueName}, Libreville. Réserve ton billet sur BilletGab !`;
 
   const shareWhatsApp = () => {
     window.open(`https://wa.me/?text=${encodeURIComponent(shareText + '\n' + pageUrl)}`, '_blank');
@@ -234,10 +235,10 @@ export default function EventDetail() {
   const minPrice = event.ticketCategories?.length
     ? Math.min(...event.ticketCategories.map((c: TicketCategory) => c.price))
     : 0;
-  const seoTitle = `${event.title} — ${event.venueCity} | BilletGo`;
+  const seoTitle = `${event.title} — ${event.venueCity} | BilletGab`;
   const seoDesc = event.description
     ? event.description.slice(0, 160)
-    : `Réservez vos billets pour ${event.title} le ${new Date(event.eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} à ${event.venueName}, ${event.venueCity}. À partir de ${formatPrice(minPrice)} sur BilletGo.`;
+    : `Réservez vos billets pour ${event.title} le ${new Date(event.eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} à ${event.venueName}, ${event.venueCity}. À partir de ${formatPrice(minPrice)} sur BilletGab.`;
   const seoUrl = `${SITE_URL}/events/${event.id}`;
   const seoImage = event.coverImageUrl ?? `${SITE_URL}/og-default.jpg`;
 
@@ -255,7 +256,7 @@ export default function EventDetail() {
         <meta property="og:image" content={seoImage} />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
-        <meta property="og:site_name" content="BilletGo" />
+        <meta property="og:site_name" content="BilletGab" />
         <meta property="og:locale" content="fr_GA" />
         {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />
@@ -540,7 +541,7 @@ export default function EventDetail() {
                     <div className="mb-4 p-4 rounded-xl bg-bg-secondary border border-white/5 text-center">
                       <p className="text-white/50 text-sm mb-2">Tu as assisté à cet événement ?</p>
                       <button
-                        onClick={() => navigate('/login')}
+                        onClick={() => navigate(`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`)}
                         className="text-violet-neon hover:text-rose-neon text-sm font-semibold transition-colors"
                       >
                         Connecte-toi pour laisser un avis
@@ -822,7 +823,7 @@ export default function EventDetail() {
                       size="md"
                       className="w-full"
                       onClick={() => {
-                        if (!isAuthenticated) { navigate('/login'); return; }
+                        if (!isAuthenticated) { navigate(`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`); return; }
                         joinWaitlist.mutate();
                       }}
                       disabled={joinWaitlist.isLoading}

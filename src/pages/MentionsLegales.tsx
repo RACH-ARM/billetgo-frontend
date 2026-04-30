@@ -27,7 +27,7 @@ export default function MentionsLegales() {
       const url = URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'mentions-legales-billetgo.pdf';
+      a.download = 'mentions-legales-billetgab.pdf';
       a.click();
       URL.revokeObjectURL(url);
     } catch {
@@ -62,7 +62,7 @@ export default function MentionsLegales() {
         <div className="glass-card p-8 border border-violet-neon/20 space-y-2">
 
           <Section title="Éditeur du site">
-            <Row label="Nom commercial" value="BilletGo" />
+            <Row label="Nom commercial" value="BilletGab" />
             <Row label="Concepteur / Exploitant" value="Tiamiyou Arèmou" />
             <Row label="Forme juridique" value="[À compléter après immatriculation]" />
             <Row label="N° RCCM" value="[À compléter — Registre du Commerce de Libreville]" />
@@ -74,7 +74,7 @@ export default function MentionsLegales() {
 
           <Section title="Hébergement du site">
             <p className="text-white/50 text-xs mb-3">
-              La plateforme BilletGo est hébergée sur plusieurs infrastructures cloud selon les composants :
+              La plateforme BilletGab est hébergée sur plusieurs infrastructures cloud selon les composants :
             </p>
 
             <p className="text-white/80 font-medium">Frontend (interface utilisateur)</p>
@@ -108,7 +108,7 @@ export default function MentionsLegales() {
             <Row label="Opérateurs" value="Airtel Money Gabon, Moov Money Gabon" />
             <p>
               Les paiements sont traités directement par les opérateurs de téléphonie mobile.
-              Aucune donnée bancaire ou de paiement n'est stockée sur les serveurs BilletGo.
+              Aucune donnée bancaire ou de paiement n'est stockée sur les serveurs BilletGab.
               Les transactions sont confirmées par notification directe de l'opérateur sur le téléphone
               de l'acheteur.
             </p>
@@ -122,7 +122,7 @@ export default function MentionsLegales() {
             <Row label="Email transactionnel" value="Resend (SMTP) — confirmations, billets, notifications" />
             <Row label="SMS" value="Via opérateurs gabonais (notifications critiques)" />
             <p>
-              Les communications envoyées par BilletGo sont exclusivement transactionnelles (confirmations
+              Les communications envoyées par BilletGab sont exclusivement transactionnelles (confirmations
               d'achat, billets, notifications de remboursement, annulations d'événements). Aucun message
               marketing n'est envoyé sans consentement explicite de l'utilisateur.
             </p>
@@ -131,7 +131,7 @@ export default function MentionsLegales() {
           <Section title="Propriété intellectuelle">
             <p>
               Le site billetgab.com, son contenu, son design, ses logos et l'ensemble du code source
-              sont la propriété exclusive de Tiamiyou Arèmou, concepteur et exploitant de BilletGo.
+              sont la propriété exclusive de Tiamiyou Arèmou, concepteur et exploitant de BilletGab.
               Toute reproduction totale ou partielle est interdite sans autorisation écrite préalable.
             </p>
             <p>
@@ -142,14 +142,14 @@ export default function MentionsLegales() {
 
           <Section title="Limitation de responsabilité">
             <p>
-              BilletGo s'efforce d'assurer la disponibilité et l'exactitude des informations diffusées
-              sur la plateforme. BilletGo intervient en qualité d'intermédiaire technique et de séquestre
+              BilletGab s'efforce d'assurer la disponibilité et l'exactitude des informations diffusées
+              sur la plateforme. BilletGab intervient en qualité d'intermédiaire technique et de séquestre
               entre les acheteurs et les organisateurs.
             </p>
             <p>
-              BilletGo ne saurait être tenu responsable du contenu des événements, des décisions des
+              BilletGab ne saurait être tenu responsable du contenu des événements, des décisions des
               organisateurs (annulation, report, modification), ni des incidents survenant lors des
-              événements. La responsabilité financière de BilletGo en cas d'annulation est limitée aux
+              événements. La responsabilité financière de BilletGab en cas d'annulation est limitée aux
               fonds effectivement retenus en séquestre au moment de l'annulation.
             </p>
           </Section>

@@ -60,7 +60,7 @@ const FAQ_ITEMS: FaqItem[] = [
   {
     question: 'Et si je perds mon téléphone ?',
     answer:
-      "Vos billets sont enregistrés dans votre compte BilletGo, pas sur votre téléphone. Il vous suffit de vous reconnecter depuis n'importe quel autre appareil — téléphone, tablette ou ordinateur — pour retrouver tous vos billets.",
+      "Vos billets sont enregistrés dans votre compte BilletGab, pas sur votre téléphone. Il vous suffit de vous reconnecter depuis n'importe quel autre appareil — téléphone, tablette ou ordinateur — pour retrouver tous vos billets.",
   },
   {
     question: 'Est-ce que quelqu\'un peut utiliser mon billet à ma place ?',
@@ -70,7 +70,7 @@ const FAQ_ITEMS: FaqItem[] = [
   {
     question: "Et si l'événement est annulé ?",
     answer:
-      "Si l'événement est annulé par l'organisateur, BilletGo procède au remboursement intégral directement sur le numéro Mobile Money utilisé lors de l'achat, conformément aux conditions définies par l'organisateur.",
+      "Les billets sont non remboursables. En cas d'annulation de l'événement, contactez directement l'organisateur pour toute demande de remboursement. BilletGab n'intervient pas dans le traitement des indemnisations entre acheteurs et organisateurs.",
   },
 ];
 
@@ -135,7 +135,7 @@ const STEPS: Omit<StepCardProps, 'stepNumber'>[] = [
     title: 'Payer via Mobile Money',
     Icon: Smartphone,
     description:
-      "Choisissez Airtel Money ou Moov Money, entrez votre numéro de téléphone et vous recevez une notification de confirmation directement sur votre appareil. Validez avec votre code secret Mobile Money. Aucune information bancaire n'est saisie sur BilletGo — le paiement passe entièrement par votre opérateur.",
+      "Choisissez Airtel Money ou Moov Money, entrez votre numéro de téléphone et vous recevez une notification de confirmation directement sur votre appareil. Validez avec votre code secret Mobile Money. Aucune information bancaire n'est saisie sur BilletGab — le paiement passe entièrement par votre opérateur.",
   },
   {
     title: 'Attendre la confirmation',
@@ -160,7 +160,7 @@ const STEPS: Omit<StepCardProps, 'stepNumber'>[] = [
     title: "Le jour de l'événement",
     Icon: ScanLine,
     description:
-      "Ouvrez BilletGo, allez dans \"Mes billets\" et appuyez sur \"Afficher le QR code\". L'agent scanne le code directement sur votre écran — résultat vert (valide) ou rouge (déjà utilisé). Pas d'internet ? Le QR code s'affiche quand même grâce au cache local.",
+      "Ouvrez BilletGab, allez dans \"Mes billets\" et appuyez sur \"Afficher le QR code\". L'agent scanne le code directement sur votre écran — résultat vert (valide) ou rouge (déjà utilisé). Pas d'internet ? Le QR code s'affiche quand même grâce au cache local.",
   },
 ];
 
@@ -180,7 +180,7 @@ export default function HowToUse() {
           </h1>
           <p className="text-white/50 font-sora text-base max-w-xl mx-auto">
             Du choix de l'événement jusqu'à l'entrée le jour J — tout ce que vous devez savoir
-            pour profiter de BilletGo sereinement.
+            pour profiter de BilletGab sereinement.
           </p>
         </div>
 

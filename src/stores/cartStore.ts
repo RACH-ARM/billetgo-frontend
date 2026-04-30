@@ -67,7 +67,7 @@ export const useCartStore = create<CartState>()(
   getTotalItems: () => get().items.reduce((acc, item) => acc + item.quantity, 0),
     }),
     {
-      name: 'billetgo-cart',
+      name: 'billetgab-cart',
       storage: {
         getItem: (key) => { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; },
         setItem: (key, value) => localStorage.setItem(key, JSON.stringify(value)),

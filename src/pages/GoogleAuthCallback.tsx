@@ -53,7 +53,13 @@ export default function GoogleAuthCallback() {
         const user = data.data;
         useAuthStore.setState({ user, accessToken, refreshToken, isAuthenticated: true });
         toast.success('Connexion avec Google réussie !');
-        navigate(ROLE_HOME[user.role] ?? '/', { replace: true });
+        const redirectTarget = localStorage.getItem('auth_redirect');
+        if (user.role === 'BUYER' && redirectTarget) {
+          localStorage.removeItem('auth_redirect');
+          navigate(decodeURIComponent(redirectTarget), { replace: true });
+        } else {
+          navigate(ROLE_HOME[user.role] ?? '/', { replace: true });
+        }
       })
       .catch(() => {
         localStorage.removeItem('accessToken');

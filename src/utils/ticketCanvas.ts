@@ -91,7 +91,7 @@ export interface TicketCanvasOpts {
   price?: number;
 }
 
-// ─── Main generator ───────────────────────────────────────────────────────────
+// ─── Main generator — format billet horizontal haute définition ───────────────
 
 export async function generateTicketCanvas(
   canvas: HTMLCanvasElement,
@@ -100,320 +100,302 @@ export async function generateTicketCanvas(
 ) {
   const { ticketId, eventTitle, categoryName, eventDate, venueName, coverImageUrl, buyerName, buyerEmail, price } = opts;
 
-  const hasBuyer = buyerName || buyerEmail || price !== undefined;
-  const W = 640;
-  const H = hasBuyer ? 1220 : 1100;
-  canvas.width = W;
-  canvas.height = H;
-  const ctx = canvas.getContext('2d')!;
+  // Coordonnées logiques (inchangées) — sortie 2× haute résolution
+  const W = 900;
+  const H = 380;
+  const SCALE = 2; // → 1800×760 pixels en sortie
+  const PERF_X = 652;
+  const STUB_CX = PERF_X + (W - PERF_X) / 2;
+  const PAD = 24;
+  const MAIN_MAX_W = PERF_X - PAD * 2;
 
-  // 1. Fond principal
-  const bgGrad = ctx.createLinearGradient(0, 0, W * 0.6, H);
-  bgGrad.addColorStop(0, '#0f0520');
+  canvas.width  = W * SCALE;
+  canvas.height = H * SCALE;
+  const ctx = canvas.getContext('2d')!;
+  ctx.scale(SCALE, SCALE);
+
+  // ── 1. Fond principal ──────────────────────────────────────────────────────
+  const bgGrad = ctx.createLinearGradient(0, 0, W * 0.7, H);
+  bgGrad.addColorStop(0,   '#0f0520');
   bgGrad.addColorStop(0.5, '#0D0D1A');
-  bgGrad.addColorStop(1, '#050d1a');
+  bgGrad.addColorStop(1,   '#050d1a');
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, W, H);
 
-  // 2. Orbes lumineux
-  drawDot(ctx, -20, 60, 220, '#7B2FBE', 0.22);
-  drawDot(ctx, W + 20, 340, 180, '#E040FB', 0.15);
-  drawDot(ctx, 80, H - 80, 160, '#7B2FBE', 0.12);
-  drawDot(ctx, W - 60, H - 120, 140, '#00E5FF', 0.10);
-  drawDot(ctx, W * 0.5, 580, 200, '#3D0F7A', 0.18);
-
-  // 3. Watermark "BILLETGO"
+  // ── 2. Image de couverture (gauche, clippée) ───────────────────────────────
   ctx.save();
-  ctx.translate(W / 2, H / 2);
-  ctx.rotate(-Math.PI / 5);
-  ctx.globalAlpha = 0.038;
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 24px Arial, sans-serif';
-  ctx.textAlign = 'center';
-  for (let row = -9; row <= 9; row++) {
-    for (let col = -5; col <= 5; col++) {
-      ctx.fillText('BILLETGO', col * 170, row * 72);
-    }
-  }
-  ctx.restore();
-
-  // 4. Photo de l'événement
-  const coverH = 320;
-  ctx.save();
-  roundRect(ctx, 0, 0, W, coverH + 30, 0);
+  ctx.beginPath();
+  ctx.rect(0, 0, PERF_X, H);
   ctx.clip();
 
   if (coverImageUrl) {
     try {
       const cover = await loadImage(coverImageUrl, true);
-      const scale = Math.max(W / cover.width, coverH / cover.height);
-      const sw = cover.width * scale;
-      const sh = cover.height * scale;
-      ctx.drawImage(cover, (W - sw) / 2, 0, sw, sh);
+      const s = Math.max(PERF_X / cover.width, H / cover.height);
+      ctx.drawImage(cover, (PERF_X - cover.width * s) / 2, (H - cover.height * s) / 2, cover.width * s, cover.height * s);
     } catch {
-      const fb = ctx.createLinearGradient(0, 0, W, coverH);
+      const fb = ctx.createLinearGradient(0, 0, PERF_X, H);
       fb.addColorStop(0, '#2D1060'); fb.addColorStop(1, '#003060');
-      ctx.fillStyle = fb; ctx.fillRect(0, 0, W, coverH);
+      ctx.fillStyle = fb; ctx.fillRect(0, 0, PERF_X, H);
     }
   } else {
-    const fb = ctx.createLinearGradient(0, 0, W, coverH);
+    const fb = ctx.createLinearGradient(0, 0, PERF_X, H);
     fb.addColorStop(0, '#2D1060'); fb.addColorStop(1, '#003060');
-    ctx.fillStyle = fb; ctx.fillRect(0, 0, W, coverH);
+    ctx.fillStyle = fb; ctx.fillRect(0, 0, PERF_X, H);
   }
 
-  const vigL = ctx.createLinearGradient(0, 0, 80, 0);
-  vigL.addColorStop(0, 'rgba(13,13,26,0.7)'); vigL.addColorStop(1, 'transparent');
-  ctx.fillStyle = vigL; ctx.fillRect(0, 0, 80, coverH);
-  const vigR = ctx.createLinearGradient(W - 80, 0, W, 0);
-  vigR.addColorStop(0, 'transparent'); vigR.addColorStop(1, 'rgba(13,13,26,0.7)');
-  ctx.fillStyle = vigR; ctx.fillRect(W - 80, 0, 80, coverH);
+  // Overlay lisibilité horizontal
+  const ov = ctx.createLinearGradient(0, 0, PERF_X, 0);
+  ov.addColorStop(0,    'rgba(13,13,26,0.93)');
+  ov.addColorStop(0.38, 'rgba(13,13,26,0.50)');
+  ov.addColorStop(0.78, 'rgba(15,5,32,0.72)');
+  ov.addColorStop(1,    'rgba(15,5,32,0.98)');
+  ctx.fillStyle = ov; ctx.fillRect(0, 0, PERF_X, H);
 
-  const overlayBot = ctx.createLinearGradient(0, coverH * 0.3, 0, coverH + 30);
-  overlayBot.addColorStop(0, 'rgba(13,13,26,0)');
-  overlayBot.addColorStop(0.55, 'rgba(13,13,26,0.6)');
-  overlayBot.addColorStop(1, 'rgba(15,5,32,1)');
-  ctx.fillStyle = overlayBot; ctx.fillRect(0, 0, W, coverH + 30);
-  ctx.fillStyle = 'rgba(50,10,100,0.25)'; ctx.fillRect(0, 0, W, coverH + 30);
+  // Overlay sombre bas (zone acheteur)
+  const ovB = ctx.createLinearGradient(0, H * 0.52, 0, H);
+  ovB.addColorStop(0, 'rgba(13,13,26,0)');
+  ovB.addColorStop(1, 'rgba(13,13,26,0.80)');
+  ctx.fillStyle = ovB; ctx.fillRect(0, 0, PERF_X, H);
+
   ctx.restore();
 
-  const bridge = ctx.createLinearGradient(0, coverH - 10, 0, coverH + 60);
-  bridge.addColorStop(0, 'rgba(15,5,32,0)');
-  bridge.addColorStop(1, 'rgba(15,5,32,1)');
-  ctx.fillStyle = bridge;
-  ctx.fillRect(0, coverH - 10, W, 70);
-
-  // 5. Sparkles photo
-  drawSparkle(ctx, 58, 44, 9, '#ffffff', 0.75);
-  drawSparkle(ctx, 540, 28, 6, '#00E5FF', 0.65);
-  drawSparkle(ctx, 590, 120, 4, '#E040FB', 0.55);
-  drawSparkle(ctx, 32, 195, 5, '#00E5FF', 0.50);
-  drawSparkle(ctx, 610, 230, 8, '#ffffff', 0.45);
-  drawSparkle(ctx, 120, 280, 4, '#E040FB', 0.40);
-  drawSparkle(ctx, 480, 260, 5, '#C084FC', 0.50);
-  drawDot(ctx, 320, 100, 40, '#E040FB', 0.06);
-  drawDot(ctx, 200, 200, 30, '#00E5FF', 0.07);
-
-  // 6. Titre (centré)
-  const title = (eventTitle || 'MON BILLET').toUpperCase();
-  let fz = 42;
-  ctx.font = `bold ${fz}px Arial, sans-serif`;
-  while (ctx.measureText(title).width > W - 56 && fz > 24) {
-    fz -= 2;
-    ctx.font = `bold ${fz}px Arial, sans-serif`;
-  }
-  ctx.shadowColor = 'rgba(0,0,0,0.9)';
-  ctx.shadowBlur = 20;
-  ctx.shadowOffsetY = 3;
-  ctx.fillStyle = '#ffffff';
-  ctx.textAlign = 'center';
-  ctx.fillText(title, W / 2, coverH - 16);
-  ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
-
-  // 7. Perforation (ADMIT ONE)
-  const sepY = coverH + 46;
-  const sepBand = ctx.createLinearGradient(0, coverH, 0, coverH + 90);
-  sepBand.addColorStop(0, 'rgba(123,47,190,0.15)');
-  sepBand.addColorStop(1, 'rgba(123,47,190,0)');
-  ctx.fillStyle = sepBand;
-  ctx.fillRect(0, coverH, W, 90);
-
-  ctx.fillStyle = '#0D0D1A';
-  ctx.beginPath(); ctx.arc(-1, sepY, 20, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(W + 1, sepY, 20, 0, Math.PI * 2); ctx.fill();
-
+  // ── 3. Watermark ──────────────────────────────────────────────────────────
   ctx.save();
-  ctx.setLineDash([6, 8]);
-  ctx.strokeStyle = 'rgba(255,255,255,0.18)';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(28, sepY); ctx.lineTo(W - 28, sepY); ctx.stroke();
+  ctx.translate(W * 0.33, H / 2);
+  ctx.rotate(-Math.PI / 7);
+  ctx.globalAlpha = 0.028;
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 15px Arial, sans-serif';
+  ctx.textAlign = 'center';
+  for (let r = -5; r <= 5; r++) for (let c = -4; c <= 4; c++) ctx.fillText('BILLETGAB', c * 148, r * 54);
   ctx.restore();
 
-  const admitW = 110;
-  ctx.fillStyle = 'rgba(123,47,190,0.25)';
-  roundRect(ctx, (W - admitW) / 2, sepY - 13, admitW, 26, 13);
-  ctx.fill();
-  ctx.fillStyle = 'rgba(192,132,252,0.8)';
-  ctx.font = 'bold 11px Arial, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('✦  ADMIT ONE  ✦', W / 2, sepY + 4);
+  // ── 4. Orbes ──────────────────────────────────────────────────────────────
+  drawDot(ctx, 0, 0,          220, '#7B2FBE', 0.18);
+  drawDot(ctx, PERF_X * 0.6, H,   160, '#E040FB', 0.11);
+  drawDot(ctx, 55, H / 2,    100, '#7B2FBE', 0.09);
+  drawDot(ctx, PERF_X - 38,  28,   90, '#00E5FF', 0.07);
 
-  // 8. Infos événement (centrées)
-  let infoY = sepY + 44;
+  // ── 5. Marque BilletGab ────────────────────────────────────────────────────
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 6;
+  ctx.fillStyle = 'rgba(192,132,252,0.75)';
+  ctx.font = 'bold 10px Arial, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('✦  BILLETGAB', PAD, 22);
+  ctx.restore();
 
+  // ── 6. Titre événement ────────────────────────────────────────────────────
+  const title = (eventTitle || 'MON BILLET').toUpperCase();
+  let fz = 34;
+  ctx.font = `bold ${fz}px Arial, sans-serif`;
+  while (ctx.measureText(title).width > MAIN_MAX_W && fz > 18) { fz -= 2; ctx.font = `bold ${fz}px Arial, sans-serif`; }
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,1)'; ctx.shadowBlur = 24;
+  ctx.fillStyle = '#ffffff'; ctx.textAlign = 'left';
+  ctx.fillText(title, PAD, 68);
+  ctx.restore();
+
+  // ── 7. Badge catégorie ────────────────────────────────────────────────────
+  let infoY = 88;
   if (categoryName) {
-    ctx.font = 'bold 13px Arial, sans-serif';
-    const catW = Math.min(ctx.measureText(categoryName.toUpperCase()).width + 40, W - 48);
-    const catX = (W - catW) / 2;
+    const cat = categoryName.toUpperCase();
+    ctx.font = 'bold 11px Arial, sans-serif';
+    const catW = Math.min(ctx.measureText(cat).width + 28, MAIN_MAX_W);
     ctx.save();
-    ctx.shadowColor = '#7B2FBE';
-    ctx.shadowBlur = 12;
-    ctx.fillStyle = 'rgba(123,47,190,0.35)';
-    roundRect(ctx, catX, infoY, catW, 30, 15);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(192,132,252,0.6)';
-    ctx.lineWidth = 1;
-    roundRect(ctx, catX, infoY, catW, 30, 15);
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = '#C084FC';
-    ctx.textAlign = 'center';
-    ctx.fillText(categoryName.toUpperCase(), W / 2, infoY + 20);
+    ctx.shadowColor = '#7B2FBE'; ctx.shadowBlur = 12;
+    ctx.fillStyle = 'rgba(123,47,190,0.42)';
+    roundRect(ctx, PAD, infoY, catW, 24, 12); ctx.fill();
+    ctx.strokeStyle = 'rgba(192,132,252,0.72)'; ctx.lineWidth = 1;
+    roundRect(ctx, PAD, infoY, catW, 24, 12); ctx.stroke();
+    ctx.shadowBlur = 0; ctx.fillStyle = '#C084FC'; ctx.textAlign = 'left';
+    ctx.fillText(cat, PAD + 14, infoY + 16);
     ctx.restore();
-    infoY += 50;
+    infoY += 40;
   }
 
+  // ── 8. Date ───────────────────────────────────────────────────────────────
   if (eventDate) {
     const d = new Date(eventDate);
-    const dateStr = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-    const timeStr = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-    ctx.textAlign = 'center';
-    ctx.fillStyle = 'rgba(0,229,255,0.45)';
-    ctx.font = '11px Arial, sans-serif';
-    ctx.fillText('DATE & HEURE', W / 2, infoY);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 15px Arial, sans-serif';
-    ctx.fillText(`${dateStr}  ·  ${timeStr}`, W / 2, infoY + 19);
-    ctx.fillStyle = 'rgba(0,229,255,0.2)';
-    ctx.fillRect(24, infoY + 28, W - 48, 1);
-    infoY += 52;
-  }
-
-  if (venueName) {
-    ctx.textAlign = 'center';
-    ctx.fillStyle = 'rgba(224,64,251,0.45)';
-    ctx.font = '11px Arial, sans-serif';
-    ctx.fillText('LIEU', W / 2, infoY);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 15px Arial, sans-serif';
-    let vText = venueName;
-    while (ctx.measureText(vText).width > W - 48 && vText.length > 10) {
-      vText = vText.slice(0, -3) + '…';
-    }
-    ctx.fillText(vText, W / 2, infoY + 19);
-    ctx.fillStyle = 'rgba(224,64,251,0.2)';
-    ctx.fillRect(24, infoY + 28, W - 48, 1);
-    infoY += 52;
-  }
-
-  // 9. Bloc acheteur (ajout — centré)
-  if (hasBuyer) {
-    const BH = 100;
-    const BY = infoY + 10;
-
+    const ds = d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+    const ts = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
     ctx.save();
-    ctx.fillStyle = 'rgba(255,255,255,0.04)';
-    roundRect(ctx, 24, BY, W - 48, BH, 14);
-    ctx.fill();
-    const topAccent = ctx.createLinearGradient(24, BY, W - 24, BY);
-    topAccent.addColorStop(0, 'rgba(123,47,190,0.7)');
-    topAccent.addColorStop(1, 'rgba(224,64,251,0.7)');
-    ctx.strokeStyle = topAccent;
-    ctx.lineWidth = 1.5;
-    roundRect(ctx, 24, BY, W - 48, BH, 14);
-    ctx.stroke();
+    ctx.shadowColor = 'rgba(0,0,0,0.95)'; ctx.shadowBlur = 10;
+    ctx.fillStyle = 'rgba(0,229,255,0.58)'; ctx.font = '9px Arial, sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText('DATE & HEURE', PAD, infoY);
+    ctx.fillStyle = '#ffffff'; ctx.font = `bold 13px Arial, sans-serif`;
+    ctx.fillText(`${ds}  ·  ${ts}`, PAD, infoY + 16);
     ctx.restore();
+    infoY += 36;
+  }
 
-    ctx.textAlign = 'center';
-    ctx.fillStyle = 'rgba(192,132,252,0.65)';
-    ctx.font = '10px Arial, sans-serif';
-    ctx.fillText('TITULAIRE', W / 2, BY + 20);
-
+  // ── 9. Lieu ───────────────────────────────────────────────────────────────
+  if (venueName) {
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.95)'; ctx.shadowBlur = 10;
+    ctx.fillStyle = 'rgba(224,64,251,0.58)'; ctx.font = '9px Arial, sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText('LIEU', PAD, infoY);
+    let vt = venueName;
+    ctx.font = 'bold 13px Arial, sans-serif';
+    while (ctx.measureText(vt).width > MAIN_MAX_W && vt.length > 10) vt = vt.slice(0, -3) + '…';
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 17px Arial, sans-serif';
-    ctx.fillText(buyerName || 'Acheteur', W / 2, BY + 42);
+    ctx.fillText(vt, PAD, infoY + 16);
+    ctx.restore();
+    infoY += 36;
+  }
 
+  // ── 10. Bloc acheteur ─────────────────────────────────────────────────────
+  const hasBuyer = buyerName || buyerEmail || price !== undefined;
+  if (hasBuyer) {
+    const BH = 52, BY = H - BH - 16;
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    roundRect(ctx, PAD - 4, BY, PERF_X - PAD * 2 + 8, BH, 10); ctx.fill();
+    const acc = ctx.createLinearGradient(PAD, BY, PERF_X - PAD, BY);
+    acc.addColorStop(0, 'rgba(123,47,190,0.68)');
+    acc.addColorStop(1, 'rgba(224,64,251,0.68)');
+    ctx.strokeStyle = acc; ctx.lineWidth = 1;
+    roundRect(ctx, PAD - 4, BY, PERF_X - PAD * 2 + 8, BH, 10); ctx.stroke();
+
+    ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 7;
+    ctx.fillStyle = 'rgba(192,132,252,0.62)'; ctx.font = '8px Arial, sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText('TITULAIRE', PAD + 4, BY + 12);
+    ctx.fillStyle = '#ffffff'; ctx.font = 'bold 14px Arial, sans-serif';
+    ctx.fillText(buyerName || 'Acheteur', PAD + 4, BY + 28);
     if (buyerEmail) {
-      ctx.fillStyle = 'rgba(255,255,255,0.38)';
-      ctx.font = '12px Arial, sans-serif';
-      ctx.fillText(buyerEmail, W / 2, BY + 60);
-    }
-
-    // Ligne basse : catégorie gauche, prix droite
-    const lineY = BY + BH - 16;
-    ctx.fillStyle = 'rgba(255,255,255,0.10)';
-    ctx.fillRect(38, lineY - 10, W - 76, 1);
-
-    if (categoryName) {
-      ctx.fillStyle = 'rgba(192,132,252,0.65)';
-      ctx.font = '11px Arial, sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText(categoryName, 38, lineY + 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.40)'; ctx.font = '10px Arial, sans-serif';
+      ctx.fillText(buyerEmail, PAD + 4, BY + 44);
     }
     if (price !== undefined) {
-      const priceStr = new Intl.NumberFormat('fr-FR').format(price) + ' FCFA';
-      ctx.fillStyle = '#00E5FF';
-      ctx.font = 'bold 12px Arial, sans-serif';
-      ctx.textAlign = 'right';
-      ctx.fillText(priceStr, W - 38, lineY + 2);
+      ctx.fillStyle = '#00E5FF'; ctx.font = 'bold 14px Arial, sans-serif'; ctx.textAlign = 'right';
+      ctx.fillText(new Intl.NumberFormat('fr-FR').format(price) + ' FCFA', PERF_X - PAD, BY + 28);
     }
-
-    infoY = BY + BH + 10;
+    ctx.restore();
   }
 
-  // 10. Zone QR code
-  const qrSize = 264;
-  const qrPad = 22;
-  const qrCardW = qrSize + qrPad * 2;
-  const qrCardH = qrSize + qrPad * 2;
-  const qrCardX = (W - qrCardW) / 2;
-  const qrCardY = infoY + 20;
+  // ── 11. Fond souche droite ────────────────────────────────────────────────
+  const stubBg = ctx.createLinearGradient(PERF_X + 1, 0, W, H);
+  stubBg.addColorStop(0, 'rgba(16,5,38,0.62)');
+  stubBg.addColorStop(1, 'rgba(4,9,18,0.62)');
+  ctx.fillStyle = stubBg;
+  ctx.fillRect(PERF_X + 1, 0, W - PERF_X - 1, H);
 
-  drawDot(ctx, W / 2, qrCardY + qrCardH / 2, 200, '#7B2FBE', 0.18);
+  // ── 12. Orbe souche + QR ──────────────────────────────────────────────────
+  drawDot(ctx, STUB_CX, H / 2, 130, '#7B2FBE', 0.14);
 
+  const qrSz = 162, qrPad = 11;
+  const qrW = qrSz + qrPad * 2, qrH = qrSz + qrPad * 2;
+  const qrX = STUB_CX - qrW / 2, qrY = H / 2 - qrH / 2 - 16;
+
+  // Halo blanc QR
   ctx.save();
-  ctx.shadowColor = 'rgba(123,47,190,0.5)';
-  ctx.shadowBlur = 32;
+  ctx.shadowColor = 'rgba(123,47,190,0.68)'; ctx.shadowBlur = 34;
   ctx.fillStyle = '#ffffff';
-  roundRect(ctx, qrCardX, qrCardY, qrCardW, qrCardH, 18);
-  ctx.fill();
-  ctx.shadowBlur = 0;
+  roundRect(ctx, qrX, qrY, qrW, qrH, 12); ctx.fill();
   ctx.restore();
 
+  // Bordure dégradée QR
   ctx.save();
-  const borderGrad = ctx.createLinearGradient(qrCardX, qrCardY, qrCardX + qrCardW, qrCardY + qrCardH);
-  borderGrad.addColorStop(0, 'rgba(123,47,190,0.7)');
-  borderGrad.addColorStop(0.5, 'rgba(224,64,251,0.5)');
-  borderGrad.addColorStop(1, 'rgba(0,229,255,0.5)');
-  ctx.strokeStyle = borderGrad;
-  ctx.lineWidth = 2.5;
-  roundRect(ctx, qrCardX, qrCardY, qrCardW, qrCardH, 18);
-  ctx.stroke();
+  const qrBG = ctx.createLinearGradient(qrX, qrY, qrX + qrW, qrY + qrH);
+  qrBG.addColorStop(0,   'rgba(123,47,190,0.85)');
+  qrBG.addColorStop(0.5, 'rgba(224,64,251,0.65)');
+  qrBG.addColorStop(1,   'rgba(0,229,255,0.65)');
+  ctx.strokeStyle = qrBG; ctx.lineWidth = 2;
+  roundRect(ctx, qrX, qrY, qrW, qrH, 12); ctx.stroke();
   ctx.restore();
 
-  const cm = 18;
-  const cOff = -8;
-  const cornerColor = 'rgba(123,47,190,0.9)';
-  drawCornerMark(ctx, qrCardX + cOff, qrCardY + cOff, cm, [1, 1], cornerColor);
-  drawCornerMark(ctx, qrCardX + qrCardW - cOff, qrCardY + cOff, cm, [-1, 1], cornerColor);
-  drawCornerMark(ctx, qrCardX + cOff, qrCardY + qrCardH - cOff, cm, [1, -1], cornerColor);
-  drawCornerMark(ctx, qrCardX + qrCardW - cOff, qrCardY + qrCardH - cOff, cm, [-1, -1], cornerColor);
+  // Marques de coin
+  const cm = 12, co = -6, cc = 'rgba(123,47,190,0.92)';
+  drawCornerMark(ctx, qrX + co,       qrY + co,       cm, [ 1,  1], cc);
+  drawCornerMark(ctx, qrX + qrW - co, qrY + co,       cm, [-1,  1], cc);
+  drawCornerMark(ctx, qrX + co,       qrY + qrH - co, cm, [ 1, -1], cc);
+  drawCornerMark(ctx, qrX + qrW - co, qrY + qrH - co, cm, [-1, -1], cc);
 
   const qrImg = await loadImage(qrDataUrl);
-  ctx.drawImage(qrImg, qrCardX + qrPad, qrCardY + qrPad, qrSize, qrSize);
+  ctx.drawImage(qrImg, qrX + qrPad, qrY + qrPad, qrSz, qrSz);
 
-  drawSparkle(ctx, qrCardX - 16, qrCardY + 30, 7, '#E040FB', 0.65);
-  drawSparkle(ctx, qrCardX + qrCardW + 16, qrCardY + qrCardH - 30, 5, '#00E5FF', 0.55);
-  drawSparkle(ctx, qrCardX + 20, qrCardY + qrCardH + 16, 4, '#C084FC', 0.50);
-  drawSparkle(ctx, qrCardX + qrCardW - 20, qrCardY - 14, 6, '#ffffff', 0.40);
+  // ── 13. Labels souche ─────────────────────────────────────────────────────
+  // E-TICKET (haut)
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,229,255,0.18)';
+  roundRect(ctx, STUB_CX - 38, 11, 76, 18, 9); ctx.fill();
+  ctx.fillStyle = 'rgba(0,229,255,0.68)'; ctx.font = 'bold 8px Arial, sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('E-TICKET', STUB_CX, 23);
+  ctx.restore();
 
-  // 11. Footer
-  const footY = qrCardY + qrCardH + 40;
-  ctx.textAlign = 'center';
+  // ADMIT ONE (sous QR)
+  const admitY = qrY + qrH + 10;
+  ctx.save();
+  ctx.shadowColor = 'rgba(123,47,190,0.55)'; ctx.shadowBlur = 10;
+  ctx.fillStyle = 'rgba(123,47,190,0.32)';
+  roundRect(ctx, STUB_CX - 52, admitY, 104, 22, 11); ctx.fill();
+  ctx.shadowBlur = 0; ctx.fillStyle = 'rgba(192,132,252,0.92)';
+  ctx.font = 'bold 10px Arial, sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('✦  ADMIT ONE  ✦', STUB_CX, admitY + 15);
+  ctx.restore();
+
+  // Texte vertical "CONSERVER CE TALON"
+  ctx.save();
+  ctx.translate(PERF_X + 14, H / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.10)';
+  ctx.font = 'bold 8px Arial, sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('CONSERVER CE TALON', 0, 0);
+  ctx.restore();
+
+  // ID billet
   ctx.fillStyle = 'rgba(255,255,255,0.22)';
-  ctx.font = '13px Arial, sans-serif';
-  ctx.fillText('Ce billet est personnel et non transférable', W / 2, footY);
-  ctx.fillStyle = 'rgba(255,255,255,0.1)';
-  ctx.font = '11px Arial, sans-serif';
-  ctx.fillText(`#${ticketId.slice(0, 22).toUpperCase()}`, W / 2, footY + 22);
+  ctx.font = '8px Arial, sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(`#${ticketId.slice(0, 14).toUpperCase()}`, STUB_CX, H - 11);
 
-  const barGrad = ctx.createLinearGradient(0, 0, W, 0);
-  barGrad.addColorStop(0, '#7B2FBE');
-  barGrad.addColorStop(0.5, '#E040FB');
-  barGrad.addColorStop(1, '#00E5FF');
-  ctx.fillStyle = barGrad;
-  ctx.fillRect(0, H - 7, W, 7);
+  // ── 14. Sparkles ──────────────────────────────────────────────────────────
+  drawSparkle(ctx, 518, 24,      6, '#00E5FF', 0.55);
+  drawSparkle(ctx, 592, H - 28, 5, '#E040FB', 0.45);
+  drawSparkle(ctx, PERF_X + 16, 22,  5, '#E040FB', 0.50);
+  drawSparkle(ctx, W - 16, H - 22,   4, '#00E5FF', 0.40);
 
-  drawSparkle(ctx, 50, H - 40, 5, '#E040FB', 0.35);
-  drawSparkle(ctx, W - 50, H - 40, 5, '#00E5FF', 0.35);
-  drawSparkle(ctx, W / 2, H - 55, 4, '#C084FC', 0.30);
+  // ── 15. Barre couleur bas ─────────────────────────────────────────────────
+  const barG = ctx.createLinearGradient(0, 0, W, 0);
+  barG.addColorStop(0,   '#7B2FBE');
+  barG.addColorStop(0.5, '#E040FB');
+  barG.addColorStop(1,   '#00E5FF');
+  ctx.fillStyle = barG;
+  ctx.fillRect(0, H - 6, W, 6);
+
+  // ── 16. Ombres de profondeur perforation ──────────────────────────────────
+  // Dessinées AVANT les trous pour ne pas reboucher les trous transparents
+  ctx.save();
+  const shL = ctx.createLinearGradient(PERF_X - 14, 0, PERF_X, 0);
+  shL.addColorStop(0, 'rgba(0,0,0,0)');
+  shL.addColorStop(1, 'rgba(0,0,0,0.38)');
+  ctx.fillStyle = shL; ctx.fillRect(PERF_X - 14, 0, 14, H);
+
+  const shR = ctx.createLinearGradient(PERF_X, 0, PERF_X + 14, 0);
+  shR.addColorStop(0, 'rgba(0,0,0,0.38)');
+  shR.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = shR; ctx.fillRect(PERF_X, 0, 14, H);
+  ctx.restore();
+
+  // ── 17. Perforation — trous réels (destination-out, absolument en dernier) ─
+  const NOTCH_R    = 18;   // rayon demi-cercles bord
+  const HOLE_R     = 3.8;  // rayon trous perforés
+  const HOLE_STEP  = 19;   // espacement entre trous
+
+  ctx.save();
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.fillStyle = '#000'; // opacité 1 obligatoire pour destination-out
+
+  // Encoches haut et bas
+  ctx.beginPath(); ctx.arc(PERF_X, 0, NOTCH_R, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(PERF_X, H, NOTCH_R, 0, Math.PI * 2); ctx.fill();
+
+  // Série de trous entre les encoches
+  const yStart = NOTCH_R + 10;
+  const yEnd   = H - NOTCH_R - 10;
+  for (let y = yStart; y <= yEnd; y += HOLE_STEP) {
+    ctx.beginPath(); ctx.arc(PERF_X, y, HOLE_R, 0, Math.PI * 2); ctx.fill();
+  }
+
+  ctx.restore(); // remet globalCompositeOperation à 'source-over'
 }

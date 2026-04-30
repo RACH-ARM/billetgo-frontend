@@ -7,6 +7,7 @@ import { ShoppingCart, Ticket, LayoutDashboard, ShieldCheck, ScanLine, LogOut, M
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import NotificationBell from './NotificationBell';
+import BilletGabLogo from '../common/BilletGabLogo';
 
 const ROLE_CONFIG = {
   BUYER:     { label: 'Mes billets',   Icon: Ticket,          path: '/mes-billets' },
@@ -55,7 +56,7 @@ export default function Navbar() {
 
         {/* Logo */}
         <Link to="/" onClick={close} className="flex-shrink-0">
-          <img src="/logo.svg" alt="BilletGo" className="h-9 w-auto" />
+          <BilletGabLogo height={36} />
         </Link>
 
         {/* Desktop nav */}

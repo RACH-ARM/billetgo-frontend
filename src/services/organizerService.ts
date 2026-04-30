@@ -125,12 +125,21 @@ export interface OrganizerPayout {
   pvitStatus: string;
 }
 
+export interface EventEarning {
+  eventId: string;
+  eventTitle: string;
+  eventDate: string;
+  eventStatus: string;
+  organizerAmount: number;
+}
+
 export interface OrganizerPayoutSummary {
   totalCollected: number;
   totalPlatformFee: number;
   totalNetAmount: number;
   totalPaid: number;
   balanceDue: number;
+  events: EventEarning[];
   payouts: OrganizerPayout[];
 }
 

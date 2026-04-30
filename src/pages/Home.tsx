@@ -166,18 +166,18 @@ export default function Home() {
   return (
     <div className="min-h-screen">
       <Helmet>
-        <title>BilletGo — Billetterie en ligne au Gabon</title>
+        <title>BilletGab — Billetterie en ligne au Gabon</title>
         <meta name="description" content="Achetez vos billets pour les meilleurs événements au Gabon : concerts, clubs, festivals, sport et plus. Paiement sécurisé par Airtel Money et Moov Money." />
         <link rel="canonical" href="https://billetgab.com" />
         <meta property="og:type" content="website" />
-        <meta property="og:title" content="BilletGo — Billetterie en ligne au Gabon" />
+        <meta property="og:title" content="BilletGab — Billetterie en ligne au Gabon" />
         <meta property="og:description" content="Achetez vos billets pour les meilleurs événements au Gabon. Paiement sécurisé par Airtel Money et Moov Money." />
         <meta property="og:url" content="https://billetgab.com" />
         <meta property="og:image" content="https://billetgab.com/og-default.jpg" />
-        <meta property="og:site_name" content="BilletGo" />
+        <meta property="og:site_name" content="BilletGab" />
         <meta property="og:locale" content="fr_GA" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="BilletGo — Billetterie en ligne au Gabon" />
+        <meta name="twitter:title" content="BilletGab — Billetterie en ligne au Gabon" />
         <meta name="twitter:description" content="Achetez vos billets pour les meilleurs événements au Gabon. Paiement sécurisé par Airtel Money et Moov Money." />
         <meta name="twitter:image" content="https://billetgab.com/og-default.jpg" />
       </Helmet>
@@ -402,9 +402,9 @@ function ProblemsResolved() {
           viewport={{ once: true }}
           className="text-center mb-10"
         >
-          <p className="text-xs text-violet-neon uppercase tracking-widest font-semibold mb-3">Ce que BilletGo règle pour vous</p>
+          <p className="text-xs text-violet-neon uppercase tracking-widest font-semibold mb-3">Ce que BilletGab règle pour vous</p>
           <h2 className="font-bebas text-4xl sm:text-5xl tracking-wider text-white mb-2">Les problèmes résolus</h2>
-          <p className="text-white/40 text-sm">Plus jamais ces galères avec BilletGo.</p>
+          <p className="text-white/40 text-sm">Plus jamais ces galères avec BilletGab.</p>
         </motion.div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

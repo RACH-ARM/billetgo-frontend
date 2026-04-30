@@ -49,7 +49,7 @@ export default function Contact() {
           </span>
           <h1 className="font-bebas text-5xl sm:text-7xl tracking-wider text-gradient mb-4">Contact</h1>
           <p className="text-white/60 text-lg max-w-xl mx-auto">
-            Une question, un problème, une idée ? L'équipe BilletGo est là.
+            Une question, un problème, une idée ? L'équipe BilletGab est là.
           </p>
         </motion.div>
       </section>

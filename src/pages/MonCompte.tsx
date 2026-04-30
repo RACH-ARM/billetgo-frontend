@@ -303,19 +303,9 @@ function TabOrganisateur() {
 
   return (
     <div className="space-y-6">
-      {/* Statut */}
-      <div className="glass-card p-4 flex flex-wrap gap-3">
-        {[
-          { label: 'Approuvé', active: org.isApproved },
-          { label: 'Certifié', active: org.isCertified },
-          { label: 'Premium', active: org.isPremium },
-        ].map(({ label, active }) => (
-          <div key={label} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold ${active ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-white/5 text-white/30 border border-white/10'}`}>
-            {active ? <Check className="w-3 h-3" /> : null}
-            {label}
-          </div>
-        ))}
-        <div className="ml-auto text-xs text-white/30">
+      {/* Commission */}
+      <div className="glass-card p-4 flex justify-end">
+        <div className="text-xs text-white/30">
           Commission : {(Number(org.commissionRate) * 100).toFixed(0)}%
         </div>
       </div>

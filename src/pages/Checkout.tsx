@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   Check, ChevronLeft, Ticket, Smartphone, CreditCard,
-  ArrowRight, Trash2, CalendarDays, MapPin, CheckCircle, X, Info, Clock, Lock,
+  ArrowRight, Trash2, CalendarDays, MapPin, X, Info, Clock, Lock,
 } from 'lucide-react';
 import { useCartStore } from '../stores/cartStore';
 import { useAuthStore } from '../stores/authStore';
@@ -14,7 +14,6 @@ import { formatEventDate } from '../utils/formatDate';
 import { normalizeGabonPhone, isValidGabonPhone, isPhoneMatchingProvider } from '../utils/phone';
 import { unlockAudio } from '../utils/sounds';
 import Button from '../components/common/Button';
-import toast from 'react-hot-toast';
 
 type Step = 1 | 2;
 
@@ -54,9 +53,6 @@ export default function Checkout() {
   const [provider, setProvider] = useState<'AIRTEL_MONEY' | 'MOOV_MONEY' | null>(null);
   const [cgvAccepted, setCgvAccepted] = useState(false);
   const [paymentPhone, setPaymentPhone] = useState('');
-  const [promoInput, setPromoInput] = useState('');
-  const [promoApplied, setPromoApplied] = useState<{ id: string; code: string; discountType: string; discountValue: number } | null>(null);
-  const [promoLoading, setPromoLoading] = useState(false);
   const [isExpired, setIsExpired] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const createOrder = useCreateOrder();
@@ -167,12 +163,6 @@ export default function Checkout() {
   }
 
   const rawTotal = getTotalAmount();
-  const discountAmount = promoApplied
-    ? promoApplied.discountType === 'PERCENT'
-      ? rawTotal * (promoApplied.discountValue / 100)
-      : Math.min(promoApplied.discountValue, rawTotal)
-    : 0;
-  const finalTotal = Math.max(0, rawTotal - discountAmount);
 
   // Frais de traitement pour billets gratuits uniquement (500 FCFA/billet)
   const FREE_TICKET_FEE = 500;
@@ -182,27 +172,9 @@ export default function Checkout() {
   // Frais de service PayIn (2.5%) — couvre les frais Mobile Money à la charge de l'acheteur
   // Base = prix billets après remise + frais billets gratuits
   const PAYIN_RATE = 0.025;
-  const payinBase = Math.max(0, finalTotal + freeTicketFee);
+  const payinBase = Math.max(0, rawTotal + freeTicketFee);
   const serviceFee = payinBase > 0 ? Math.round(payinBase * PAYIN_RATE) : 0;
   const totalToPay = payinBase + serviceFee;
-
-  const applyPromo = async () => {
-    if (!promoInput.trim()) return;
-    setPromoLoading(true);
-    try {
-      const { data } = await import('../services/api').then(m => m.default.post('/orders/validate-promo', {
-        code: promoInput.trim(),
-        eventId: event.id,
-      }));
-      setPromoApplied(data.data);
-      toast.success(`Code "${data.data.code}" appliqué !`);
-    } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(msg || 'Code invalide');
-    } finally {
-      setPromoLoading(false);
-    }
-  };
 
   // Validation stock en temps réel via les données fraîches de l'événement
   const soldOutItems = freshEvent
@@ -232,7 +204,6 @@ export default function Checkout() {
         buyerEmail: buyerInfo.email || undefined,
         cgvAcceptedAt: new Date().toISOString(),
         provider: provider ?? undefined,
-        ...(promoApplied && { promoCode: promoApplied.code }),
       });
 
       const result = await initiatePayment.mutateAsync({
@@ -257,7 +228,7 @@ export default function Checkout() {
           eventDate: event.eventDate,
           venueName: event.venueName,
           coverImageUrl: event.coverImageUrl ?? null,
-          amount: finalTotal,
+          amount: totalToPay,
           ticketsCount: items.reduce((s, i) => s + i.quantity, 0),
           provider,
           orderItems: items.map((i) => ({
@@ -451,12 +422,6 @@ export default function Checkout() {
                         <span>Sous-total</span>
                         <span className="font-mono">{formatPrice(rawTotal)}</span>
                       </div>
-                      {discountAmount > 0 && (
-                        <div className="flex justify-between text-sm text-green-400">
-                          <span>Remise ({promoApplied?.code})</span>
-                          <span className="font-mono">- {formatPrice(discountAmount)}</span>
-                        </div>
-                      )}
                       {freeTicketFee > 0 && (
                         <div className="flex justify-between items-center text-sm text-white/40">
                           <span className="flex items-center gap-1.5">
@@ -480,43 +445,6 @@ export default function Checkout() {
                         <span className="font-mono text-lg font-bold text-gradient">{formatPrice(totalToPay)}</span>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Code promo */}
-                  <div className="glass-card p-4 border border-violet-neon/10">
-                    <p className="text-xs text-white/40 uppercase tracking-widest mb-3">Code promo</p>
-                    {promoApplied ? (
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-green-400 text-sm">
-                          <CheckCircle className="w-4 h-4" />
-                          <span className="font-mono font-bold">{promoApplied.code}</span>
-                          <span>— {promoApplied.discountType === 'PERCENT' ? `${promoApplied.discountValue}%` : formatPrice(promoApplied.discountValue)} de réduction</span>
-                        </div>
-                        <button onClick={() => setPromoApplied(null)} className="text-white/30 hover:text-rose-neon transition-colors">
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={promoInput}
-                            onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
-                            onKeyDown={(e) => e.key === 'Enter' && applyPromo()}
-                            placeholder="VOTRECODE"
-                            className="flex-1 bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white placeholder-white/20 font-mono text-sm focus:outline-none focus:border-violet-neon transition-colors"
-                          />
-                          <button
-                            onClick={applyPromo}
-                            disabled={promoLoading || !promoInput.trim()}
-                            className="px-4 py-2.5 rounded-xl bg-violet-neon/20 border border-violet-neon/40 text-violet-neon hover:bg-violet-neon/30 text-sm font-semibold transition-colors disabled:opacity-40"
-                          >
-                            {promoLoading ? '...' : 'Appliquer'}
-                          </button>
-                        </div>
-                      </>
-                    )}
                   </div>
 
                 </motion.div>
@@ -636,7 +564,7 @@ export default function Checkout() {
                     <span className="text-xs text-white/50 leading-relaxed">
                       J'accepte les{' '}
                       <Link to="/cgv" target="_blank" className="text-violet-neon hover:underline">CGV</Link>
-                      {' '}— billets non remboursables sauf annulation de l'événement.
+                      {' '}— billets non remboursables.
                     </span>
                   </label>
 
@@ -696,12 +624,6 @@ export default function Checkout() {
               </div>
 
               <div className="space-y-1.5 pt-3 border-t border-white/5">
-                {discountAmount > 0 && (
-                  <div className="flex justify-between text-xs text-green-400">
-                    <span>Remise</span>
-                    <span className="font-mono">- {formatPrice(discountAmount)}</span>
-                  </div>
-                )}
                 {freeTicketFee > 0 && (
                   <div className="flex justify-between text-xs text-white/35">
                     <span>Frais traitement billets gratuits</span>

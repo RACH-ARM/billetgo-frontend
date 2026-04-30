@@ -12,12 +12,12 @@ describe('getTrafficSource', () => {
   });
 
   it('retourne les données stockées', () => {
-    sessionStorage.setItem('billetgo_traffic', JSON.stringify({ utmSource: 'google' }));
+    sessionStorage.setItem('billetgab_traffic', JSON.stringify({ utmSource: 'google' }));
     expect(getTrafficSource()).toEqual({ utmSource: 'google' });
   });
 
   it('retourne {} si la valeur en session est JSON invalide', () => {
-    sessionStorage.setItem('billetgo_traffic', 'not-json{{{');
+    sessionStorage.setItem('billetgab_traffic', 'not-json{{{');
     expect(getTrafficSource()).toEqual({});
   });
 });
@@ -47,7 +47,7 @@ describe('captureTrafficSource', () => {
   it('ne stocke rien pour du trafic direct (pas d\'UTM, pas de referrer)', () => {
     setLocation('https://billetgab.com/');
     captureTrafficSource();
-    expect(sessionStorage.getItem('billetgo_traffic')).toBeNull();
+    expect(sessionStorage.getItem('billetgab_traffic')).toBeNull();
   });
 
   it('capture utm_source et utm_campaign', () => {
@@ -76,7 +76,7 @@ describe('captureTrafficSource', () => {
     setReferrer('https://billetgab.com/events');
     captureTrafficSource();
     // Pas d'UTM non plus → rien stocké
-    expect(sessionStorage.getItem('billetgo_traffic')).toBeNull();
+    expect(sessionStorage.getItem('billetgab_traffic')).toBeNull();
   });
 
   it('ne remplace pas une source déjà capturée dans la session (first-touch)', () => {

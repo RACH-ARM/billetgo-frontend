@@ -1,6 +1,6 @@
 {
-  "name": "BilletGo",
-  "short_name": "BilletGo",
+  "name": "BilletGab",
+  "short_name": "BilletGab",
   "description": "La première plateforme de billetterie événementielle du Gabon",
   "start_url": "/",
   "display": "standalone",

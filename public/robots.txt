@@ -7,4 +7,4 @@ Disallow: /organizer
 Disallow: /admin
 Disallow: /scanner
 
-Sitemap: https://billetgo.ga/sitemap.xml
+Sitemap: https://billetgab.com/sitemap.xml

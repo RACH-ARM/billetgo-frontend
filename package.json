@@ -1,13 +1,13 @@
 {
-  "name": "billetgo-frontend",
+  "name": "billetgab-frontend",
   "version": "1.0.0",
-  "description": "BilletGo — Plateforme de billetterie événementielle du Gabon — Frontend",
+  "description": "BilletGab — Plateforme de billetterie événementielle du Gabon — Frontend",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --force",
     "build": "tsc && vite build",
-    "preview": "vite preview",
+    "preview": "vite preview --host",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "type-check": "tsc --noEmit",
     "test": "vitest run",

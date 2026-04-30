@@ -6,7 +6,7 @@ import {
   Users, CalendarDays, TrendingUp, Clock, CheckCircle, XCircle,
   ShieldAlert, LayoutDashboard, ListChecks, X, LogOut, Banknote,
   Star, Flame, Ban, Sparkles, ScanLine, Plus, Eye, EyeOff, Pencil, MessageSquare, FileSearch, RotateCcw, ScrollText, Settings,
-  Square, CheckSquare, BadgeCheck, Award, Zap, Shield,
+  Square, CheckSquare, BadgeCheck, Award, Zap, Shield, MapPin,
 } from 'lucide-react';
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
@@ -56,6 +56,242 @@ interface AdminPayoutOrganizer {
   isApproved?: boolean;
   isCertified?: boolean;
   isPremium?: boolean;
+}
+
+// ── Event Preview ─────────────────────────────────────────────
+interface PreviewEventData {
+  id?: string;
+  title?: string;
+  subtitle?: string;
+  category?: string;
+  description?: string;
+  coverImageUrl?: string;
+  galleryUrls?: string[];
+  eventDate?: string;
+  doorsOpenAt?: string;
+  venueName?: string;
+  venueAddress?: string;
+  venueCity?: string;
+  isFeatured?: boolean;
+  isCertified?: boolean;
+  organizer?: {
+    companyName?: string;
+    businessName?: string;
+    logoUrl?: string;
+    isCertified?: boolean;
+    description?: string;
+    user?: { firstName?: string; lastName?: string };
+  };
+  ticketCategories?: Array<{
+    name: string;
+    price: number;
+    quantityTotal: number;
+    quantitySold?: number;
+    description?: string;
+    isVisible?: boolean;
+    sortOrder?: number;
+  }>;
+}
+
+function EventPreviewModal({ event, onClose }: { event: PreviewEventData; onClose: () => void }) {
+  const allImages = [
+    ...(event.coverImageUrl ? [event.coverImageUrl] : []),
+    ...(event.galleryUrls ?? []),
+  ];
+  const orgName = event.organizer?.companyName
+    ?? event.organizer?.businessName
+    ?? [event.organizer?.user?.firstName, event.organizer?.user?.lastName].filter(Boolean).join(' ')
+    ?? 'Organisateur';
+  const visibleCats = (event.ticketCategories ?? [])
+    .filter(c => c.isVisible !== false)
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm overflow-y-auto"
+      onClick={onClose}
+    >
+      <div className="min-h-screen py-6 px-4 flex flex-col items-center">
+        {/* Barre d'outils */}
+        <div className="w-full max-w-4xl flex items-center justify-between mb-4 flex-shrink-0">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-violet-neon/15 border border-violet-neon/30 text-violet-neon text-sm">
+            <Eye className="w-4 h-4" />
+            Prévisualisation — vue acheteur
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl bg-white/10 text-white/60 hover:bg-white/20 hover:text-white transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Cadre de prévisualisation */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="w-full max-w-4xl bg-bg rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
+          onClick={e => e.stopPropagation()}
+        >
+          {/* Hero banner */}
+          <div className="relative h-64 md:h-96 overflow-hidden">
+            {event.coverImageUrl ? (
+              <img src={event.coverImageUrl} alt={event.title} className="w-full h-full object-cover object-top" />
+            ) : (
+              <div className="w-full h-full" style={{ background: 'linear-gradient(135deg, #2D1060 0%, #0D0D1A 60%, #003060 100%)' }} />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/50 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-bg/40 to-transparent" />
+            <div className="absolute bottom-6 left-6 right-6">
+              <div className="flex flex-wrap gap-2 mb-2">
+                {event.category && (
+                  <span className="text-xs px-2.5 py-1 rounded-full bg-violet-neon/25 border border-violet-neon/40 text-violet-neon font-semibold">
+                    {event.category}
+                  </span>
+                )}
+                {event.isFeatured && (
+                  <span className="text-xs px-2.5 py-1 rounded-full bg-rose-neon/25 border border-rose-neon/40 text-rose-neon font-semibold">
+                    À LA UNE
+                  </span>
+                )}
+              </div>
+              <h1 className="font-bebas text-4xl md:text-6xl tracking-wider text-white drop-shadow-2xl leading-none">
+                {event.title}
+              </h1>
+              {event.subtitle && (
+                <p className="text-white/70 mt-1.5 text-base">{event.subtitle}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Corps */}
+          <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Colonne principale */}
+            <div className="lg:col-span-2 space-y-4">
+
+              {/* Date */}
+              {event.eventDate && (
+                <div className="glass-card p-4 flex flex-wrap gap-6 items-center">
+                  <div>
+                    <p className="text-xs text-white/40 uppercase tracking-widest mb-1">Date</p>
+                    <p className="text-white font-semibold">{formatEventDate(event.eventDate)}</p>
+                  </div>
+                  {event.doorsOpenAt && (
+                    <>
+                      <div className="w-px h-8 bg-white/10" />
+                      <div>
+                        <p className="text-xs text-white/40 uppercase tracking-widest mb-1">Ouverture des portes</p>
+                        <p className="text-white/70 font-mono text-sm">
+                          {new Date(event.doorsOpenAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Description */}
+              {event.description && (
+                <div className="glass-card p-5">
+                  <h2 className="font-bebas text-lg tracking-wider text-white mb-3">À propos</h2>
+                  <p className="text-white/60 text-sm leading-relaxed whitespace-pre-line">{event.description}</p>
+                </div>
+              )}
+
+              {/* Galerie */}
+              {allImages.length > 1 && (
+                <div className="glass-card p-4">
+                  <h2 className="font-bebas text-lg tracking-wider text-white mb-3">Galerie</h2>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                    {allImages.slice(0, 8).map((url, i) => (
+                      <div key={i} className="aspect-square rounded-xl overflow-hidden">
+                        <img src={url} alt={`Photo ${i + 1}`} className="w-full h-full object-cover opacity-80" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Lieu */}
+              {event.venueName && (
+                <div className="glass-card p-5">
+                  <h2 className="font-bebas text-lg tracking-wider text-white mb-3">Lieu</h2>
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-violet-neon/20 flex items-center justify-center flex-shrink-0">
+                      <MapPin className="w-4 h-4 text-violet-neon" />
+                    </div>
+                    <div>
+                      <p className="text-white font-semibold">{event.venueName}</p>
+                      {event.venueAddress && <p className="text-white/50 text-sm mt-0.5">{event.venueAddress}</p>}
+                      {event.venueCity && <p className="text-white/50 text-sm">{event.venueCity}</p>}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Organisateur */}
+              <div className="glass-card p-5">
+                <h2 className="font-bebas text-lg tracking-wider text-white mb-3">Organisateur</h2>
+                <div className="flex items-center gap-3">
+                  {event.organizer?.logoUrl ? (
+                    <img src={event.organizer.logoUrl} alt={orgName} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" />
+                  ) : (
+                    <div
+                      className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bebas text-xl flex-shrink-0"
+                      style={{ background: 'linear-gradient(135deg, #7B2FBE, #00E5FF)' }}
+                    >
+                      {orgName.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-white font-semibold">{orgName}</p>
+                      {(event.isCertified || event.organizer?.isCertified) && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-neon/15 text-cyan-neon border border-cyan-neon/30 font-semibold">
+                          ✓ Certifié
+                        </span>
+                      )}
+                    </div>
+                    {event.organizer?.description && (
+                      <p className="text-white/50 text-sm mt-0.5 line-clamp-2">{event.organizer.description}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Colonne billets */}
+            <div className="space-y-3">
+              <h2 className="font-bebas text-xl tracking-wider text-white">Billets disponibles</h2>
+              {visibleCats.length === 0 ? (
+                <div className="glass-card p-5 text-center text-white/30 text-sm border border-dashed border-white/10">
+                  Aucune catégorie de billet définie
+                </div>
+              ) : visibleCats.map((cat, i) => (
+                <div key={i} className="glass-card p-4 border border-violet-neon/20">
+                  <div className="flex justify-between items-start mb-1">
+                    <h3 className="font-semibold text-white">{cat.name}</h3>
+                    <span className="font-mono font-bold text-cyan-neon text-sm">{formatPrice(cat.price)}</span>
+                  </div>
+                  {cat.description && <p className="text-xs text-white/50 mb-2">{cat.description}</p>}
+                  <p className="text-xs text-white/30 mb-3">{cat.quantityTotal} places disponibles</p>
+                  <div className="w-full py-2 rounded-xl text-sm font-semibold text-center bg-violet-neon/10 border border-violet-neon/20 text-violet-neon/60 cursor-default select-none">
+                    Ajouter au panier
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+
+        <p className="text-white/20 text-xs mt-4 mb-2">Cliquez en dehors pour fermer</p>
+      </div>
+    </motion.div>
+  );
 }
 
 // ── Role badge ────────────────────────────────────────────────
@@ -494,6 +730,7 @@ export default function AdminBackoffice() {
   );
 
   const [rejectChangesTarget, setRejectChangesTarget] = useState<{ id: string; title: string } | null>(null);
+  const [previewEvent, setPreviewEvent] = useState<PreviewEventData | null>(null);
 
   const { data: payoutsData, isLoading: payoutsLoading, refetch: refetchPayouts } = useQuery(
     'admin-payouts',
@@ -829,7 +1066,7 @@ export default function AdminBackoffice() {
             Déconnexion
           </button>
         </div>
-        <p className="text-white/40 mt-1 text-sm">Gestion de la plateforme BilletGo</p>
+        <p className="text-white/40 mt-1 text-sm">Gestion de la plateforme BilletGab</p>
       </motion.div>
 
       {/* Tabs */}
@@ -870,7 +1107,7 @@ export default function AdminBackoffice() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <KpiCard title="Commandes complètes" value={(dashboard?.totalOrders ?? 0).toLocaleString('fr-FR')} Icon={CheckCircle} color="green" />
-            <KpiCard title="Revenus plateforme" value={formatPrice(dashboard?.platformRevenue ?? 0, 'FCFA', '0 FCFA')} subtitle="Commission BilletGo" Icon={TrendingUp} color="rose" />
+            <KpiCard title="Revenus plateforme" value={formatPrice(dashboard?.platformRevenue ?? 0, 'FCFA', '0 FCFA')} subtitle="Commission BilletGab" Icon={TrendingUp} color="rose" />
             <KpiCard title="Volume transactions" value={formatPrice(dashboard?.totalTransactionVolume ?? 0, 'FCFA', '0 FCFA')} subtitle="Total brut" Icon={TrendingUp} color="cyan" />
           </div>
         </div>
@@ -1031,6 +1268,14 @@ export default function AdminBackoffice() {
                 </div>
                 <div className="flex md:flex-col gap-2 flex-shrink-0">
                   <Button
+                    variant="secondary"
+                    size="sm"
+                    className="flex-1 md:flex-none flex items-center gap-1.5 border-violet-neon/30 text-violet-neon hover:bg-violet-neon/10"
+                    onClick={() => setPreviewEvent(event as PreviewEventData)}
+                  >
+                    <Eye className="w-4 h-4" /> Prévisualiser
+                  </Button>
+                  <Button
                     variant="primary"
                     size="sm"
                     className="flex-1 md:flex-none flex items-center gap-1.5"
@@ -1158,7 +1403,24 @@ export default function AdminBackoffice() {
                         </div>
                       )}
 
-                      <div className="flex gap-2 mt-4 pt-3 border-t border-white/5">
+                      <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-white/5">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="flex items-center gap-1.5 border-violet-neon/30 text-violet-neon hover:bg-violet-neon/10"
+                          onClick={() => {
+                            const merged = {
+                              ...event,
+                              ...(pending ?? {}),
+                              ticketCategories: Array.isArray(pending?.ticketCategories)
+                                ? pending!.ticketCategories
+                                : event.ticketCategories,
+                            };
+                            setPreviewEvent(merged as PreviewEventData);
+                          }}
+                        >
+                          <Eye className="w-4 h-4" /> Prévisualiser (après modif.)
+                        </Button>
                         <Button
                           variant="primary"
                           size="sm"
@@ -2567,6 +2829,13 @@ export default function AdminBackoffice() {
 
         </div>
       )}
+
+      {/* Preview modal */}
+      <AnimatePresence>
+        {previewEvent && (
+          <EventPreviewModal event={previewEvent} onClose={() => setPreviewEvent(null)} />
+        )}
+      </AnimatePresence>
 
       {/* Reject modal */}
       <AnimatePresence>

@@ -68,10 +68,10 @@ export default function OrganizerPublicPage() {
 
   const allPhotos = data?.events.flatMap((e) => e.galleryUrls ?? []) ?? [];
 
-  const seoTitle = `${data.companyName} — Organisateur d'événements | BilletGo`;
+  const seoTitle = `${data.companyName} — Organisateur d'événements | BilletGab`;
   const seoDesc = data.description
     ? data.description.slice(0, 160)
-    : `Découvrez les événements de ${data.companyName} sur BilletGo — billetterie en ligne au Gabon.`;
+    : `Découvrez les événements de ${data.companyName} sur BilletGab — billetterie en ligne au Gabon.`;
   const seoUrl = `${SITE_URL}/organizers/${data.id}`;
   const seoImage = data.logoUrl ?? `${SITE_URL}/og-default.jpg`;
 
@@ -86,7 +86,7 @@ export default function OrganizerPublicPage() {
         <meta property="og:description" content={seoDesc} />
         <meta property="og:url" content={seoUrl} />
         <meta property="og:image" content={seoImage} />
-        <meta property="og:site_name" content="BilletGo" />
+        <meta property="og:site_name" content="BilletGab" />
         <meta property="og:locale" content="fr_GA" />
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:title" content={seoTitle} />

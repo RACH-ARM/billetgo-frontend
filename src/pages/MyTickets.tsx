@@ -39,6 +39,7 @@ function SkeletonOrder() {
 const ORDER_STATUS_VARIANT: Record<string, 'green' | 'gray' | 'rose'> = {
   COMPLETED: 'green',
   PENDING: 'gray',
+  PENDING_FAILED: 'rose',
   PROCESSING: 'gray',
   FAILED: 'rose',
   CANCELLED: 'rose',
@@ -48,10 +49,18 @@ const ORDER_STATUS_VARIANT: Record<string, 'green' | 'gray' | 'rose'> = {
 const ORDER_STATUS_LABEL: Record<string, string> = {
   COMPLETED: 'Confirmée',
   PENDING: 'En attente',
+  PENDING_FAILED: 'Paiement échoué',
   PROCESSING: 'En cours',
   FAILED: 'Échouée',
   CANCELLED: 'Annulée',
   REFUNDED: 'Remboursée',
+};
+
+const getEffectiveStatus = (order: any): string => {
+  if (order.status === 'PENDING' && order.payments?.some((p: any) => p.status === 'FAILED')) {
+    return 'PENDING_FAILED';
+  }
+  return order.status;
 };
 
 export default function MyTickets() {
@@ -72,9 +81,6 @@ export default function MyTickets() {
   const navigate = useNavigate();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [refundModal, setRefundModal] = useState<{ type: 'order' | 'ticket'; id: string; eventTitle: string } | null>(null);
-  const [refundReason, setRefundReason] = useState('');
-  const [refundLoading, setRefundLoading] = useState(false);
   const [transferModal, setTransferModal] = useState<{ ticketId: string; ticketNum: number; eventTitle: string } | null>(null);
   const [transferInput, setTransferInput] = useState('');
   const [transferLoading, setTransferLoading] = useState(false);
@@ -116,26 +122,6 @@ export default function MyTickets() {
       else next.add(orderId);
       return next;
     });
-  };
-
-  const handleRequestRefund = async () => {
-    if (!refundModal) return;
-    setRefundLoading(true);
-    try {
-      if (refundModal.type === 'order') {
-        await api.post(`/orders/${refundModal.id}/refund`, { reason: refundReason.trim() || undefined });
-      } else {
-        await api.post(`/tickets/${refundModal.id}/refund`, { reason: refundReason.trim() || undefined });
-      }
-      toast.success('Demande de remboursement soumise. Nous reviendrons vers vous sous 48h.');
-      setRefundModal(null);
-      setRefundReason('');
-    } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } } };
-      toast.error(e?.response?.data?.message || 'Impossible de soumettre la demande');
-    } finally {
-      setRefundLoading(false);
-    }
   };
 
   const handleTransfer = async () => {
@@ -350,8 +336,8 @@ export default function MyTickets() {
                       <p className="text-xs text-white/50">{formatEventDate(order.event.eventDate)}</p>
                       <p className="text-xs text-white/40">{order.event.venueName}</p>
                     </div>
-                    <Badge variant={ORDER_STATUS_VARIANT[order.status] || 'gray'}>
-                      {ORDER_STATUS_LABEL[order.status] || order.status}
+                    <Badge variant={ORDER_STATUS_VARIANT[getEffectiveStatus(order)] || 'gray'}>
+                      {ORDER_STATUS_LABEL[getEffectiveStatus(order)] || order.status}
                     </Badge>
                   </div>
 
@@ -512,13 +498,6 @@ export default function MyTickets() {
                                   >
                                     <ArrowRightLeft className="w-3 h-3" /> Transférer
                                   </button>
-                                  <span className="text-white/10">·</span>
-                                  <button
-                                    onClick={() => setRefundModal({ type: 'ticket', id: ticket.id, eventTitle: order.event.title })}
-                                    className="text-xs text-white/25 hover:text-rose-neon transition-colors flex items-center gap-1"
-                                  >
-                                    <RotateCcw className="w-3 h-3" /> Rembourser
-                                  </button>
                                 </div>
                               ) : (
                                 <span className="text-xs text-white/20">Disponible</span>
@@ -547,64 +526,6 @@ export default function MyTickets() {
           );
         })}
       </div>
-
-      {/* Modale remboursement */}
-      <AnimatePresence>
-        {refundModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
-            onClick={() => setRefundModal(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="glass-card p-6 max-w-md w-full border border-rose-neon/20 max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bebas text-xl tracking-wider text-white">Demande de remboursement</h3>
-                <button onClick={() => setRefundModal(null)} className="text-white/40 hover:text-white">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <p className="text-sm text-white/60 mb-4">
-                <span className="text-white font-medium">{refundModal.eventTitle}</span>
-                <br />
-                {refundModal.type === 'ticket'
-                  ? 'Remboursement d\'un billet individuel. Possible uniquement avant la tenue de l\'événement.'
-                  : 'Remboursement de toute la commande. Possible uniquement avant la tenue de l\'événement.'
-                }{' '}Traitement sous 48h.
-              </p>
-              <textarea
-                value={refundReason}
-                onChange={(e) => setRefundReason(e.target.value)}
-                placeholder="Motif de votre demande (optionnel)"
-                rows={3}
-                className="w-full bg-bg rounded-lg border border-white/10 text-white/80 text-sm p-3 resize-none focus:outline-none focus:border-rose-neon/50 placeholder-white/20 mb-4"
-              />
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setRefundModal(null)}
-                  className="flex-1 py-2.5 rounded-xl border border-white/10 text-white/50 hover:text-white text-sm transition-colors"
-                >
-                  Annuler
-                </button>
-                <button
-                  onClick={handleRequestRefund}
-                  disabled={refundLoading}
-                  className="flex-1 py-2.5 rounded-xl bg-rose-neon/10 border border-rose-neon/40 text-rose-neon hover:bg-rose-neon/20 text-sm font-semibold transition-colors disabled:opacity-50"
-                >
-                  {refundLoading ? 'Envoi...' : 'Soumettre la demande'}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Modale transfert */}
       <AnimatePresence>
@@ -657,7 +578,7 @@ export default function MyTickets() {
                     {' '}— Billet {String(transferModal.ticketNum).padStart(2, '0')}
                   </p>
                   <p className="text-xs text-white/30 mb-4">
-                    Le destinataire doit avoir un compte BilletGo. Votre QR Code sera invalidé immédiatement.
+                    Le destinataire doit avoir un compte BilletGab. Votre QR Code sera invalidé immédiatement.
                   </p>
                   <div className="mb-4">
                     <label className="block text-xs text-white/50 uppercase tracking-widest mb-1.5">

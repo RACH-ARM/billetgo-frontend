@@ -20,7 +20,7 @@ export default function Confidentialite() {
       const url = URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'politique-confidentialite-billetgo.pdf';
+      a.download = 'politique-confidentialite-billetgab.pdf';
       a.click();
       URL.revokeObjectURL(url);
     } catch {
@@ -56,7 +56,7 @@ export default function Confidentialite() {
 
           <Section title="1. Responsable du traitement">
             <p>
-              Le responsable du traitement des données personnelles collectées sur BilletGo est{' '}
+              Le responsable du traitement des données personnelles collectées sur BilletGab est{' '}
               <span className="text-white">Tiamiyou Arèmou</span>, concepteur et exploitant de la plateforme,
               basé à Libreville, Gabon.
             </p>
@@ -67,14 +67,14 @@ export default function Confidentialite() {
           </Section>
 
           <Section title="2. Données collectées">
-            <p>BilletGo collecte les données suivantes selon le profil et les actions de l'utilisateur :</p>
+            <p>BilletGab collecte les données suivantes selon le profil et les actions de l'utilisateur :</p>
 
             <p className="text-white/80 font-medium mt-2">Lors de l'inscription (tous les utilisateurs)</p>
             <ul className="list-disc list-inside space-y-1 pl-2">
               <li>Prénom et nom de famille</li>
               <li>Adresse email (optionnelle si numéro de téléphone fourni)</li>
               <li>Numéro de téléphone (optionnel si email fourni)</li>
-              <li>Mot de passe (stocké sous forme hachée avec bcrypt, inaccessible même par BilletGo)</li>
+              <li>Mot de passe (stocké sous forme hachée avec bcrypt, inaccessible même par BilletGab)</li>
               <li>Nom de la société ou de l'organisation (pour les comptes organisateurs)</li>
             </ul>
 
@@ -131,7 +131,7 @@ export default function Confidentialite() {
 
           <Section title="4. Partage des données">
             <p>
-              BilletGo ne vend jamais vos données personnelles à des tiers. Vos données peuvent être
+              BilletGab ne vend jamais vos données personnelles à des tiers. Vos données peuvent être
               partagées uniquement dans les cas suivants :
             </p>
             <ul className="list-disc list-inside space-y-1 pl-2">
@@ -172,7 +172,7 @@ export default function Confidentialite() {
 
           <Section title="6. Sécurité des données">
             <p>
-              BilletGo met en œuvre les mesures techniques et organisationnelles suivantes pour protéger vos données :
+              BilletGab met en œuvre les mesures techniques et organisationnelles suivantes pour protéger vos données :
             </p>
             <ul className="list-disc list-inside space-y-1 pl-2">
               <li>Hachage des mots de passe avec bcrypt (coût 12).</li>
@@ -209,7 +209,7 @@ export default function Confidentialite() {
 
           <Section title="8. Cookies et stockage local">
             <p>
-              BilletGo n'utilise pas de cookies publicitaires ni de traceurs tiers à des fins de ciblage.
+              BilletGab n'utilise pas de cookies publicitaires ni de traceurs tiers à des fins de ciblage.
               Le stockage local du navigateur (localStorage) est utilisé exclusivement pour maintenir votre
               session de connexion (token JWT) et vos préférences de panier. Ces données restent sur votre
               appareil et ne sont pas transmises à des tiers.

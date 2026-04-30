@@ -229,7 +229,7 @@ export default function EventsPage() {
 
   // Inject CSS keyframes once
   useEffect(() => {
-    const id = 'billetgo-scroll-keyframes';
+    const id = 'billetgab-scroll-keyframes';
     if (document.getElementById(id)) return;
     const style = document.createElement('style');
     style.id = id;

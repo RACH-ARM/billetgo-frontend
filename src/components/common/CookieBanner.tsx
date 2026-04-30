@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Cookie, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const STORAGE_KEY = 'billetgo_cookie_consent';
+const STORAGE_KEY = 'billetgab_cookie_consent';
 
 export default function CookieBanner() {
   const [visible, setVisible] = useState(false);
@@ -39,7 +39,7 @@ export default function CookieBanner() {
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-white/80 font-medium mb-1">Ce site utilise des cookies essentiels</p>
                 <p className="text-xs text-white/40 leading-relaxed">
-                  BilletGo utilise uniquement des cookies strictement nécessaires à son fonctionnement
+                  BilletGab utilise uniquement des cookies strictement nécessaires à son fonctionnement
                   (authentification, préférences de session). Aucun cookie publicitaire ni traceur tiers.{' '}
                   <Link to="/confidentialite" className="text-violet-neon hover:underline">
                     En savoir plus
