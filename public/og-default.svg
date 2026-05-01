@@ -1,144 +1,141 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <defs>
-    <!-- Fond principal -->
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0D0D1A"/>
-      <stop offset="100%" stop-color="#13132A"/>
+      <stop offset="0%" stop-color="#0f0520"/>
+      <stop offset="45%" stop-color="#0D0D1A"/>
+      <stop offset="100%" stop-color="#050d1a"/>
     </linearGradient>
-    <!-- Gradient violet-rose pour le titre -->
+
     <linearGradient id="titleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#7B2FBE"/>
       <stop offset="50%" stop-color="#E040FB"/>
       <stop offset="100%" stop-color="#00E5FF"/>
     </linearGradient>
-    <!-- Glow violet -->
-    <radialGradient id="glow1" cx="30%" cy="40%" r="40%">
-      <stop offset="0%" stop-color="#7B2FBE" stop-opacity="0.25"/>
+
+    <linearGradient id="ticketGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7B2FBE" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#E040FB" stop-opacity="0.18"/>
+    </linearGradient>
+
+    <linearGradient id="bottomBarGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7B2FBE"/>
+      <stop offset="50%" stop-color="#E040FB"/>
+      <stop offset="100%" stop-color="#00E5FF"/>
+    </linearGradient>
+
+    <radialGradient id="orb1" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#7B2FBE" stop-opacity="0.32"/>
       <stop offset="100%" stop-color="#7B2FBE" stop-opacity="0"/>
     </radialGradient>
-    <!-- Glow cyan -->
-    <radialGradient id="glow2" cx="75%" cy="65%" r="35%">
-      <stop offset="0%" stop-color="#00E5FF" stop-opacity="0.12"/>
+
+    <radialGradient id="orb2" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#E040FB" stop-opacity="0.20"/>
+      <stop offset="100%" stop-color="#E040FB" stop-opacity="0"/>
+    </radialGradient>
+
+    <radialGradient id="orb3" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00E5FF" stop-opacity="0.17"/>
       <stop offset="100%" stop-color="#00E5FF" stop-opacity="0"/>
     </radialGradient>
-    <!-- Gradient billet -->
-    <linearGradient id="ticketGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#7B2FBE" stop-opacity="0.5"/>
-      <stop offset="100%" stop-color="#E040FB" stop-opacity="0.2"/>
-    </linearGradient>
-    <!-- Glassmorphism card -->
-    <filter id="blur" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="1"/>
-    </filter>
   </defs>
 
-  <!-- Background -->
+  <!-- FOND -->
   <rect width="1200" height="630" fill="url(#bg)"/>
-  <rect width="1200" height="630" fill="url(#glow1)"/>
-  <rect width="1200" height="630" fill="url(#glow2)"/>
 
-  <!-- Grille de points décoratifs -->
-  <pattern id="dots" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
-    <circle cx="2" cy="2" r="1" fill="white" fill-opacity="0.04"/>
+  <!-- Grille de points -->
+  <pattern id="dots" x="0" y="0" width="36" height="36" patternUnits="userSpaceOnUse">
+    <circle cx="1.5" cy="1.5" r="1" fill="white" fill-opacity="0.032"/>
   </pattern>
   <rect width="1200" height="630" fill="url(#dots)"/>
 
-  <!-- Billet décoratif gauche (grand, flou) -->
-  <g transform="rotate(-18, 160, 315)" opacity="0.18">
-    <rect x="40" y="180" width="240" height="115" rx="14" fill="url(#ticketGrad)" stroke="#7B2FBE" stroke-width="1.5"/>
-    <circle cx="40" cy="237" r="14" fill="#0D0D1A"/>
-    <circle cx="280" cy="237" r="14" fill="#0D0D1A"/>
-    <line x1="54" y1="237" x2="266" y2="237" stroke="#7B2FBE" stroke-width="1" stroke-dasharray="6 4"/>
+  <!-- ORBES D'AMBIANCE -->
+  <ellipse cx="160" cy="200" rx="380" ry="320" fill="url(#orb1)"/>
+  <ellipse cx="600" cy="560" rx="340" ry="240" fill="url(#orb2)"/>
+  <ellipse cx="1080" cy="140" rx="300" ry="270" fill="url(#orb3)"/>
+  <ellipse cx="980" cy="490" rx="220" ry="180" fill="url(#orb1)"/>
+
+  <!-- BILLETS DÉCORATIFS DE FOND -->
+  <g transform="rotate(-14, 120, 380)" opacity="0.10">
+    <rect x="-60" y="260" width="320" height="150" rx="14" fill="url(#ticketGrad)" stroke="#7B2FBE" stroke-width="1.5"/>
+    <circle cx="-60" cy="335" r="18" fill="#0D0D1A" opacity="0.8"/>
+    <circle cx="260" cy="335" r="18" fill="#0D0D1A" opacity="0.8"/>
+    <line x1="-42" y1="335" x2="242" y2="335" stroke="#7B2FBE" stroke-width="1" stroke-dasharray="7 5"/>
+  </g>
+  <g transform="rotate(8, 950, 80)" opacity="0.09">
+    <rect x="820" y="20" width="260" height="120" rx="12" fill="url(#ticketGrad)" stroke="#E040FB" stroke-width="1.2"/>
+    <circle cx="820" cy="80" r="15" fill="#0D0D1A" opacity="0.8"/>
+    <circle cx="1080" cy="80" r="15" fill="#0D0D1A" opacity="0.8"/>
+    <line x1="835" y1="80" x2="1065" y2="80" stroke="#E040FB" stroke-width="1" stroke-dasharray="6 4"/>
+  </g>
+  <g transform="rotate(-6, 1080, 520)" opacity="0.08">
+    <rect x="960" y="460" width="280" height="120" rx="12" fill="url(#ticketGrad)" stroke="#00E5FF" stroke-width="1"/>
+    <circle cx="960" cy="520" r="16" fill="#0D0D1A" opacity="0.8"/>
+    <circle cx="1240" cy="520" r="16" fill="#0D0D1A" opacity="0.8"/>
   </g>
 
-  <!-- Billet décoratif droit (petit) -->
-  <g transform="rotate(12, 1050, 200)" opacity="0.14">
-    <rect x="950" y="130" width="180" height="86" rx="10" fill="url(#ticketGrad)" stroke="#E040FB" stroke-width="1.5"/>
-    <circle cx="950" cy="173" r="11" fill="#0D0D1A"/>
-    <circle cx="1130" cy="173" r="11" fill="#0D0D1A"/>
-    <line x1="961" y1="173" x2="1119" y2="173" stroke="#E040FB" stroke-width="1" stroke-dasharray="5 3"/>
-  </g>
+  <!-- Accroche -->
+  <text x="600" y="112"
+    font-family="Arial, sans-serif"
+    font-size="13"
+    font-weight="400"
+    fill="rgba(255,255,255,0.28)"
+    letter-spacing="5"
+    text-anchor="middle">PLATEFORME DE BILLETTERIE EN LIGNE</text>
 
-  <!-- Cercle lumineux derrière le logo -->
-  <circle cx="600" cy="280" r="180" fill="#7B2FBE" fill-opacity="0.07"/>
-  <circle cx="600" cy="280" r="140" fill="#7B2FBE" fill-opacity="0.05"/>
-
-  <!-- Icône ticket central -->
-  <g transform="translate(520, 140)">
-    <!-- Corps du billet -->
-    <rect x="0" y="0" width="160" height="76" rx="10" fill="none" stroke="url(#titleGrad)" stroke-width="2" opacity="0.6"/>
-    <!-- Encoche gauche/droite -->
-    <circle cx="0" cy="38" r="10" fill="#0D0D1A" stroke="url(#titleGrad)" stroke-width="1.5" opacity="0.6"/>
-    <circle cx="160" cy="38" r="10" fill="#0D0D1A" stroke="url(#titleGrad)" stroke-width="1.5" opacity="0.6"/>
-    <!-- Tiret -->
-    <line x1="14" y1="38" x2="146" y2="38" stroke="url(#titleGrad)" stroke-width="1.2" stroke-dasharray="6 4" opacity="0.5"/>
-    <!-- QR code simulé -->
-    <rect x="18" y="10" width="22" height="22" rx="3" fill="none" stroke="#00E5FF" stroke-width="1.5" opacity="0.7"/>
-    <rect x="22" y="14" width="5" height="5" fill="#00E5FF" opacity="0.7"/>
-    <rect x="29" y="14" width="5" height="5" fill="#00E5FF" opacity="0.5"/>
-    <rect x="22" y="21" width="5" height="5" fill="#00E5FF" opacity="0.5"/>
-    <rect x="29" y="21" width="5" height="5" fill="#00E5FF" opacity="0.7"/>
-    <!-- Lignes de texte simulées -->
-    <rect x="52" y="14" width="70" height="5" rx="2.5" fill="white" opacity="0.2"/>
-    <rect x="52" y="24" width="50" height="4" rx="2" fill="white" opacity="0.12"/>
-  </g>
-
-  <!-- Titre BilletGab -->
-  <text
-    x="600"
-    y="300"
-    text-anchor="middle"
-    font-family="'Arial Black', 'Impact', sans-serif"
-    font-size="110"
+  <!-- BILLETGAB grand et centré -->
+  <text x="600" y="310"
+    font-family="Arial Black, Impact, sans-serif"
+    font-size="158"
     font-weight="900"
-    letter-spacing="6"
+    letter-spacing="4"
     fill="url(#titleGrad)"
-  >BILLETGAB</text>
+    text-anchor="middle">BILLETGAB</text>
 
   <!-- Ligne séparatrice -->
-  <line x1="380" y1="325" x2="820" y2="325" stroke="url(#titleGrad)" stroke-width="1" opacity="0.3"/>
+  <line x1="240" y1="346" x2="960" y2="346" stroke="url(#titleGrad)" stroke-width="1" opacity="0.22"/>
 
   <!-- Tagline -->
-  <text
-    x="600"
-    y="368"
-    text-anchor="middle"
-    font-family="'Arial', sans-serif"
-    font-size="22"
+  <text x="600" y="390"
+    font-family="Arial, sans-serif"
+    font-size="20"
     font-weight="400"
-    letter-spacing="4"
-    fill="white"
-    fill-opacity="0.55"
-  >LA BILLETTERIE DU GABON</text>
+    fill="rgba(255,255,255,0.38)"
+    letter-spacing="7"
+    text-anchor="middle">LA BILLETTERIE DU GABON</text>
 
-  <!-- Pills de paiement -->
-  <g transform="translate(600, 430)">
-    <!-- Airtel -->
-    <rect x="-175" y="-22" width="155" height="42" rx="21" fill="white" fill-opacity="0.06" stroke="white" stroke-opacity="0.12" stroke-width="1"/>
-    <circle cx="-152" cy="-1" r="12" fill="#E53935" fill-opacity="0.8"/>
-    <text x="-132" y="4" font-family="Arial" font-size="13" font-weight="600" fill="white" fill-opacity="0.7">Airtel Money</text>
-
-    <!-- Moov -->
-    <rect x="20" y="-22" width="155" height="42" rx="21" fill="white" fill-opacity="0.06" stroke="white" stroke-opacity="0.12" stroke-width="1"/>
-    <circle cx="43" cy="-1" r="12" fill="#1E88E5" fill-opacity="0.8"/>
-    <text x="63" y="4" font-family="Arial" font-size="13" font-weight="600" fill="white" fill-opacity="0.7">Moov Money</text>
-  </g>
-
-  <!-- URL en bas -->
-  <text
-    x="600"
-    y="570"
+  <!-- Badge PAIEMENT SÉCURISÉ -->
+  <rect x="454" y="422" width="292" height="40" rx="20" fill="rgba(123,47,190,0.18)" stroke="rgba(123,47,190,0.45)" stroke-width="1.2"/>
+  <text x="600" y="448"
+    font-family="Arial, sans-serif"
+    font-size="14"
+    font-weight="700"
+    fill="#E040FB"
     text-anchor="middle"
-    font-family="'Courier New', monospace"
+    letter-spacing="2">&#x2713; PAIEMENT SÉCURISÉ</text>
+
+  <!-- URL -->
+  <text x="600" y="542"
+    font-family="Courier New, monospace, sans-serif"
     font-size="18"
     fill="#7B2FBE"
-    fill-opacity="0.8"
-    letter-spacing="2"
-  >billetgab.com</text>
+    fill-opacity="0.72"
+    letter-spacing="3"
+    text-anchor="middle">billetgab.com</text>
 
-  <!-- Badge certifié -->
-  <g transform="translate(600, 505)">
-    <rect x="-80" y="-16" width="160" height="32" rx="16" fill="#7B2FBE" fill-opacity="0.15" stroke="#7B2FBE" stroke-opacity="0.4" stroke-width="1"/>
-    <text x="0" y="5" text-anchor="middle" font-family="Arial" font-size="12" font-weight="600" fill="#E040FB" letter-spacing="1.5">PAIEMENT SECURISE</text>
-  </g>
+  <!-- SPARKLES -->
+  <path d="M502,52 L504,44 L506,52 L514,54 L506,56 L504,64 L502,56 L494,54 Z" fill="#00E5FF" fill-opacity="0.65"/>
+  <path d="M42,310 L43.5,305 L45,310 L50,311.5 L45,313 L43.5,318 L42,313 L37,311.5 Z" fill="#E040FB" fill-opacity="0.55"/>
+  <path d="M1150,490 L1152,483 L1154,490 L1161,492 L1154,494 L1152,501 L1150,494 L1143,492 Z" fill="#E040FB" fill-opacity="0.50"/>
+  <path d="M168,70 L169.2,66 L170.4,70 L174.4,71.2 L170.4,72.4 L169.2,76.4 L168,72.4 L164,71.2 Z" fill="#7B2FBE" fill-opacity="0.70"/>
+  <path d="M1155,42 L1157,34 L1159,42 L1167,44 L1159,46 L1157,54 L1155,46 L1147,44 Z" fill="#00E5FF" fill-opacity="0.50"/>
+  <path d="M45,575 L46.5,570 L48,575 L53,576.5 L48,578 L46.5,583 L45,578 L40,576.5 Z" fill="#E040FB" fill-opacity="0.40"/>
+  <circle cx="490" cy="92" r="2" fill="#00E5FF" fill-opacity="0.50"/>
+  <circle cx="720" cy="58" r="1.5" fill="#E040FB" fill-opacity="0.45"/>
+  <circle cx="1090" cy="420" r="2" fill="#7B2FBE" fill-opacity="0.60"/>
+  <circle cx="35" cy="420" r="2" fill="#00E5FF" fill-opacity="0.35"/>
+  <circle cx="1162" cy="310" r="1.5" fill="#E040FB" fill-opacity="0.30"/>
+  <circle cx="860" cy="578" r="2" fill="#7B2FBE" fill-opacity="0.45"/>
+
+  <!-- BARRE GRADIENT BAS -->
+  <rect x="0" y="622" width="1200" height="8" fill="url(#bottomBarGrad)"/>
 </svg>
