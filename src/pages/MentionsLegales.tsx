@@ -143,14 +143,14 @@ export default function MentionsLegales() {
           <Section title="Limitation de responsabilité">
             <p>
               BilletGab s'efforce d'assurer la disponibilité et l'exactitude des informations diffusées
-              sur la plateforme. BilletGab intervient en qualité d'intermédiaire technique et de séquestre
+              sur la plateforme. BilletGab intervient en qualité d'intermédiaire technique de paiement
               entre les acheteurs et les organisateurs.
             </p>
             <p>
               BilletGab ne saurait être tenu responsable du contenu des événements, des décisions des
               organisateurs (annulation, report, modification), ni des incidents survenant lors des
               événements. La responsabilité financière de BilletGab en cas d'annulation est limitée aux
-              fonds effectivement retenus en séquestre au moment de l'annulation.
+              fonds effectivement collectés et non encore reversés à l'organisateur au moment de l'annulation.
             </p>
           </Section>
 

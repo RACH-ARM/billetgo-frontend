@@ -62,9 +62,9 @@ export default function CGU() {
               aux organisateurs de créer et gérer leurs événements, et aux scanners de valider les billets à l'entrée.
             </p>
             <p>
-              BilletGab agit en qualité d'intermédiaire technique et de séquestre (escrow) entre les acheteurs
-              et les organisateurs d'événements. Les fonds collectés auprès des acheteurs sont détenus par
-              BilletGab et reversés progressivement aux organisateurs selon les conditions définies aux présentes.
+              BilletGab agit en qualité d'intermédiaire technique de paiement entre les acheteurs
+              et les organisateurs d'événements. Les fonds collectés auprès des acheteurs transitent par
+              BilletGab via son prestataire de paiement et sont reversés aux organisateurs selon les conditions définies aux présentes.
             </p>
             <p>
               L'accès à la plateforme est disponible à l'adresse billetgab.com et via l'application web progressive (PWA).
@@ -151,10 +151,10 @@ export default function CGU() {
             </p>
           </Section>
 
-          <Section title="7. Séquestre et versements">
+          <Section title="7. Collecte des fonds et versements">
             <p>
-              BilletGab collecte l'intégralité des fonds des acheteurs et les conserve en qualité de séquestre
-              (escrow) jusqu'au reversement à l'organisateur. Les organisateurs peuvent demander un virement
+              BilletGab collecte les fonds des acheteurs via son prestataire de paiement et les reverse
+              à l'organisateur selon les modalités en vigueur. Les organisateurs peuvent demander un virement
               de leur solde disponible depuis la page Versements. BilletGab se réserve le droit
               de retarder ou de suspendre un versement en cas de litige ou de suspicion de fraude.
             </p>

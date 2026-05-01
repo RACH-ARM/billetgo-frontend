@@ -58,9 +58,9 @@ export default function CGV() {
             <p>
               Les présentes Conditions Générales de Vente (CGV) régissent l'ensemble des transactions
               réalisées sur la plateforme BilletGab entre les acheteurs et les organisateurs d'événements.
-              BilletGab intervient en qualité d'intermédiaire technique et de séquestre (escrow) : les fonds
-              des acheteurs sont collectés et détenus par BilletGab, puis reversés progressivement aux
-              organisateurs selon les conditions définies aux CGU.
+              BilletGab intervient en qualité d'intermédiaire technique de paiement : les fonds
+              des acheteurs sont collectés par BilletGab via son prestataire de paiement, puis reversés
+              aux organisateurs selon les conditions définies aux CGU.
             </p>
             <p>
               Toute commande passée sur BilletGab implique l'acceptation pleine et entière des présentes CGV
