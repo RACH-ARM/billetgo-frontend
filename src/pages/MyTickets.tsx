@@ -291,7 +291,6 @@ export default function MyTickets() {
           }
 
           const order = entry.data;
-          const totalTickets: number = order.tickets?.length ?? 0;
           // Exclure les billets transférés (buyerId !== user.id) des compteurs de l'envoyeur
           const myTickets = (order.tickets ?? []).filter((t: any) => t.buyerId === user?.id);
           const activeTickets: number = myTickets.filter((t: any) => t.status !== 'REFUNDED' && t.status !== 'CANCELLED').length;

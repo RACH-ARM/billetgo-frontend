@@ -7,7 +7,7 @@ import {
   CGU, CGV, Confidentialite, MentionsLegales, ForgotPassword,
   ResetPassword, VerifyEmail, OrganizerPublicPage, Notifications,
   OrganizerLayout, Versements, MesEvenements, MonCompte,
-  ContratOrganisateur, GoogleAuthCallback, Spinner,
+  ContratOrganisateur, GoogleAuthCallback,
 } from './routes';
 
 export const router = createBrowserRouter(
@@ -87,7 +87,6 @@ export const router = createBrowserRouter(
   ],
   {
     future: {
-      v7_startTransition: true,
       v7_relativeSplatPath: true,
     },
   }

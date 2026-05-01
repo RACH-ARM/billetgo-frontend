@@ -191,21 +191,3 @@ const ulStyle: React.CSSProperties = {
   margin: '8px 0',
 };
 
-const tableStyle: React.CSSProperties = {
-  width: '100%',
-  borderCollapse: 'collapse',
-  margin: '10px 0',
-  fontSize: 12,
-};
-
-const thStyle: React.CSSProperties = {
-  border: '1px solid #ccc',
-  padding: '6px 10px',
-  textAlign: 'left',
-  fontWeight: 600,
-};
-
-const tdStyle: React.CSSProperties = {
-  border: '1px solid #ccc',
-  padding: '5px 10px',
-};

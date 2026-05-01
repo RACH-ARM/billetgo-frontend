@@ -1,4 +1,4 @@
-import { format, formatDistance, isPast, isFuture } from 'date-fns';
+import { format, formatDistance, isPast } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 export const formatEventDate = (date: string | Date): string => {

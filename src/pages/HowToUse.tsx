@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Search, Ticket, Smartphone, Clock, Mail, BookOpen, ScanLine,
-  ChevronDown, ArrowRight, WifiOff, ImageDown,
+  Search, Ticket, Smartphone, Clock, Mail, ScanLine,
+  ChevronDown, ArrowRight, ImageDown,
 } from 'lucide-react';
 
 // ─── StepCard ─────────────────────────────────────────────────────────────────

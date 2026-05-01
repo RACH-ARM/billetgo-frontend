@@ -4,7 +4,7 @@ import { useAuthStore } from '../stores/authStore';
 import {
   Smartphone, QrCode, BarChart2, Users, Download, ShieldCheck,
   CheckCircle, ArrowRight, CalendarDays, Settings, Share2, ScanLine,
-  Zap, Ticket, Banknote, XCircle, TrendingUp,
+  Zap, Banknote, XCircle, TrendingUp,
 } from 'lucide-react';
 
 // ── Problems résolus ──────────────────────────────────────────

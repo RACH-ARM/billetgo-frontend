@@ -251,7 +251,7 @@ export const useMarkNotificationRead = () => {
     {
       onSuccess: (_data, id) => {
         qc.setQueryData<OrganizerNotification[]>('organizer-notifications', (prev) =>
-          prev ? prev.map(n => n.id === id ? { ...n, isRead: true } : n) : prev
+          prev ? prev.map(n => n.id === id ? { ...n, isRead: true } : n) : []
         );
       },
     }
