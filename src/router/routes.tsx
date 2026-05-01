@@ -10,7 +10,11 @@ function lazyWithReload<T extends ComponentType<unknown>>(
 ) {
   return lazy(() =>
     factory().catch(() => {
-      window.location.reload();
+      const key = 'vite-chunk-reload';
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, '1');
+        window.location.reload();
+      }
       return new Promise<{ default: T }>(() => {});
     })
   );
