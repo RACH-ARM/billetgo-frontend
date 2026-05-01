@@ -209,12 +209,6 @@ export default function Register() {
 
           {role === 'ORGANIZER' && (
             <div className="space-y-2">
-              <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                <span className="text-amber-400 text-lg leading-none flex-shrink-0">!</span>
-                <p className="text-xs text-amber-200/70 leading-relaxed">
-                  En tant qu'organisateur, vous devez lire et accepter les Conditions Générales Organisateur (CGO) qui encadrent les versements, vos responsabilités en cas d'annulation et vos obligations légales.
-                </p>
-              </div>
               <label className="flex items-start gap-3 cursor-pointer">
                 <input
                   type="checkbox"
