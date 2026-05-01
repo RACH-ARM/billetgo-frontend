@@ -4,48 +4,8 @@ import { useAuthStore } from '../stores/authStore';
 import {
   Smartphone, QrCode, BarChart2, Users, Download, ShieldCheck,
   CheckCircle, ArrowRight, CalendarDays, Settings, Share2, ScanLine,
-  Zap, Banknote, XCircle, TrendingUp,
+  Zap, Banknote,
 } from 'lucide-react';
-
-// ── Problems résolus ──────────────────────────────────────────
-const PROBLEMS = [
-  {
-    problem: 'Faux billets à l\'entrée',
-    solution: 'QR Code HMAC unique et cryptographiquement signé — impossible à dupliquer ou transférer sans invalidation.',
-    Icon: QrCode,
-    color: 'violet' as const,
-  },
-  {
-    problem: 'Chaos et files d\'attente le soir J',
-    solution: 'Scan instantané depuis n\'importe quel smartphone. Vos agents voient en temps réel le nom et la catégorie.',
-    Icon: ScanLine,
-    color: 'cyan' as const,
-  },
-  {
-    problem: 'Gestion des espèces risquée',
-    solution: 'Paiement 100% Mobile Money. Reversement sécurisé sur votre numéro — sans manipulation d\'argent liquide.',
-    Icon: Banknote,
-    color: 'rose' as const,
-  },
-  {
-    problem: 'Zéro visibilité sur les ventes',
-    solution: 'Dashboard temps réel : billets vendus par catégorie, chiffre d\'affaires, export CSV des acheteurs.',
-    Icon: BarChart2,
-    color: 'green' as const,
-  },
-  {
-    problem: 'Données acheteurs introuvables',
-    solution: 'Nom, email et téléphone de chaque acheteur disponibles dès la vente — exportables en un clic.',
-    Icon: Users,
-    color: 'violet' as const,
-  },
-  {
-    problem: 'Vente limitée aux points physiques',
-    solution: 'Vente en ligne 24h/24 depuis n\'importe où. Les billets partent même quand vous dormez.',
-    Icon: TrendingUp,
-    color: 'rose' as const,
-  },
-];
 
 // ── Features ──────────────────────────────────────────────────
 const FEATURES = [
@@ -315,49 +275,6 @@ export default function OrganizerLanding() {
         </div>
       </section>
 
-      {/* ── Problèmes résolus ── */}
-      <section className="px-4 sm:px-6 lg:px-8 py-12">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-8"
-          >
-            <p className="text-xs text-rose-neon uppercase tracking-widest font-semibold mb-3">Ce que BilletGab règle définitivement</p>
-            <h2 className="font-bebas text-3xl sm:text-4xl tracking-wider text-white mb-2">Les problèmes résolus</h2>
-            <p className="text-white/40 text-sm max-w-xl mx-auto">Chaque organisateur au Gabon a déjà vécu au moins un de ces problèmes. BilletGab les règle tous.</p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {PROBLEMS.map((item, i) => {
-              const c = COLORS[item.color];
-              return (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 24 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.08 }}
-                  className="glass-card p-4 border border-white/5 flex flex-col gap-4"
-                >
-                  <div className="flex items-start gap-3">
-                    <XCircle className="w-5 h-5 text-red-400/70 flex-shrink-0 mt-0.5" />
-                    <p className="text-white/40 text-sm line-through">{item.problem}</p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${c.bg}`}>
-                      <item.Icon className={`w-4 h-4 ${c.text}`} />
-                    </div>
-                    <p className="text-white/70 text-sm leading-relaxed">{item.solution}</p>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
       {/* ── Commission unique ── */}
       <section className="px-4 sm:px-6 lg:px-8 py-12 bg-bg-secondary/30">
         <div className="max-w-5xl mx-auto">
@@ -517,51 +434,6 @@ export default function OrganizerLanding() {
               </div>
             </div>
           </motion.div>
-        </div>
-      </section>
-
-      {/* ── Mobile Money section ── */}
-      <section className="px-4 sm:px-6 lg:px-8 py-12 bg-bg-secondary/30">
-        <div className="max-w-5xl mx-auto">
-          <div className="glass-card p-5 sm:p-8 border border-violet-neon/20 flex flex-col lg:flex-row gap-6 items-center">
-            <div className="flex-1">
-              <p className="text-xs text-violet-neon uppercase tracking-widest font-semibold mb-3">Paiement local</p>
-              <h2 className="font-bebas text-3xl sm:text-4xl tracking-wider text-white mb-3 leading-none">
-                Vos clients paient comme ils le font déjà — avec leur téléphone.
-              </h2>
-              <p className="text-white/50 text-sm leading-relaxed mb-4">
-                Fini les files d'attente aux guichets, les billets perdus et les faux billets. BilletGab s'appuie sur Airtel Money et Moov Money — les solutions que vos clients utilisent déjà chaque jour.
-              </p>
-              <ul className="space-y-3">
-                {[
-                  'Confirmation instantanée du paiement',
-                  'Billet disponible immédiatement dans le compte acheteur',
-                  'Zéro carte bancaire requise',
-                  'Reversement sur votre compte après l\'événement',
-                ].map((item, i) => (
-                  <li key={i} className="flex items-center gap-2.5 text-sm text-white/70">
-                    <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Logos Mobile Money */}
-            <div className="flex flex-row lg:flex-col gap-4 flex-shrink-0">
-              {[
-                { name: 'Airtel Money', color: 'from-rose-neon/20 to-rose-neon/5', border: 'border-rose-neon/30', text: 'text-rose-neon' },
-                { name: 'Moov Money', color: 'from-cyan-neon/20 to-cyan-neon/5', border: 'border-cyan-neon/30', text: 'text-cyan-neon' },
-              ].map((p) => (
-                <div
-                  key={p.name}
-                  className={`w-40 h-20 rounded-2xl bg-gradient-to-br ${p.color} border ${p.border} flex items-center justify-center`}
-                >
-                  <span className={`font-bebas text-xl tracking-wider ${p.text}`}>{p.name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </section>
 
