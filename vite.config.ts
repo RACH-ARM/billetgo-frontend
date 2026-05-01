@@ -1,15 +1,11 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
-import mkcert from 'vite-plugin-mkcert';
-import basicSsl from '@vitejs/plugin-basic-ssl';
 import path from 'path';
 
 export default defineConfig({
   plugins: [
     react(),
-    mkcert(),    // HTTPS de confiance pour le dev server (localhost)
-    basicSsl(),  // HTTPS auto-signé pour le preview server (réseau local)
     VitePWA({
       registerType: 'autoUpdate',
       // Inclure le SW dans le build
@@ -95,7 +91,6 @@ export default defineConfig({
   preview: {
     host: true,
     port: 4173,
-    https: {},   // basicSsl injecte les certificats ici
   },
   server: {
     host: true,
