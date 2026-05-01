@@ -210,7 +210,7 @@ export const useUploadEventGallery = () => {
     {
       onSuccess: (data, { eventId }) => {
         qc.setQueryData(['organizer-event', eventId], (prev: Record<string, unknown> | undefined) =>
-          prev ? { ...prev, galleryUrls: data.galleryUrls } : prev
+          (prev ? { ...prev, galleryUrls: data.galleryUrls } : undefined) as Record<string, unknown>
         );
       },
     }
@@ -225,7 +225,7 @@ export const useDeleteEventGalleryPhoto = () => {
     {
       onSuccess: (data, { eventId }) => {
         qc.setQueryData(['organizer-event', eventId], (prev: Record<string, unknown> | undefined) =>
-          prev ? { ...prev, galleryUrls: data.galleryUrls } : prev
+          (prev ? { ...prev, galleryUrls: data.galleryUrls } : undefined) as Record<string, unknown>
         );
       },
     }
