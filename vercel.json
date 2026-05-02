@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "api/events-og/[id].ts": {
+      "includeFiles": "dist/index.html"
+    }
+  },
   "headers": [
     {
       "source": "/index.html",
@@ -48,6 +53,10 @@
     {
       "source": "/sitemap.xml",
       "destination": "https://api.billetgab.com/sitemap.xml"
+    },
+    {
+      "source": "/events/:id",
+      "destination": "/api/events-og/:id"
     },
     {
       "source": "/api/v1/:path*",
