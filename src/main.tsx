@@ -2,7 +2,6 @@ import './lib/sentry'; // doit être le premier import
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import * as Sentry from '@sentry/react';
-import SplashLoader from './components/common/SplashLoader';
 import { QueryClientProvider } from 'react-query';
 import { HelmetProvider } from 'react-helmet-async';
 import { Toaster } from 'react-hot-toast';
@@ -12,7 +11,7 @@ import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <Sentry.ErrorBoundary fallback={<SplashLoader message="Une erreur est survenue" />}>
+    <Sentry.ErrorBoundary fallback={<div style={{minHeight:'100vh',background:'#09060F',display:'flex',alignItems:'center',justifyContent:'center',color:'rgba(255,255,255,0.4)',fontFamily:'Sora,sans-serif',fontSize:14}}>Une erreur inattendue s'est produite.</div>}>
     <HelmetProvider>
     <QueryClientProvider client={queryClient}>
       <App />
