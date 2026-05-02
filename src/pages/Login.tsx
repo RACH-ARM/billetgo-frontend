@@ -108,8 +108,8 @@ export default function Login() {
             onClick={() => {
               const redirectTarget = searchParams.get('redirect');
               if (redirectTarget) localStorage.setItem('auth_redirect', redirectTarget);
-              const base = import.meta.env.VITE_API_URL ?? '/api/v1';
-              window.location.href = `${base}/auth/google?origin=${encodeURIComponent(window.location.origin)}`;
+              const base = import.meta.env.VITE_BACKEND_URL ?? import.meta.env.VITE_API_URL ?? '/api/v1';
+              window.location.href = `${base}/api/v1/auth/google?origin=${encodeURIComponent(window.location.origin)}`;
             }}
             className="relative w-full flex items-center justify-center gap-3 rounded-xl border border-violet-neon/30 bg-[#0D0D1A] hover:bg-white/5 px-4 py-3 text-sm text-white transition-colors"
           >
