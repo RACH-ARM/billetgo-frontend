@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { Suspense, lazy, ComponentType } from 'react';
 import SplashLoader from '../components/common/SplashLoader';
@@ -86,7 +86,11 @@ export const OpenRoute = () => (
 
 export const ProtectedRoute = ({ roles }: { roles?: string[] }) => {
   const { isAuthenticated, user } = useAuthStore();
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  const location = useLocation();
+  if (!isAuthenticated) {
+    const redirect = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`/login?redirect=${redirect}`} replace />;
+  }
   if (roles && user && !roles.includes(user.role)) {
     return <Navigate to={ROLE_HOME[user.role] ?? '/'} replace />;
   }
