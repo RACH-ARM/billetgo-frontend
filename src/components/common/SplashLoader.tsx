@@ -28,7 +28,7 @@ const CSS = `
   }
   .splash-b-front {
     font-family: 'Bebas Neue', 'Arial Black', Arial, sans-serif;
-    font-size: clamp(150px, 28vw, 280px);
+    font-size: var(--splash-size, clamp(150px, 28vw, 280px));
     line-height: 0.88;
     display: block;
     background: linear-gradient(
@@ -54,7 +54,7 @@ const CSS = `
   }
   .splash-b-back {
     font-family: 'Bebas Neue', 'Arial Black', Arial, sans-serif;
-    font-size: clamp(150px, 28vw, 280px);
+    font-size: var(--splash-size, clamp(150px, 28vw, 280px));
     line-height: 0.88;
     display: block;
     color: #12002A;
@@ -78,25 +78,23 @@ const CSS = `
 
 interface Props {
   message?: string;
+  /** Mode inline : pas de fond plein écran, taille réduite — pour les zones intérieures (avec navbar) */
+  inline?: boolean;
 }
 
-export default function SplashLoader({ message = 'Chargement…' }: Props) {
+export default function SplashLoader({ message = 'Chargement…', inline = false }: Props) {
   return (
     <>
       <style>{CSS}</style>
       <div
-        style={{
-          minHeight: '100vh',
-          background: '#09060F',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '36px',
-        }}
+        style={
+          inline
+            ? { padding: '80px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '28px' }
+            : { minHeight: '100vh', background: '#09060F', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '36px' }
+        }
       >
         {/* B 3D */}
-        <div style={{ position: 'relative' }}>
+        <div style={{ position: 'relative', ['--splash-size' as string]: inline ? 'clamp(90px, 16vw, 140px)' : undefined }}>
           {/* Halo ambiant derrière le B */}
           <div
             style={{

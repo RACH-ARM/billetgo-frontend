@@ -4,12 +4,9 @@ import Navbar from './Navbar';
 import Footer from './Footer';
 import CookieBanner from '../common/CookieBanner';
 import { useAuthStore } from '../../stores/authStore';
+import SplashLoader from '../common/SplashLoader';
 
-const PageSpinner = () => (
-  <div className="flex justify-center items-center py-40">
-    <div className="w-10 h-10 border-4 border-violet-neon/30 border-t-violet-neon rounded-full animate-spin" />
-  </div>
-);
+const PageSpinner = () => <SplashLoader inline />;
 
 export default function PageLayout() {
   const { isAuthenticated, user } = useAuthStore();
