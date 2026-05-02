@@ -1,4 +1,4 @@
-import { useRef, useMemo, Component, type ReactNode } from 'react';
+import { useRef, useMemo, Component, useState, useEffect, type ReactNode } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { motion } from 'framer-motion';
 import * as THREE from 'three';
@@ -203,6 +203,12 @@ interface Props {
 
 export default function SplashLoader({ message = 'Chargement…', inline = false }: Props) {
   const size = inline ? 160 : 280;
+  const [showReload, setShowReload] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setShowReload(true), 10_000);
+    return () => clearTimeout(t);
+  }, []);
 
   return (
     <div style={{
@@ -224,6 +230,21 @@ export default function SplashLoader({ message = 'Chargement…', inline = false
       </CanvasBoundary>
 
       <Dots message={message} />
+
+      {showReload && (
+        <button
+          onClick={() => { sessionStorage.removeItem('vite-chunk-reload'); window.location.reload(); }}
+          style={{
+            marginTop:8, padding:'8px 20px', borderRadius:20,
+            border:'1px solid rgba(155,79,222,0.5)',
+            background:'rgba(123,47,190,0.12)', color:'rgba(255,255,255,0.6)',
+            fontFamily:'Sora,sans-serif', fontSize:12, cursor:'pointer',
+            letterSpacing:'0.08em',
+          }}
+        >
+          Recharger la page
+        </button>
+      )}
     </div>
   );
 }
