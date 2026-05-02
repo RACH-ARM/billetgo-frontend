@@ -55,6 +55,7 @@ function NavItems({ onClose }: { onClose: () => void }) {
 
 function SidebarContent({ onClose }: { onClose: () => void }) {
   const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
 
   return (
     <div className="flex flex-col h-full">
