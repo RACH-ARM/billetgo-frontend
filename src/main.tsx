@@ -1,4 +1,16 @@
 import './lib/sentry'; // doit être le premier import
+
+// Safari BFCache : quand l'utilisateur revient sur un onglet mis en veille,
+// Safari restaure la page depuis la mémoire (persisted=true) sans refaire de
+// requête réseau → les chunks JS ont des hashes périmés et plantent.
+// On force un vrai rechargement réseau dès la détection.
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted) {
+    sessionStorage.removeItem('vite-chunk-reload');
+    window.location.reload();
+  }
+});
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import * as Sentry from '@sentry/react';

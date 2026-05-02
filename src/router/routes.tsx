@@ -4,20 +4,21 @@ import { Suspense, lazy, ComponentType } from 'react';
 import SplashLoader from '../components/common/SplashLoader';
 
 // Quand Vite rebuild, les hashes de chunks changent. Si le navigateur essaie
-// de charger un ancien hash (chunk introuvable), on recharge la page une fois
-// pour récupérer les nouveaux chunks plutôt que de crasher.
-// On stocke un timestamp plutôt qu'un booléen : après 30 s (ex. reprise Safari)
-// le rechargement peut se relancer, évitant la page violette bloquée.
+// de charger un ancien hash (chunk introuvable), on navigue vers la même URL
+// (contourne le cache) pour récupérer les nouveaux chunks.
+// Timestamp pour éviter les boucles infinies : max 1 rechargement / 10 s.
+// Le cas BFCache Safari est géré dans main.tsx (pageshow persisted).
 function lazyWithReload<T extends ComponentType<unknown>>(
   factory: () => Promise<{ default: T }>
 ) {
   return lazy(() =>
     factory().catch(() => {
       const now = Date.now();
-      const lastReload = Number(sessionStorage.getItem('vite-chunk-reload') ?? 0);
-      if (now - lastReload > 30_000) {
+      const last = Number(sessionStorage.getItem('vite-chunk-reload') ?? 0);
+      if (now - last > 10_000) {
         sessionStorage.setItem('vite-chunk-reload', String(now));
-        window.location.reload();
+        // href force une vraie navigation (ignore le cache), reload() ne le fait pas
+        window.location.href = window.location.href;
       }
       return new Promise<{ default: T }>(() => {});
     })
