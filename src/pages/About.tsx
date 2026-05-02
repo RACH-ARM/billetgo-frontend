@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Helmet } from 'react-helmet-async';
 import { Ticket, Users, ShieldCheck, Zap, MapPin, Heart } from 'lucide-react';
 
 const VALUES = [
@@ -19,6 +20,15 @@ const STATS = [
 export default function About() {
   return (
     <div className="min-h-screen bg-bg">
+      <Helmet>
+        <title>À propos — BilletGab, la billetterie événementielle du Gabon</title>
+        <meta name="description" content="BilletGab est la première plateforme gabonaise de billetterie en ligne. Notre mission : rendre l'accès aux événements simple, sécurisé et local." />
+        <link rel="canonical" href="https://billetgab.com/a-propos" />
+        <meta property="og:title" content="À propos — BilletGab" />
+        <meta property="og:description" content="La première billetterie événementielle du Gabon. Simple, sécurisée, locale." />
+        <meta property="og:url" content="https://billetgab.com/a-propos" />
+        <meta property="og:image" content="https://billetgab.com/og-default.jpg" />
+      </Helmet>
       {/* Hero */}
       <section className="relative pt-28 pb-16 px-4">
         <div className="max-w-4xl mx-auto text-center">

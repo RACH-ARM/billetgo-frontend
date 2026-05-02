@@ -1,10 +1,17 @@
 User-agent: *
 Allow: /
 Disallow: /checkout
-Disallow: /my-tickets
+Disallow: /mes-billets
 Disallow: /mon-compte
-Disallow: /organizer
+Disallow: /compte
+Disallow: /dashboard
+Disallow: /mes-evenements
+Disallow: /versements
+Disallow: /notifications
 Disallow: /admin
 Disallow: /scanner
+Disallow: /confirmation/
+Disallow: /verify-email
+Disallow: /reset-password
 
 Sitemap: https://billetgab.com/sitemap.xml

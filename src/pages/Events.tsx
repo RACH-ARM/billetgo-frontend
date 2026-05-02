@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { Calendar, MapPin, Flame, Star, Ticket } from 'lucide-react';
 import { useQuery } from 'react-query';
 import { eventService } from '../services/eventService';
@@ -251,6 +252,15 @@ export default function EventsPage() {
 
   return (
     <main className="min-h-screen bg-bg pt-24 pb-16 space-y-16">
+      <Helmet>
+        <title>Événements au Gabon — Billets en ligne | BilletGab</title>
+        <meta name="description" content="Découvrez tous les événements à Libreville et au Gabon : concerts, clubs, festivals, sport, théâtre. Achetez vos billets en ligne par Airtel Money ou Moov Money." />
+        <link rel="canonical" href="https://billetgab.com/evenements" />
+        <meta property="og:title" content="Événements au Gabon — BilletGab" />
+        <meta property="og:description" content="Concerts, festivals, clubs, sport au Gabon. Billets en ligne, paiement Mobile Money." />
+        <meta property="og:url" content="https://billetgab.com/evenements" />
+        <meta property="og:image" content="https://billetgab.com/og-default.jpg" />
+      </Helmet>
       {/* Hero */}
       <div className="px-4 md:px-8 lg:px-16 text-center space-y-3">
         <h1 className="text-4xl md:text-5xl font-bebas text-gradient tracking-wide">

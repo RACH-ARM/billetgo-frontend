@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { FileText, Download, AlertTriangle, ShieldCheck, Banknote, Calendar, RefreshCw, Scale, Lock, Loader2 } from 'lucide-react';
 import api from '../services/api';
 
@@ -72,6 +73,10 @@ export default function ContratOrganisateur() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-12 space-y-8">
+      <Helmet>
+        <title>Contrat Organisateur (CGO) | BilletGab</title>
+        <meta name="robots" content="noindex" />
+      </Helmet>
 
       {/* En-tête */}
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">

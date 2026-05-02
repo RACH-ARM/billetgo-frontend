@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { Helmet } from 'react-helmet-async';
 import { MapPin, MessageSquare } from 'lucide-react';
 
 const CHANNELS = [
@@ -59,6 +60,13 @@ const CHANNELS = [
 export default function Contact() {
   return (
     <div className="min-h-screen bg-bg">
+      <Helmet>
+        <title>Contact — BilletGab</title>
+        <meta name="description" content="Contactez BilletGab via WhatsApp, Instagram, TikTok ou Facebook. Support disponible du lundi au samedi de 08h à 20h (WAT)." />
+        <link rel="canonical" href="https://billetgab.com/contact" />
+        <meta property="og:title" content="Contact — BilletGab" />
+        <meta property="og:url" content="https://billetgab.com/contact" />
+      </Helmet>
       {/* Hero */}
       <section className="pt-28 pb-12 px-4 text-center">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>

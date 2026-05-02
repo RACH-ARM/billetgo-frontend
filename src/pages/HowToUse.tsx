@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, Ticket, Smartphone, Clock, Mail, ScanLine,
@@ -168,6 +169,13 @@ const STEPS: Omit<StepCardProps, 'stepNumber'>[] = [
 export default function HowToUse() {
   return (
     <main className="min-h-screen bg-bg pt-24 pb-16">
+      <Helmet>
+        <title>Comment ça marche — Acheter un billet sur BilletGab</title>
+        <meta name="description" content="Achetez un billet sur BilletGab en 3 étapes simples : choisissez votre événement, payez par Airtel Money ou Moov Money, recevez votre QR code." />
+        <link rel="canonical" href="https://billetgab.com/comment-ca-marche" />
+        <meta property="og:title" content="Comment ça marche — BilletGab" />
+        <meta property="og:url" content="https://billetgab.com/comment-ca-marche" />
+      </Helmet>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Header */}

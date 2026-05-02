@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Helmet } from 'react-helmet-async';
 import { useAuthStore } from '../stores/authStore';
 import {
   Smartphone, QrCode, BarChart2, Users, Download, ShieldCheck,
@@ -106,6 +107,15 @@ export default function OrganizerLanding() {
 
   return (
     <div className="min-h-screen">
+      <Helmet>
+        <title>Organisateurs — Créez et gérez vos événements au Gabon | BilletGab</title>
+        <meta name="description" content="Vendez vos billets en ligne au Gabon en quelques minutes. Tableau de bord, QR codes, paiement Airtel Money & Moov Money. Inscription gratuite." />
+        <link rel="canonical" href="https://billetgab.com/organisateurs" />
+        <meta property="og:title" content="Organisateurs — BilletGab" />
+        <meta property="og:description" content="Vendez vos billets en ligne au Gabon. Paiement Mobile Money, QR codes, dashboard temps réel." />
+        <meta property="og:url" content="https://billetgab.com/organisateurs" />
+        <meta property="og:image" content="https://billetgab.com/og-default.jpg" />
+      </Helmet>
 
       {/* ── Hero ── */}
       <section className="relative overflow-hidden px-4 sm:px-6 lg:px-8 pt-20 pb-12 sm:pt-24 sm:pb-16">

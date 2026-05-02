@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { ChevronLeft, Download, Loader2 } from 'lucide-react';
 import api from '../services/api';
 
@@ -32,6 +33,10 @@ export default function CGU() {
 
   return (
     <div className="min-h-screen bg-bg py-20 px-4">
+      <Helmet>
+        <title>Conditions Générales d'Utilisation | BilletGab</title>
+        <meta name="robots" content="noindex" />
+      </Helmet>
       <div className="max-w-3xl mx-auto">
         <Link to="/" className="inline-flex items-center gap-1.5 text-white/40 hover:text-white text-sm mb-8 transition-colors">
           <ChevronLeft className="w-4 h-4" /> Retour à l'accueil
