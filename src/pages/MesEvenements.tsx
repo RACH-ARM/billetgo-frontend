@@ -352,6 +352,13 @@ type CreateEventFormState = {
   maxTicketsPerOrder: number;
 };
 
+const isoToLocal = (iso: string) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
+const localToISO = (val: string) => val ? new Date(val).toISOString() : val;
+
 const DRAFT_KEY = 'billetgab_create_event_draft';
 
 function loadDraft() {
@@ -464,9 +471,10 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
       await createEvent.mutateAsync({
         payload: {
           ...form,
-          doorsOpenAt: form.doorsOpenAt || undefined,
-          endDate: form.endDate || undefined,
-          scheduledPublishAt: form.scheduledPublishAt || undefined,
+          eventDate: localToISO(form.eventDate),
+          doorsOpenAt: form.doorsOpenAt ? localToISO(form.doorsOpenAt) : undefined,
+          endDate: form.endDate ? localToISO(form.endDate) : undefined,
+          scheduledPublishAt: form.scheduledPublishAt ? localToISO(form.scheduledPublishAt) : undefined,
           ticketCategories: categories,
           contractAcceptedAt: new Date().toISOString(),
         },
@@ -822,10 +830,10 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
         subtitle: (ed.subtitle as string) ?? '',
         description: (ed.description as string) ?? '',
         category: (ed.category as string) ?? 'AUTRE',
-        eventDate: ((ed.eventDate as string) ?? '').slice(0, 16),
-        doorsOpenAt: ((ed.doorsOpenAt as string) ?? '').slice(0, 16),
-        endDate: ((ed.endDate as string) ?? '').slice(0, 16),
-        scheduledPublishAt: ((ed.scheduledPublishAt as string) ?? '').slice(0, 16),
+        eventDate: isoToLocal((ed.eventDate as string) ?? ''),
+        doorsOpenAt: isoToLocal((ed.doorsOpenAt as string) ?? ''),
+        endDate: isoToLocal((ed.endDate as string) ?? ''),
+        scheduledPublishAt: isoToLocal((ed.scheduledPublishAt as string) ?? ''),
         venueName: (ed.venueName as string) ?? '',
         venueAddress: (ed.venueAddress as string) ?? '',
         venueCity: (ed.venueCity as string) ?? 'Libreville',
@@ -884,9 +892,10 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
     try {
       const payload = {
         ...form,
-        doorsOpenAt: form.doorsOpenAt || undefined,
-        endDate: form.endDate || undefined,
-        scheduledPublishAt: form.scheduledPublishAt || undefined,
+        eventDate: localToISO(form.eventDate),
+        doorsOpenAt: form.doorsOpenAt ? localToISO(form.doorsOpenAt) : undefined,
+        endDate: form.endDate ? localToISO(form.endDate) : undefined,
+        scheduledPublishAt: form.scheduledPublishAt ? localToISO(form.scheduledPublishAt) : undefined,
         ticketCategories: categories,
       };
 
