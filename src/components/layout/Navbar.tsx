@@ -31,7 +31,7 @@ export default function Navbar() {
     close();
     await logout();
     toast.success('Déconnexion réussie');
-    navigate('/');
+    navigate('/login');
   };
 
   const [resendLoading, setResendLoading] = useState(false);
