@@ -4,14 +4,14 @@
   "description": "La première plateforme de billetterie événementielle du Gabon",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0D0D1A",
+  "background_color": "#08081A",
   "theme_color": "#7B2FBE",
   "icons": [
     {
       "src": "/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }
