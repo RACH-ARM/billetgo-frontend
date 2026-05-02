@@ -1,6 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { Suspense, lazy, ComponentType } from 'react';
+import SplashLoader from '../components/common/SplashLoader';
 
 // Quand Vite rebuild, les hashes de chunks changent. Si le navigateur essaie
 // de charger un ancien hash (chunk introuvable), on recharge la page une fois
@@ -52,11 +53,7 @@ export const ContratOrganisateur = lazy(() => import('../pages/ContratOrganisate
 export const GoogleAuthCallback = lazy(() => import('../pages/GoogleAuthCallback'));
 export const PublicLayout = lazy(() => import('../components/layout/PageLayout'));
 
-export const Spinner = () => (
-  <div className="min-h-screen bg-bg flex items-center justify-center">
-    <div className="w-12 h-12 border-4 border-violet-neon/30 border-t-violet-neon rounded-full animate-spin" />
-  </div>
-);
+export const Spinner = () => <SplashLoader />;
 
 const ROLE_HOME: Record<string, string> = {
   BUYER: '/',
