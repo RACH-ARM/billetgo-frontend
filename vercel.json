@@ -51,7 +51,7 @@
     },
     {
       "source": "/api/v1/:path*",
-      "destination": "https://billetgo-backend.onrender.com/api/v1/:path*"
+      "destination": "https://api.billetgab.com/api/v1/:path*"
     },
     {
       "source": "/((?!api/).*)",
