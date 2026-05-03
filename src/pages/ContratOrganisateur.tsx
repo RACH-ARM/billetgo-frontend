@@ -234,7 +234,7 @@ export default function ContratOrganisateur() {
         <Section num="7" title="Annulation d'événement — Procédure obligatoire" icon={Calendar}>
           <P>En cas d'annulation ou de report d'un événement, l'Organisateur doit impérativement :</P>
           <ul className="space-y-1">
-            <Li>Notifier BilletGab par email à <span className="text-violet-neon">support@billetgab.com</span> dans les <span className="text-white font-semibold">24 heures</span> suivant la décision d'annulation ;</Li>
+            <Li>Notifier BilletGab par email à <span className="text-violet-neon">billetgab01@gmail.com</span> dans les <span className="text-white font-semibold">24 heures</span> suivant la décision d'annulation ;</Li>
             <Li>Utiliser la fonctionnalité « Annuler l'événement » depuis son tableau de bord ;</Li>
             <Li>Communiquer publiquement l'annulation aux acheteurs via les canaux de l'événement ;</Li>
             <Li>Proposer, en cas de report, une nouvelle date dans un délai maximum de 90 jours.</Li>
@@ -418,7 +418,7 @@ export default function ContratOrganisateur() {
             Cette acceptation vaut <span className="text-white">signature électronique</span> au sens de la loi gabonaise et est enregistrée avec horodatage serveur sur les serveurs de BilletGab.
           </p>
           <p className="text-xs text-white/30">
-            Document généré automatiquement — BilletGab SAS — billetgab.com — support@billetgab.com
+            Document généré automatiquement — BilletGab SAS — billetgab.com — billetgab01@gmail.com
           </p>
         </div>
 

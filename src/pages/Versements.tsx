@@ -189,10 +189,10 @@ export default function Versements() {
         </div>
         <div>
           <p className="text-sm font-semibold text-white">Une question sur vos versements ?</p>
-          <a href="mailto:support@billetgab.com"
+          <a href="mailto:billetgab01@gmail.com"
             className="text-xs text-violet-neon hover:text-violet-neon/70 underline underline-offset-2 transition-colors"
           >
-            support@billetgab.com
+            billetgab01@gmail.com
           </a>
         </div>
       </motion.div>

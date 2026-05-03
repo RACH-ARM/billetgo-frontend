@@ -116,7 +116,7 @@ export default function ContratPrint() {
       {/* Art. 7 */}
       <section style={{ marginBottom: 20 }}>
         <h2 style={h2Style}>Article 7 — Annulation d'événement — Procédure obligatoire</h2>
-        <p>En cas d'annulation ou de report, l'Organisateur doit notifier BilletGab par email à <strong>support@billetgab.com</strong> dans les <strong>24 heures</strong> suivant la décision, et utiliser la fonctionnalité « Annuler l'événement » depuis son tableau de bord.</p>
+        <p>En cas d'annulation ou de report, l'Organisateur doit notifier BilletGab par email à <strong>billetgab01@gmail.com</strong> dans les <strong>24 heures</strong> suivant la décision, et utiliser la fonctionnalité « Annuler l'événement » depuis son tableau de bord.</p>
         <p>Les remboursements des acheteurs sont de la <strong>seule responsabilité de l'Organisateur</strong> (article 6). BilletGab n'intervient pas dans les remboursements financiers entre l'Organisateur et ses acheteurs. Toute annulation non signalée ou tentative de détournement sera poursuivie pénalement sur le fondement de l'abus de confiance (article 247 du Code pénal gabonais).</p>
       </section>
 
@@ -167,7 +167,7 @@ export default function ContratPrint() {
       </div>
 
       <p style={{ marginTop: 24, fontSize: 11, color: '#888', textAlign: 'center' }}>
-        BilletGab — support@billetgab.com — billetgab.com — Document généré le {now}
+        BilletGab — billetgab01@gmail.com — billetgab.com — Document généré le {now}
       </p>
     </div>
   );
