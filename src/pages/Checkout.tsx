@@ -50,6 +50,7 @@ export default function Checkout() {
     email: user?.email ?? '',
     phone: '',
   });
+  const [guestInfo, setGuestInfo] = useState({ firstName: '', lastName: '', email: '' });
   const [provider, setProvider] = useState<'AIRTEL_MONEY' | 'MOOV_MONEY' | null>(null);
   const [cgvAccepted, setCgvAccepted] = useState(false);
   const [paymentPhone, setPaymentPhone] = useState('');
@@ -191,7 +192,10 @@ export default function Checkout() {
   const hasStockIssue = soldOutItems.length > 0 || exceedsMaxPerOrder;
 
   const paymentPhoneValid = provider !== null && isValidGabonPhone(paymentPhone) && isPhoneMatchingProvider(paymentPhone, provider);
-  const canPay = buyerInfo.name.trim().length >= 2 && provider !== null && paymentPhoneValid && cgvAccepted;
+  const guestInfoValid = guestInfo.firstName.trim().length >= 2
+    && guestInfo.lastName.trim().length >= 2
+    && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestInfo.email);
+  const canPay = (user ? buyerInfo.name.trim().length >= 2 : guestInfoValid) && provider !== null && paymentPhoneValid && cgvAccepted;
 
   const handlePayment = async () => {
     unlockAudio(); // débloque AudioContext pendant l'interaction utilisateur
@@ -200,8 +204,10 @@ export default function Checkout() {
       const order = await createOrder.mutateAsync({
         eventId: event.id,
         items: items.map((i) => ({ categoryId: i.category.id, quantity: i.quantity })),
-        buyerName: buyerInfo.name,
-        buyerEmail: buyerInfo.email || undefined,
+        ...(user
+          ? { buyerName: buyerInfo.name, buyerEmail: buyerInfo.email || undefined }
+          : { guestFirstName: guestInfo.firstName, guestLastName: guestInfo.lastName, guestEmail: guestInfo.email }
+        ),
         cgvAcceptedAt: new Date().toISOString(),
         provider: provider ?? undefined,
       });
@@ -460,31 +466,78 @@ export default function Checkout() {
                   className="space-y-4"
                 >
                   <div className="glass-card p-6 space-y-5">
-                    <div>
-                      <label className="text-xs text-white/50 uppercase tracking-widest block mb-2">
-                        Nom complet <span className="text-rose-neon">*</span>
-                      </label>
-                      <input
-                        value={buyerInfo.name}
-                        onChange={(e) => setBuyerInfo((b) => ({ ...b, name: e.target.value }))}
-                        placeholder="Votre nom complet"
-                        className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-xs text-white/50 uppercase tracking-widest block mb-2">
-                        Email <span className="text-white/30">(optionnel)</span>
-                      </label>
-                      <input
-                        value={buyerInfo.email}
-                        onChange={(e) => setBuyerInfo((b) => ({ ...b, email: e.target.value }))}
-                        type="email"
-                        placeholder="votre@email.com"
-                        className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors"
-                      />
-                    </div>
-
+                    {!user ? (
+                      <>
+                        <div className="p-3 rounded-xl bg-violet-neon/10 border border-violet-neon/20 text-xs text-white/60 leading-relaxed">
+                          Vos billets vous seront envoyés par email. Vous pourrez les retrouver à tout moment via le lien reçu.{' '}
+                          <Link to="/login" className="text-violet-neon hover:underline">Se connecter</Link>
+                          {' '}pour un accès permanent.
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-xs text-white/50 uppercase tracking-widest block mb-2">
+                              Prénom <span className="text-rose-neon">*</span>
+                            </label>
+                            <input
+                              value={guestInfo.firstName}
+                              onChange={(e) => setGuestInfo((g) => ({ ...g, firstName: e.target.value }))}
+                              placeholder="Prénom"
+                              className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs text-white/50 uppercase tracking-widest block mb-2">
+                              Nom <span className="text-rose-neon">*</span>
+                            </label>
+                            <input
+                              value={guestInfo.lastName}
+                              onChange={(e) => setGuestInfo((g) => ({ ...g, lastName: e.target.value }))}
+                              placeholder="Nom"
+                              className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-xs text-white/50 uppercase tracking-widest block mb-2">
+                            Email <span className="text-rose-neon">*</span>
+                          </label>
+                          <input
+                            value={guestInfo.email}
+                            onChange={(e) => setGuestInfo((g) => ({ ...g, email: e.target.value }))}
+                            type="email"
+                            placeholder="votre@email.com"
+                            className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors"
+                          />
+                          <p className="text-xs text-white/30 mt-1.5">Vos billets seront envoyés à cette adresse.</p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          <label className="text-xs text-white/50 uppercase tracking-widest block mb-2">
+                            Nom complet <span className="text-rose-neon">*</span>
+                          </label>
+                          <input
+                            value={buyerInfo.name}
+                            onChange={(e) => setBuyerInfo((b) => ({ ...b, name: e.target.value }))}
+                            placeholder="Votre nom complet"
+                            className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-white/50 uppercase tracking-widest block mb-2">
+                            Email <span className="text-white/30">(optionnel)</span>
+                          </label>
+                          <input
+                            value={buyerInfo.email}
+                            onChange={(e) => setBuyerInfo((b) => ({ ...b, email: e.target.value }))}
+                            type="email"
+                            placeholder="votre@email.com"
+                            className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors"
+                          />
+                        </div>
+                      </>
+                    )}
 
                     <div className="border-t border-white/5 pt-5">
                       <label className="text-xs text-white/50 uppercase tracking-widest block mb-3">

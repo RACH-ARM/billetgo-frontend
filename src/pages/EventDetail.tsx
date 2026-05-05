@@ -206,10 +206,6 @@ export default function EventDetail() {
   };
 
   const handleBuy = () => {
-    if (!isAuthenticated) {
-      navigate(`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`);
-      return;
-    }
     navigate('/checkout');
   };
 
@@ -859,11 +855,6 @@ export default function EventDetail() {
                   <Button variant="primary" size="lg" className="w-full" onClick={handleBuy}>
                     Passer au paiement <ArrowRight className="w-4 h-4" />
                   </Button>
-                  {!isAuthenticated && (
-                    <p className="text-center text-xs text-white/40 mt-2">
-                      Connexion requise pour acheter
-                    </p>
-                  )}
                 </motion.div>
               )}
             </AnimatePresence>

@@ -103,6 +103,7 @@ export default function Navbar() {
               <Link to="/organisateurs" className="text-sm text-white/70 hover:text-white transition-colors px-2 py-1">Organisateurs</Link>
               <Link to="/a-propos" className="text-sm text-white/70 hover:text-white transition-colors px-2 py-1">À propos</Link>
               <Link to="/contact" className="text-sm text-white/70 hover:text-white transition-colors px-2 py-1">Contact</Link>
+              <Link to="/retrouver-mes-billets" className="text-sm text-white/70 hover:text-white transition-colors px-2 py-1">Mes billets</Link>
               <Link to="/login" className="text-sm text-white/70 hover:text-white transition-colors px-2 py-1">Connexion</Link>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Link to="/register?role=organizer" className="neon-button text-sm py-2 px-4">Publier un Event</Link>
@@ -190,6 +191,10 @@ export default function Navbar() {
                 <Link to="/a-propos" onClick={close} className="px-3 py-2.5 rounded-xl text-sm text-white/70 hover:text-white hover:bg-white/5 transition-all">À propos</Link>
                 <Link to="/contact" onClick={close} className="px-3 py-2.5 rounded-xl text-sm text-white/70 hover:text-white hover:bg-white/5 transition-all">Contact</Link>
                 <div className="border-t border-white/5 mt-1 pt-2 flex flex-col gap-1">
+                  <Link to="/retrouver-mes-billets" onClick={close} className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-white/70 hover:text-white hover:bg-white/5 transition-all">
+                    <Ticket className="w-4 h-4" />
+                    Mes billets
+                  </Link>
                   <Link to="/login" onClick={close} className="px-3 py-2.5 rounded-xl text-sm text-white/70 hover:text-white hover:bg-white/5 transition-all">Connexion</Link>
                   <Link to="/register?role=organizer" onClick={close} className="neon-button text-sm py-2.5 px-4 text-center mt-1">Publier un Event</Link>
                 </div>

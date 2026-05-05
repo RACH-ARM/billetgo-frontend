@@ -7,7 +7,7 @@ import {
   CGU, CGV, Confidentialite, MentionsLegales, ForgotPassword,
   ResetPassword, VerifyEmail, OrganizerPublicPage, Notifications,
   OrganizerLayout, Versements, MesEvenements, MonCompte,
-  ContratOrganisateur, GoogleAuthCallback,
+  ContratOrganisateur, GoogleAuthCallback, GuestTicketLookup,
 } from './routes';
 
 export const router = createBrowserRouter(
@@ -40,14 +40,10 @@ export const router = createBrowserRouter(
         { path: 'mot-de-passe-oublie', element: <ForgotPassword /> },
         { path: 'reset-password', element: <ResetPassword /> },
         { path: 'verify-email', element: <VerifyEmail /> },
-      ],
-    },
-    {
-      element: <ProtectedRoute roles={['BUYER']} />,
-      children: [
         { path: 'checkout', element: <Checkout /> },
         { path: 'mes-billets', element: <MyTickets /> },
         { path: 'confirmation/:orderId', element: <OrderConfirmation /> },
+        { path: 'retrouver-mes-billets', element: <GuestTicketLookup /> },
       ],
     },
     {

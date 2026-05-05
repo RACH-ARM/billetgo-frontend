@@ -65,9 +65,12 @@ export interface Order {
 export interface CreateOrderPayload {
   eventId: string;
   items: { categoryId: string; quantity: number }[];
-  buyerName: string;
+  buyerName?: string;
   buyerEmail?: string;
   buyerPhone?: string;
+  guestFirstName?: string;
+  guestLastName?: string;
+  guestEmail?: string;
   cgvAcceptedAt?: string;
   utmSource?: string;
   utmMedium?: string;
