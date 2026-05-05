@@ -458,6 +458,14 @@ function OrderConfirmationInner() {
                 </p>
               </div>
 
+              <div className="glass-card p-4 border border-violet-neon/15 text-sm text-white/50 leading-relaxed max-w-sm mx-auto">
+                <p>
+                  <span className="text-white/80 font-semibold">Pas reçu la demande USSD ?</span>{' '}
+                  Votre compte n'a pas été débité. Patientez quelques minutes, puis retournez sur
+                  la page de l'événement pour recommencer l'achat.
+                </p>
+              </div>
+
               {orderId && (
                 <p className="text-white/20 font-mono text-xs">Réf : {orderId}</p>
               )}
