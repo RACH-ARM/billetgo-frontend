@@ -240,8 +240,25 @@ function GuestTicketsView({ token, prefetchedData }: { token?: string; prefetche
       <h1 className="font-bebas text-5xl tracking-wider text-gradient mb-2">MES BILLETS</h1>
       <p className="text-white/40 text-sm mb-6">Accès temporaire pour <span className="text-white/70">{guestData.email}</span></p>
 
+      <div className="mb-4">
+        <div className="flex items-start gap-3 glass-card p-4 border border-cyan-neon/20 bg-cyan-neon/5">
+          <ImageDown className="w-5 h-5 text-cyan-neon flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-white/50 leading-relaxed">
+            Appuyez sur <strong>"Afficher le QR Code"</strong> puis sur "Enregistrer" pour sauvegarder votre billet dans votre galerie — accessible hors connexion.
+          </p>
+        </div>
+      </div>
+
+      {guestData.tickets.length === 0 ? (
+        <div className="glass-card p-12 text-center">
+          <p className="text-white/40">Aucun billet associé à cet email.</p>
+        </div>
+      ) : (
+        <GuestOrderGroups tickets={guestData.tickets} />
+      )}
+
       {/* Google CTA */}
-      <div className="mb-6 glass-card p-5 border border-violet-neon/20 space-y-3">
+      <div className="mt-6 glass-card p-5 border border-violet-neon/20 space-y-3">
         <p className="text-sm text-white/70 font-medium">Créez un compte pour un accès permanent à vos billets</p>
         <div className="flex flex-col sm:flex-row gap-2">
           <button
@@ -268,24 +285,7 @@ function GuestTicketsView({ token, prefetchedData }: { token?: string; prefetche
         </div>
       </div>
 
-      <div className="mb-4">
-        <div className="flex items-start gap-3 glass-card p-4 border border-cyan-neon/20 bg-cyan-neon/5">
-          <ImageDown className="w-5 h-5 text-cyan-neon flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-white/50 leading-relaxed">
-            Appuyez sur <strong>"Afficher le QR Code"</strong> puis sur "Enregistrer" pour sauvegarder votre billet dans votre galerie — accessible hors connexion.
-          </p>
-        </div>
-      </div>
-
-      {guestData.tickets.length === 0 ? (
-        <div className="glass-card p-12 text-center">
-          <p className="text-white/40">Aucun billet associé à cet email.</p>
-        </div>
-      ) : (
-        <GuestOrderGroups tickets={guestData.tickets} />
-      )}
-
-      <div className="mt-10 text-center">
+      <div className="mt-6 text-center">
         <Link to="/retrouver-mes-billets" className="text-xs text-white/30 hover:text-violet-neon transition-colors">
           <Ticket className="w-3.5 h-3.5 inline mr-1" />
           Rechercher avec une autre adresse email
