@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   CheckCircle2, XCircle, Clock, Ticket,
   CalendarDays, MapPin, HelpCircle, RefreshCw, Share2, Mail,
-  Smartphone, AlertCircle, Check, Download,
+  Smartphone, AlertCircle, Check, ImageDown,
 } from 'lucide-react';
 import { paymentService } from '../services/paymentService';
 import { useQueryClient } from 'react-query';
@@ -15,6 +15,7 @@ import { formatPrice } from '../utils/formatPrice';
 import { normalizeGabonPhone, isValidGabonPhone, isPhoneMatchingProvider } from '../utils/phone';
 import Button from '../components/common/Button';
 import type { PaymentProvider } from '../types/ticket';
+import { generateTicketCanvas, blobToBase64 } from '../utils/ticketCanvas';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 type ConfirmationState = 'WAITING' | 'SUCCESS' | 'FAILURE' | 'RETRYABLE_FAILURE' | 'TIMEOUT' | 'UNAUTHORIZED';
@@ -213,7 +214,7 @@ function OrderConfirmationInner() {
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
 
   const state = location.state as NavState;
 
@@ -221,6 +222,21 @@ function OrderConfirmationInner() {
   const [failureType, setFailureType] = useState<FailureType>('other');
   const [currentPaymentId, setCurrentPaymentId] = useState<string | null>(state?.paymentId ?? null);
   const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [qrSaving, setQrSaving] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Fetch QR as base64 when URL is known (CSP-safe + needed for canvas generation)
+  useEffect(() => {
+    if (!qrImageUrl) return;
+    let cancelled = false;
+    fetch(qrImageUrl)
+      .then(r => r.blob())
+      .then(blob => blobToBase64(blob))
+      .then(b64 => { if (!cancelled) setQrDataUrl(b64); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [qrImageUrl]);
 
   // Retry form state
   const [retryProvider, setRetryProvider] = useState<'AIRTEL_MONEY' | 'MOOV_MONEY' | null>(state?.provider ?? null);
@@ -430,35 +446,63 @@ function OrderConfirmationInner() {
               {/* QR Code — téléchargeable dans la galerie */}
               {qrImageUrl && (
                 <div className="glass-card p-5 border border-violet-neon/20 space-y-4">
+                  <canvas ref={canvasRef} className="hidden" />
                   <h3 className="font-bebas text-lg tracking-wider text-violet-neon text-center flex items-center justify-center gap-2">
                     <Ticket className="w-5 h-5" />
                     QR Code d'entrée
                   </h3>
                   <div className="flex flex-col items-center gap-4">
                     <div className="bg-white p-3 rounded-2xl" style={{ boxShadow: '0 0 24px rgba(224,64,251,0.25)' }}>
-                      <img src={qrImageUrl} alt="QR Code BilletGab" className="w-40 h-40 block rounded" />
+                      {qrDataUrl
+                        ? <img src={qrDataUrl} alt="QR Code BilletGab" className="w-40 h-40 block rounded" />
+                        : <div className="w-40 h-40 bg-gray-100 rounded animate-pulse" />
+                      }
                     </div>
                     <button
+                      disabled={!qrDataUrl || qrSaving}
                       onClick={async () => {
+                        if (!qrDataUrl || !canvasRef.current) return;
+                        setQrSaving(true);
                         try {
-                          const res = await fetch(qrImageUrl);
-                          const blob = await res.blob();
-                          const blobUrl = URL.createObjectURL(blob);
-                          const a = document.createElement('a');
-                          a.href = blobUrl;
-                          a.download = `billet-qr-${orderId?.slice(0, 8) ?? 'billetgab'}.png`;
-                          document.body.appendChild(a);
-                          a.click();
-                          document.body.removeChild(a);
-                          URL.revokeObjectURL(blobUrl);
-                        } catch {
-                          window.open(qrImageUrl, '_blank');
+                          const categoryLabel = state?.orderItems.length === 1
+                            ? `${state.ticketsCount} billet${state.ticketsCount > 1 ? 's' : ''} — ${state.orderItems[0].name}`
+                            : `${state?.ticketsCount ?? 1} billet${(state?.ticketsCount ?? 1) > 1 ? 's' : ''}`;
+                          await generateTicketCanvas(canvasRef.current, qrDataUrl, {
+                            ticketId: orderId ?? 'billetgab',
+                            eventTitle: state?.eventName,
+                            categoryName: categoryLabel,
+                            eventDate: state?.eventDate,
+                            venueName: state?.venueName,
+                            coverImageUrl: state?.coverImageUrl || undefined,
+                            buyerName: user ? `${user.firstName} ${user.lastName}`.trim() : undefined,
+                            buyerEmail: user?.email ?? undefined,
+                            price: state?.amount,
+                          });
+                          const blob: Blob = await new Promise(res => canvasRef.current!.toBlob(b => res(b!), 'image/png'));
+                          const file = new File([blob], 'billet-billetgab.png', { type: 'image/png' });
+                          if (navigator.share && navigator.canShare?.({ files: [file] })) {
+                            await navigator.share({ files: [file], title: 'Mon billet BilletGab' });
+                          } else {
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url; a.download = 'billet-billetgab.png';
+                            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                            setTimeout(() => URL.revokeObjectURL(url), 2000);
+                          }
+                        } catch (err) {
+                          if (err instanceof Error && err.name !== 'AbortError') {
+                            import('react-hot-toast').then(({ default: toast }) => toast.error('Erreur lors de la génération'));
+                          }
+                        } finally {
+                          setQrSaving(false);
                         }
                       }}
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-neon/20 border border-violet-neon/40 text-violet-neon hover:bg-violet-neon/30 transition-all text-sm font-semibold"
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-neon/20 border border-violet-neon/40 text-violet-neon hover:bg-violet-neon/30 transition-all text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                      <Download className="w-4 h-4" />
-                      Enregistrer dans la galerie
+                      {qrSaving
+                        ? <><span className="w-4 h-4 border-2 border-violet-neon/40 border-t-violet-neon rounded-full animate-spin" />Génération…</>
+                        : <><ImageDown className="w-4 h-4" />Enregistrer dans la galerie</>
+                      }
                     </button>
                   </div>
                   <p className="text-center text-xs text-white/30 leading-relaxed">
