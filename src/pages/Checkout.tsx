@@ -469,7 +469,8 @@ export default function Checkout() {
                     {!user ? (
                       <>
                         <div className="p-3 rounded-xl bg-violet-neon/10 border border-violet-neon/20 text-xs text-white/60 leading-relaxed">
-                          Vos billets vous seront envoyés par email. Vous pourrez les retrouver à tout moment via le lien reçu.{' '}
+                          Vos billets vous seront envoyés par email. Retrouvez-les à tout moment sur{' '}
+                          <Link to="/retrouver-mes-billets" className="text-violet-neon hover:underline">retrouver-mes-billets</Link>.{' '}
                           <Link to="/login" className="text-violet-neon hover:underline">Se connecter</Link>
                           {' '}pour un accès permanent.
                         </div>
