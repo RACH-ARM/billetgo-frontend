@@ -25,6 +25,8 @@ interface Props {
   buyerName?: string;
   buyerEmail?: string;
   price?: number;
+  // URL publique (guest) — contourne l'auth
+  publicQrUrl?: string;
   // Désactivé si billet remboursé / annulé
   disabled?: boolean;
 }
@@ -34,6 +36,7 @@ export default function QRCodeDisplay({
   ticketId,
   eventTitle, categoryName, eventDate, venueName, coverImageUrl,
   buyerName, buyerEmail, price,
+  publicQrUrl,
   disabled = false,
 }: Props) {
   const cacheId = orderId ?? ticketId ?? '';
@@ -64,8 +67,16 @@ export default function QRCodeDisplay({
     if (dataUrl) { setShow(true); return; }
     setLoading(true);
     try {
-      const response = await api.get(apiPath, { responseType: 'blob' });
-      const base64 = await blobToBase64(new Blob([response.data], { type: 'image/png' }));
+      let rawBlob: Blob;
+      if (publicQrUrl) {
+        const res = await fetch(publicQrUrl);
+        if (!res.ok) throw new Error('QR fetch failed');
+        rawBlob = await res.blob();
+      } else {
+        const response = await api.get(apiPath, { responseType: 'blob' });
+        rawBlob = new Blob([response.data], { type: 'image/png' });
+      }
+      const base64 = await blobToBase64(rawBlob);
       try {
         localStorage.setItem(CACHE_KEY(cacheId), base64);
         setCached(true);

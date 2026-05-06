@@ -236,6 +236,7 @@ function GuestTicketsView({ token, prefetchedData }: { token?: string; prefetche
                 {ticket.status !== 'REFUNDED' && ticket.status !== 'CANCELLED' ? (
                   <QRCodeDisplay
                     orderId={order?.id}
+                    publicQrUrl={order?.qrPublicUrl}
                     usedCount={ticket.status === 'USED' ? 1 : 0}
                     totalCount={1}
                     eventTitle={event?.title ?? ''}
