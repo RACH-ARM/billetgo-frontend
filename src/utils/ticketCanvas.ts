@@ -104,7 +104,7 @@ export async function generateTicketCanvas(
   const W = 900;
   const H = 380;
   const SCALE = 2; // → 1800×760 pixels en sortie
-  const PERF_X = 652;
+  const PERF_X = 625;
   const STUB_CX = PERF_X + (W - PERF_X) / 2;
   const PAD = 24;
   const MAIN_MAX_W = PERF_X - PAD * 2;
