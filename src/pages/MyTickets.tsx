@@ -152,7 +152,6 @@ function GuestOrderGroups({ tickets }: { tickets: any[] }) {
                 coverImageUrl={event?.coverImageUrl ?? null}
                 buyerName={order?.buyerName}
                 price={ticketsSubtotal}
-                disabled={usedCount >= totalCount && totalCount > 0}
               />
             )}
           </motion.div>

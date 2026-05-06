@@ -29,6 +29,7 @@ interface Props {
   publicQrUrl?: string;
   // Désactivé si billet remboursé / annulé
   disabled?: boolean;
+  disabledLabel?: string;
 }
 
 export default function QRCodeDisplay({
@@ -38,6 +39,7 @@ export default function QRCodeDisplay({
   buyerName, buyerEmail, price,
   publicQrUrl,
   disabled = false,
+  disabledLabel = 'Billet remboursé',
 }: Props) {
   const cacheId = orderId ?? ticketId ?? '';
   const apiPath = orderId ? `/orders/${orderId}/qr` : `/tickets/${ticketId}/qr`;
@@ -156,7 +158,7 @@ export default function QRCodeDisplay({
   if (disabled) {
     return (
       <div className="w-48 h-48 bg-bg-secondary rounded-2xl flex items-center justify-center border border-rose-neon/20">
-        <span className="text-rose-neon/60 text-sm text-center px-4">Billet remboursé</span>
+        <span className="text-rose-neon/60 text-sm text-center px-4">{disabledLabel}</span>
       </div>
     );
   }
