@@ -78,6 +78,90 @@ export default function MyTickets() {
   return <AuthenticatedMyTickets />;
 }
 
+function GuestOrderGroups({ tickets }: { tickets: any[] }) {
+  const orderGroups = useMemo(() => {
+    const map = new Map<string, any[]>();
+    for (const ticket of tickets) {
+      const key = ticket.order?.id ?? '__unknown__';
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(ticket);
+    }
+    return Array.from(map.values());
+  }, [tickets]);
+
+  return (
+    <div className="space-y-4">
+      {orderGroups.map((group: any[], i: number) => {
+        const firstTicket = group[0];
+        const event = firstTicket.category?.event;
+        const order = firstTicket.order;
+        const activeTickets = group.filter((t: any) => t.status !== 'REFUNDED' && t.status !== 'CANCELLED');
+        const usedCount = group.filter((t: any) => t.status === 'USED').length;
+        const totalCount = activeTickets.length;
+        const ticketsSubtotal = group.reduce((s: number, t: any) => s + Number(t.category?.price ?? 0), 0);
+        const categoryLabel = Object.entries(
+          activeTickets.reduce((acc: Record<string, number>, t: any) => {
+            const name = t.category?.name ?? '';
+            acc[name] = (acc[name] ?? 0) + 1;
+            return acc;
+          }, {})
+        ).map(([name, qty]) => `${qty}× ${name}`).join(', ') || firstTicket.category?.name;
+        const allCancelled = activeTickets.length === 0;
+
+        return (
+          <motion.div
+            key={order?.id ?? i}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: i * 0.04 }}
+            className="glass-card p-5"
+          >
+            <div className="flex items-start gap-3 mb-4">
+              {event?.coverImageUrl && (
+                <img src={event.coverImageUrl} alt="" className="w-16 h-16 rounded-xl object-cover opacity-80 flex-shrink-0" />
+              )}
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bebas text-lg tracking-wide text-white">{event?.title}</h3>
+                <p className="text-xs text-white/50">{event?.eventDate ? formatEventDate(event.eventDate) : ''}</p>
+                <p className="text-xs text-white/40">{event?.venueName}</p>
+                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                  <span className="bg-violet-neon/20 text-violet-neon text-xs px-3 py-1 rounded-full border border-violet-neon/30 max-w-[220px] truncate">
+                    {categoryLabel}
+                  </span>
+                  <span className="font-mono text-cyan-neon text-sm font-bold">
+                    {formatPrice(ticketsSubtotal)}
+                  </span>
+                </div>
+              </div>
+              <Badge variant={allCancelled ? 'rose' : usedCount >= totalCount && totalCount > 0 ? 'gray' : 'green'}>
+                {allCancelled ? 'Annulé' : usedCount >= totalCount && totalCount > 0 ? 'Utilisé' : 'Disponible'}
+              </Badge>
+            </div>
+            {allCancelled ? (
+              <p className="text-xs text-white/30 italic">Billet annulé ou remboursé.</p>
+            ) : (
+              <QRCodeDisplay
+                orderId={order?.id}
+                publicQrUrl={order?.qrPublicUrl}
+                usedCount={usedCount}
+                totalCount={totalCount || 1}
+                eventTitle={event?.title ?? ''}
+                categoryName={categoryLabel}
+                eventDate={event?.eventDate ?? ''}
+                venueName={event?.venueName ?? ''}
+                coverImageUrl={event?.coverImageUrl ?? null}
+                buyerName={order?.buyerName}
+                price={ticketsSubtotal}
+                disabled={usedCount >= totalCount && totalCount > 0}
+              />
+            )}
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+}
+
 function GuestTicketsView({ token, prefetchedData }: { token?: string; prefetchedData?: { email: string; tickets: any[] } }) {
   const [guestData, setGuestData] = useState<{ email: string; tickets: any[] } | null>(prefetchedData ?? null);
   const [loading, setLoading] = useState(!prefetchedData && !!token);
@@ -199,62 +283,7 @@ function GuestTicketsView({ token, prefetchedData }: { token?: string; prefetche
           <p className="text-white/40">Aucun billet associé à cet email.</p>
         </div>
       ) : (
-        <div className="space-y-4">
-          {guestData.tickets.map((ticket: any, i: number) => {
-            const event = ticket.category?.event;
-            const order = ticket.order;
-            const ticketsSubtotal = Number(ticket.category?.price ?? 0);
-            return (
-              <motion.div
-                key={ticket.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.04 }}
-                className="glass-card p-5"
-              >
-                <div className="flex items-start gap-3 mb-4">
-                  {event?.coverImageUrl && (
-                    <img src={event.coverImageUrl} alt="" className="w-16 h-16 rounded-xl object-cover opacity-80 flex-shrink-0" />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bebas text-lg tracking-wide text-white">{event?.title}</h3>
-                    <p className="text-xs text-white/50">{event?.eventDate ? formatEventDate(event.eventDate) : ''}</p>
-                    <p className="text-xs text-white/40">{event?.venueName}</p>
-                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                      <span className="bg-violet-neon/20 text-violet-neon text-xs px-3 py-1 rounded-full border border-violet-neon/30">
-                        {ticket.category?.name}
-                      </span>
-                      <span className="font-mono text-cyan-neon text-sm font-bold">
-                        {formatPrice(ticketsSubtotal)}
-                      </span>
-                    </div>
-                  </div>
-                  <Badge variant={ticket.status === 'UNUSED' ? 'green' : ticket.status === 'USED' ? 'gray' : 'rose'}>
-                    {ticket.status === 'UNUSED' ? 'Disponible' : ticket.status === 'USED' ? 'Utilisé' : 'Annulé'}
-                  </Badge>
-                </div>
-                {ticket.status !== 'REFUNDED' && ticket.status !== 'CANCELLED' ? (
-                  <QRCodeDisplay
-                    orderId={order?.id}
-                    publicQrUrl={order?.qrPublicUrl}
-                    usedCount={ticket.status === 'USED' ? 1 : 0}
-                    totalCount={1}
-                    eventTitle={event?.title ?? ''}
-                    categoryName={ticket.category?.name ?? ''}
-                    eventDate={event?.eventDate ?? ''}
-                    venueName={event?.venueName ?? ''}
-                    coverImageUrl={event?.coverImageUrl ?? null}
-                    buyerName={order?.buyerName}
-                    price={ticketsSubtotal}
-                    disabled={ticket.status === 'USED'}
-                  />
-                ) : (
-                  <p className="text-xs text-white/30 italic">Billet annulé ou remboursé.</p>
-                )}
-              </motion.div>
-            );
-          })}
-        </div>
+        <GuestOrderGroups tickets={guestData.tickets} />
       )}
 
       <div className="mt-10 text-center">
