@@ -104,7 +104,7 @@ function SuccessIcon() {
   );
 }
 
-// ─── Info block (inside SUCCESS state) ───────────────────────────────────────
+// ─── Info block — utilisateur connecté ───────────────────────────────────────
 function InfoBlock() {
   return (
     <div className="glass-card p-5 border border-violet-neon/15 space-y-4">
@@ -147,6 +147,54 @@ function InfoBlock() {
       >
         <HelpCircle className="w-4 h-4" />
         Guide complet — Comment utiliser mes billets ?
+      </Link>
+    </div>
+  );
+}
+
+// ─── Info block — guest (sans compte) ────────────────────────────────────────
+function GuestInfoBlock() {
+  return (
+    <div className="glass-card p-5 border border-violet-neon/15 space-y-4">
+      <h3 className="font-bebas text-lg tracking-wider text-violet-neon flex items-center gap-2">
+        <Mail className="w-5 h-5" />
+        Où trouver votre QR code ?
+      </h3>
+      <div className="space-y-4 text-sm">
+        {[
+          {
+            n: '1',
+            title: 'Vérifiez votre email',
+            body: "Vous allez recevoir un email de BilletGab avec votre QR code d'entrée. Vérifiez aussi votre dossier spam si vous ne le voyez pas dans les prochaines minutes.",
+          },
+          {
+            n: '2',
+            title: "Le jour de l'événement",
+            body: "Ouvrez l'email BilletGab, affichez votre QR code et présentez votre écran à l'entrée. Vous pouvez aussi l'enregistrer dans votre galerie pour un accès hors connexion.",
+          },
+          {
+            n: '3',
+            title: "Vous avez perdu l'email ?",
+            body: "Rendez-vous sur billetgab.com/retrouver-mes-billets et saisissez votre adresse email pour recevoir un nouveau lien d'accès.",
+          },
+        ].map(({ n, title, body }) => (
+          <div key={n} className="flex gap-3">
+            <div className="w-5 h-5 rounded-full bg-violet-neon/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <span className="text-violet-neon text-[10px] font-bold">{n}</span>
+            </div>
+            <div>
+              <p className="text-white/80 font-semibold">{title}</p>
+              <p className="text-white/50 mt-0.5 leading-relaxed">{body}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      <Link
+        to="/retrouver-mes-billets"
+        className="inline-flex items-center gap-1.5 text-violet-neon text-sm font-semibold hover:underline mt-1"
+      >
+        <Ticket className="w-4 h-4" />
+        Retrouver mes billets →
       </Link>
     </div>
   );
@@ -377,14 +425,14 @@ function OrderConfirmationInner() {
                 </div>
               )}
 
-              {/* Actions */}
+              {/* Action principale */}
               <Button
                 variant="primary"
                 size="lg"
-                onClick={() => navigate('/mes-billets', { replace: true })}
+                onClick={() => navigate(isAuthenticated ? '/mes-billets' : '/retrouver-mes-billets', { replace: true })}
               >
                 <Ticket className="w-4 h-4" />
-                Voir mes billets
+                {isAuthenticated ? 'Voir mes billets' : 'Retrouver mes billets'}
               </Button>
 
               {/* Guest CTA — créer un compte pour accès permanent */}
@@ -467,7 +515,7 @@ function OrderConfirmationInner() {
                 </div>
               )}
 
-              <InfoBlock />
+              {isAuthenticated ? <InfoBlock /> : <GuestInfoBlock />}
             </motion.div>
           )}
 
@@ -506,9 +554,9 @@ function OrderConfirmationInner() {
               )}
 
               <div className="flex flex-col gap-3">
-                <Button variant="primary" size="lg" onClick={() => navigate('/mes-billets', { replace: true })}>
+                <Button variant="primary" size="lg" onClick={() => navigate(isAuthenticated ? '/mes-billets' : '/retrouver-mes-billets', { replace: true })}>
                   <Ticket className="w-4 h-4" />
-                  Vérifier dans mes billets
+                  {isAuthenticated ? 'Vérifier dans mes billets' : 'Retrouver mes billets'}
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
                   Retour à l'accueil
