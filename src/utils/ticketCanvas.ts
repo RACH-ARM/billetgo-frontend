@@ -104,7 +104,7 @@ export async function generateTicketCanvas(
   const W = 900;
   const H = 380;
   const SCALE = 2; // → 1800×760 pixels en sortie
-  const PERF_X = 625;
+  const PERF_X = 540;
   const STUB_CX = PERF_X + (W - PERF_X) / 2;
   const PAD = 24;
   const MAIN_MAX_W = PERF_X - PAD * 2;
@@ -284,7 +284,7 @@ export async function generateTicketCanvas(
   // ── 12. Orbe souche + QR ──────────────────────────────────────────────────
   drawDot(ctx, STUB_CX, H / 2, 130, '#7B2FBE', 0.14);
 
-  const qrSz = 202, qrPad = 9;
+  const qrSz = 254, qrPad = 10;
   const qrW = qrSz + qrPad * 2, qrH = qrSz + qrPad * 2;
   const qrX = STUB_CX - qrW / 2, qrY = H / 2 - qrH / 2;
 
