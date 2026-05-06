@@ -273,7 +273,7 @@ function GuestTicketsView({ token, prefetchedData }: { token?: string; prefetche
         <div className="flex items-start gap-3 glass-card p-4 border border-cyan-neon/20 bg-cyan-neon/5">
           <ImageDown className="w-5 h-5 text-cyan-neon flex-shrink-0 mt-0.5" />
           <p className="text-xs text-white/50 leading-relaxed">
-            Appuyez sur "Enregistrer" sur votre QR code pour le sauvegarder dans votre galerie — accessible hors connexion.
+            Appuyez sur <strong>"Afficher le QR Code"</strong> puis sur "Enregistrer" pour sauvegarder votre billet dans votre galerie — accessible hors connexion.
           </p>
         </div>
       </div>
