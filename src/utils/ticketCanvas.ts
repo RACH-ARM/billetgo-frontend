@@ -284,9 +284,9 @@ export async function generateTicketCanvas(
   // ── 12. Orbe souche + QR ──────────────────────────────────────────────────
   drawDot(ctx, STUB_CX, H / 2, 130, '#7B2FBE', 0.14);
 
-  const qrSz = 162, qrPad = 11;
+  const qrSz = 202, qrPad = 9;
   const qrW = qrSz + qrPad * 2, qrH = qrSz + qrPad * 2;
-  const qrX = STUB_CX - qrW / 2, qrY = H / 2 - qrH / 2 - 16;
+  const qrX = STUB_CX - qrW / 2, qrY = H / 2 - qrH / 2;
 
   // Halo blanc QR
   ctx.save();
