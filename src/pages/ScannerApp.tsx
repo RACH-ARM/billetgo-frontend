@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
+import { unlockAudio, playScanSound } from '../utils/sounds';
 import toast from 'react-hot-toast';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -315,6 +316,7 @@ export default function ScannerApp() {
   }, []);
 
   const startScanning = async () => {
+    unlockAudio();
     setResult(null);
     setIsVerifying(false);
     setCameraError(null);
@@ -375,6 +377,7 @@ export default function ScannerApp() {
         const { data } = await api.post('/scans/verify', { qrPayload });
         const res: ScanResult = data;
         setResult(res);
+        playScanSound(res.valid ? 'green' : (res.color ?? 'red'));
         setScanCount(n => n + 1);
         if (res.valid) setValidCount(n => n + 1);
         return;
@@ -393,12 +396,14 @@ export default function ScannerApp() {
         valid: false, color: 'red',
         message: '⚠ Hors-ligne — aucun cache pour ce billet',
       });
+      playScanSound('red');
       setScanCount(n => n + 1);
       return;
     }
 
     const res = verifyQROffline(qrPayload, cache);
     setResult(res);
+    playScanSound(res.valid ? 'green' : (res.color ?? 'red'));
     setScanCount(n => n + 1);
     if (res.valid) setValidCount(n => n + 1);
 
