@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { ChevronLeft, HelpCircle, ImageDown, Trash2, CheckCircle2, Clock, RotateCcw, X, ArrowRightLeft, ArrowDownToLine, ChevronDown, ChevronUp, MailWarning, CalendarCheck, Ticket, RefreshCw } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { useQueryClient } from 'react-query';
@@ -65,24 +65,27 @@ const getEffectiveStatus = (order: any): string => {
 
 export default function MyTickets() {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const token = searchParams.get('token');
   const { isAuthenticated } = useAuthStore();
 
-  // Guest mode: token present and user not authenticated → show GuestTicketsView
-  if (token && !isAuthenticated) {
-    return <GuestTicketsView token={token} />;
+  const prefetchedGuestData = (location.state as any)?.guestData as { email: string; tickets: any[] } | undefined;
+
+  if (!isAuthenticated && (token || prefetchedGuestData)) {
+    return <GuestTicketsView token={token ?? undefined} prefetchedData={prefetchedGuestData} />;
   }
 
   return <AuthenticatedMyTickets />;
 }
 
-function GuestTicketsView({ token }: { token: string }) {
-  const [guestData, setGuestData] = useState<{ email: string; tickets: any[] } | null>(null);
-  const [loading, setLoading] = useState(true);
+function GuestTicketsView({ token, prefetchedData }: { token?: string; prefetchedData?: { email: string; tickets: any[] } }) {
+  const [guestData, setGuestData] = useState<{ email: string; tickets: any[] } | null>(prefetchedData ?? null);
+  const [loading, setLoading] = useState(!prefetchedData && !!token);
   const [expired, setExpired] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState(!prefetchedData && !token);
 
   useEffect(() => {
+    if (prefetchedData || !token) return;
     api.get(`/tickets/by-token?token=${encodeURIComponent(token)}`)
       .then(({ data }) => setGuestData(data.data))
       .catch((err: any) => {
@@ -90,7 +93,7 @@ function GuestTicketsView({ token }: { token: string }) {
         else setError(true);
       })
       .finally(() => setLoading(false));
-  }, [token]);
+  }, [token, prefetchedData]);
 
   const backendBase = import.meta.env.VITE_BACKEND_URL ?? import.meta.env.VITE_API_URL ?? '';
   const googleUrl = `${backendBase}/api/v1/auth/google?origin=${encodeURIComponent(window.location.origin)}`;
