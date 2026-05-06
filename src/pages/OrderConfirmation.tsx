@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   CheckCircle2, XCircle, Clock, Ticket,
   CalendarDays, MapPin, HelpCircle, RefreshCw, Share2, Mail,
-  Smartphone, AlertCircle, Check,
+  Smartphone, AlertCircle, Check, Download,
 } from 'lucide-react';
 import { paymentService } from '../services/paymentService';
 import { useQueryClient } from 'react-query';
@@ -220,6 +220,7 @@ function OrderConfirmationInner() {
   const [confirmationState, setConfirmationState] = useState<ConfirmationState>('WAITING');
   const [failureType, setFailureType] = useState<FailureType>('other');
   const [currentPaymentId, setCurrentPaymentId] = useState<string | null>(state?.paymentId ?? null);
+  const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
 
   // Retry form state
   const [retryProvider, setRetryProvider] = useState<'AIRTEL_MONEY' | 'MOOV_MONEY' | null>(state?.provider ?? null);
@@ -250,6 +251,7 @@ function OrderConfirmationInner() {
         const result = await paymentService.getPaymentStatus(paymentId);
         if (result.status === 'SUCCESS') {
           clearInterval(pollRef.current!);
+          setQrImageUrl(result.qrImageUrl ?? null);
           setConfirmationState('SUCCESS');
           playPaymentSuccess();
           queryClient.invalidateQueries('my-tickets');
@@ -422,6 +424,46 @@ function OrderConfirmationInner() {
                   {orderId && (
                     <p className="text-white/20 font-mono text-xs pt-1">Réf : {orderId}</p>
                   )}
+                </div>
+              )}
+
+              {/* QR Code — téléchargeable dans la galerie */}
+              {qrImageUrl && (
+                <div className="glass-card p-5 border border-violet-neon/20 space-y-4">
+                  <h3 className="font-bebas text-lg tracking-wider text-violet-neon text-center flex items-center justify-center gap-2">
+                    <Ticket className="w-5 h-5" />
+                    QR Code d'entrée
+                  </h3>
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="bg-white p-3 rounded-2xl" style={{ boxShadow: '0 0 24px rgba(224,64,251,0.25)' }}>
+                      <img src={qrImageUrl} alt="QR Code BilletGab" className="w-40 h-40 block rounded" />
+                    </div>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const res = await fetch(qrImageUrl);
+                          const blob = await res.blob();
+                          const blobUrl = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = blobUrl;
+                          a.download = `billet-qr-${orderId?.slice(0, 8) ?? 'billetgab'}.png`;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          URL.revokeObjectURL(blobUrl);
+                        } catch {
+                          window.open(qrImageUrl, '_blank');
+                        }
+                      }}
+                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-neon/20 border border-violet-neon/40 text-violet-neon hover:bg-violet-neon/30 transition-all text-sm font-semibold"
+                    >
+                      <Download className="w-4 h-4" />
+                      Enregistrer dans la galerie
+                    </button>
+                  </div>
+                  <p className="text-center text-xs text-white/30 leading-relaxed">
+                    QR code unique — présentez-le à l'entrée de l'événement
+                  </p>
                 </div>
               )}
 

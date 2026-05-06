@@ -20,6 +20,7 @@ export const paymentService = {
     failureReason: string | null;
     orderStatus: string;
     orderExpiresAt: string | null;
+    qrImageUrl: string | null;
   }> => {
     const { data } = await api.get(`/payments/${paymentId}/status`);
     return data.data;
