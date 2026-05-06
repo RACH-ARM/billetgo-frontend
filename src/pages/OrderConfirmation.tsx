@@ -515,6 +515,7 @@ function OrderConfirmationInner() {
               <Button
                 variant="primary"
                 size="lg"
+                className="w-full"
                 onClick={() => navigate(isAuthenticated ? '/mes-billets' : '/retrouver-mes-billets', { replace: true })}
               >
                 <Ticket className="w-4 h-4" />
@@ -640,7 +641,7 @@ function OrderConfirmationInner() {
               )}
 
               <div className="flex flex-col gap-3">
-                <Button variant="primary" size="lg" onClick={() => navigate(isAuthenticated ? '/mes-billets' : '/retrouver-mes-billets', { replace: true })}>
+                <Button variant="primary" size="lg" className="w-full" onClick={() => navigate(isAuthenticated ? '/mes-billets' : '/retrouver-mes-billets', { replace: true })}>
                   <Ticket className="w-4 h-4" />
                   {isAuthenticated ? 'Vérifier dans mes billets' : 'Retrouver mes billets'}
                 </Button>
