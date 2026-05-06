@@ -257,6 +257,13 @@ function GuestTicketsView({ token, prefetchedData }: { token?: string; prefetche
         <GuestOrderGroups tickets={guestData.tickets} />
       )}
 
+      <div className="mt-4 text-center">
+        <Link to="/retrouver-mes-billets" className="text-xs text-white/30 hover:text-violet-neon transition-colors">
+          <Ticket className="w-3.5 h-3.5 inline mr-1" />
+          Rechercher avec une autre adresse email
+        </Link>
+      </div>
+
       {/* Google CTA */}
       <div className="mt-6 glass-card p-5 border border-violet-neon/20 space-y-3">
         <p className="text-sm text-white/70 font-medium">Créez un compte pour un accès permanent à vos billets</p>
@@ -285,12 +292,6 @@ function GuestTicketsView({ token, prefetchedData }: { token?: string; prefetche
         </div>
       </div>
 
-      <div className="mt-6 text-center">
-        <Link to="/retrouver-mes-billets" className="text-xs text-white/30 hover:text-violet-neon transition-colors">
-          <Ticket className="w-3.5 h-3.5 inline mr-1" />
-          Rechercher avec une autre adresse email
-        </Link>
-      </div>
     </div>
   );
 }
