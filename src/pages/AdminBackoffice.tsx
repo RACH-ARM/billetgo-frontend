@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -6,7 +6,7 @@ import {
   Users, CalendarDays, TrendingUp, Clock, CheckCircle, XCircle,
   ShieldAlert, LayoutDashboard, ListChecks, X, LogOut, Banknote,
   Star, Flame, Ban, Sparkles, ScanLine, Plus, Eye, EyeOff, Pencil, MessageSquare, FileSearch, RotateCcw, ScrollText, Settings,
-  Square, CheckSquare, BadgeCheck, Award, Zap, Shield, MapPin,
+  Square, CheckSquare, BadgeCheck, Award, Zap, Shield, MapPin, QrCode, Download,
 } from 'lucide-react';
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
@@ -949,6 +949,20 @@ export default function AdminBackoffice() {
   );
   const [freeTicketFeeInput, setFreeTicketFeeInput] = useState('');
   const [rateInputs, setRateInputs] = useState({ airtelPayinRate: '', moovPayinRate: '', airtelPayoutRate: '', moovPayoutRate: '' });
+  const [siteQrObjectUrl, setSiteQrObjectUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (tab !== 'settings' || siteQrObjectUrl) return;
+    let objectUrl: string | null = null;
+    api.get(`/utils/qr?url=${encodeURIComponent('https://billetgab.com')}`, { responseType: 'blob' })
+      .then(({ data }) => {
+        objectUrl = URL.createObjectURL(new Blob([data], { type: 'image/png' }));
+        setSiteQrObjectUrl(objectUrl);
+      })
+      .catch(() => {});
+    return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
+  }, [tab, siteQrObjectUrl]);
+
   const updateConfigMutation = useMutation(
     (payload: Record<string, number>) => api.patch('/admin/settings', payload).then((r) => r.data),
     {
@@ -1051,38 +1065,39 @@ export default function AdminBackoffice() {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-        <div className="flex items-center justify-between mb-4">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-5 sm:mb-8">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
           <div>
-            <h1 className="font-bebas text-5xl tracking-wider text-gradient leading-none">BACK-OFFICE ADMIN</h1>
+            <h1 className="font-bebas text-3xl sm:text-5xl tracking-wider text-gradient leading-none">BACK-OFFICE ADMIN</h1>
             <p className="text-white/40 text-xs mt-1">{user?.firstName} {user?.lastName}</p>
           </div>
           <button
             onClick={async () => { await logout(); navigate('/login'); }}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10 text-white/40 hover:text-rose-neon hover:border-rose-neon/30 transition-colors text-sm"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10 text-white/40 hover:text-rose-neon hover:border-rose-neon/30 transition-colors text-sm flex-shrink-0"
           >
             <LogOut className="w-4 h-4" />
-            Déconnexion
+            <span className="hidden sm:inline">Déconnexion</span>
           </button>
         </div>
-        <p className="text-white/40 mt-1 text-sm">Gestion de la plateforme BilletGab</p>
+        <p className="text-white/40 mt-1 text-sm hidden sm:block">Gestion de la plateforme BilletGab</p>
       </motion.div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-8 border-b border-violet-neon/20 pb-4 overflow-x-auto scrollbar-hide">
+      <div className="flex gap-1 sm:gap-2 mb-6 sm:mb-8 border-b border-violet-neon/20 pb-3 sm:pb-4 overflow-x-auto scrollbar-hide">
         {TABS.map(({ key, label, Icon, badge }) => (
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`flex-shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+            title={label}
+            className={`flex-shrink-0 flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
               tab === key ? 'bg-neon-gradient text-white shadow-neon' : 'text-white/50 hover:text-white hover:bg-white/5'
             }`}
           >
-            <Icon className="w-4 h-4" />
-            {label}
+            <Icon className="w-4 h-4 flex-shrink-0" />
+            <span className="hidden sm:inline">{label}</span>
             {(badge ?? 0) > 0 && (
-              <span className="min-w-5 h-5 px-1 bg-rose-neon rounded-full text-xs flex items-center justify-center text-white font-bold">
+              <span className="min-w-4 h-4 sm:min-w-5 sm:h-5 px-1 bg-rose-neon rounded-full text-[10px] sm:text-xs flex items-center justify-center text-white font-bold">
                 {(badge ?? 0) > 99 ? '99+' : badge}
               </span>
             )}
@@ -1266,11 +1281,11 @@ export default function AdminBackoffice() {
                     </div>
                   )}
                 </div>
-                <div className="flex md:flex-col gap-2 flex-shrink-0">
+                <div className="flex flex-wrap md:flex-col gap-2 flex-shrink-0 mt-1">
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="flex-1 md:flex-none flex items-center gap-1.5 border-violet-neon/30 text-violet-neon hover:bg-violet-neon/10"
+                    className="flex items-center gap-1.5 border-violet-neon/30 text-violet-neon hover:bg-violet-neon/10"
                     onClick={() => setPreviewEvent(event as PreviewEventData)}
                   >
                     <Eye className="w-4 h-4" /> Prévisualiser
@@ -1278,7 +1293,7 @@ export default function AdminBackoffice() {
                   <Button
                     variant="primary"
                     size="sm"
-                    className="flex-1 md:flex-none flex items-center gap-1.5"
+                    className="flex items-center gap-1.5"
                     onClick={() => updateStatus.mutate({ id: event.id as string, status: 'APPROVED' })}
                     isLoading={updateStatus.isLoading}
                   >
@@ -1287,7 +1302,7 @@ export default function AdminBackoffice() {
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="flex-1 md:flex-none flex items-center gap-1.5 border-yellow-400/40 text-yellow-400 hover:bg-yellow-400/10"
+                    className="flex items-center gap-1.5 border-yellow-400/40 text-yellow-400 hover:bg-yellow-400/10"
                     onClick={() => setRevisionTarget({ id: event.id as string, title: event.title as string })}
                   >
                     <MessageSquare className="w-4 h-4" /> Révision
@@ -1295,7 +1310,7 @@ export default function AdminBackoffice() {
                   <Button
                     variant="danger"
                     size="sm"
-                    className="flex-1 md:flex-none flex items-center gap-1.5"
+                    className="flex items-center gap-1.5"
                     onClick={() => setRejectTarget({ id: event.id as string, title: event.title as string })}
                   >
                     <XCircle className="w-4 h-4" /> Refuser
@@ -1529,11 +1544,11 @@ export default function AdminBackoffice() {
           </div>
         ) :
         <div className="space-y-3">
-          <div className="flex items-center gap-3 mb-6 p-4 glass-card border border-violet-neon/20">
-            <div className="flex items-center gap-4 text-xs text-white/50 flex-wrap">
-              <span className="flex items-center gap-1.5"><Star className="w-3.5 h-3.5 text-yellow-400" /> À la une — apparaît en hero (1 seul à la fois)</span>
-              <span className="flex items-center gap-1.5"><Flame className="w-3.5 h-3.5 text-rose-neon" /> HOT — badge flamme sur la carte + section Tendances</span>
-              <span className="flex items-center gap-1.5"><Ban className="w-3.5 h-3.5 text-white/30" /> Retirer — masque l'événement du site</span>
+          <div className="mb-6 p-4 glass-card border border-violet-neon/20">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-xs text-white/50">
+              <span className="flex items-center gap-1.5"><Star className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0" /> À la une — apparaît en hero (1 seul à la fois)</span>
+              <span className="flex items-center gap-1.5"><Flame className="w-3.5 h-3.5 text-rose-neon flex-shrink-0" /> HOT — badge flamme + section Tendances</span>
+              <span className="flex items-center gap-1.5"><Ban className="w-3.5 h-3.5 text-white/30 flex-shrink-0" /> Retirer — masque l'événement du site</span>
             </div>
           </div>
 
@@ -1588,7 +1603,7 @@ export default function AdminBackoffice() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex flex-wrap gap-2 flex-shrink-0">
+                <div className="flex flex-wrap gap-2 w-full sm:w-auto sm:flex-shrink-0">
                   <Button
                     variant={isFeatured ? 'primary' : 'secondary'}
                     size="sm"
@@ -1679,12 +1694,12 @@ export default function AdminBackoffice() {
                           }
                         </button>
                       </th>
-                      <th className="text-left px-5 py-3">Utilisateur</th>
-                      <th className="text-left px-5 py-3">Rôle</th>
-                      <th className="text-left px-5 py-3 hidden md:table-cell">Téléphone</th>
-                      <th className="text-left px-5 py-3 hidden sm:table-cell">Inscription</th>
-                      <th className="text-center px-5 py-3">Statut</th>
-                      <th className="px-5 py-3" />
+                      <th className="text-left px-4 sm:px-5 py-3">Utilisateur</th>
+                      <th className="text-left px-4 sm:px-5 py-3 hidden sm:table-cell">Rôle</th>
+                      <th className="text-left px-4 sm:px-5 py-3 hidden md:table-cell">Téléphone</th>
+                      <th className="text-left px-4 sm:px-5 py-3 hidden lg:table-cell">Inscription</th>
+                      <th className="text-center px-4 sm:px-5 py-3 hidden sm:table-cell">Statut</th>
+                      <th className="px-4 sm:px-5 py-3" />
                     </tr>
                   </thead>
                   <tbody>
@@ -1710,25 +1725,28 @@ export default function AdminBackoffice() {
                             </button>
                           )}
                         </td>
-                        <td className="px-5 py-4">
-                          <p className="text-white font-semibold">{u.firstName as string} {u.lastName as string}</p>
+                        <td className="px-4 sm:px-5 py-4">
+                          <p className="text-white font-semibold text-sm">{u.firstName as string} {u.lastName as string}</p>
                           <p className="text-white/40 text-xs">{u.email as string}</p>
                           {(u.role as string) === 'ORGANIZER' && Boolean((u as Record<string, unknown>).organizer) && (
                             <p className="text-violet-neon/70 text-xs mt-0.5">
                               {((u as Record<string, unknown>).organizer as Record<string, unknown>).companyName as string}
                             </p>
                           )}
+                          <div className="sm:hidden mt-1">
+                            <RoleBadge role={u.role as string} />
+                          </div>
                         </td>
-                        <td className="px-5 py-4">
+                        <td className="px-4 sm:px-5 py-4 hidden sm:table-cell">
                           <RoleBadge role={u.role as string} />
                         </td>
-                        <td className="px-5 py-4 text-white/50 text-xs hidden md:table-cell">
+                        <td className="px-4 sm:px-5 py-4 text-white/50 text-xs hidden md:table-cell">
                           {(u.phone as string) || '—'}
                         </td>
-                        <td className="px-5 py-4 text-white/40 text-xs hidden sm:table-cell">
+                        <td className="px-4 sm:px-5 py-4 text-white/40 text-xs hidden lg:table-cell">
                           {new Date(u.createdAt as string).toLocaleDateString('fr-FR')}
                         </td>
-                        <td className="px-5 py-4 text-center">
+                        <td className="px-4 sm:px-5 py-4 text-center hidden sm:table-cell">
                           <div className="flex flex-col items-center gap-1">
                             {u.isActive ? (
                               <span className="text-xs px-2.5 py-1 rounded-full bg-green-500/20 text-green-400 font-semibold">Actif</span>
@@ -1744,8 +1762,15 @@ export default function AdminBackoffice() {
                             )}
                           </div>
                         </td>
-                        <td className="px-5 py-4">
+                        <td className="px-4 sm:px-5 py-4">
                           <div className="flex flex-col gap-1.5 items-start">
+                            <div className="sm:hidden mb-1">
+                              {u.isActive ? (
+                                <span className="text-xs px-2.5 py-1 rounded-full bg-green-500/20 text-green-400 font-semibold">Actif</span>
+                              ) : (
+                                <span className="text-xs px-2.5 py-1 rounded-full bg-rose-neon/20 text-rose-neon font-semibold">Bloqué</span>
+                              )}
+                            </div>
                             {(u.role as string) !== 'ADMIN' && (
                               <>
                                 <Button
@@ -1831,7 +1856,7 @@ export default function AdminBackoffice() {
 
           {/* Barre d'actions en masse */}
           {selectedUserIds.size > 0 && (
-            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 glass-card px-5 py-3 border border-violet-neon/30 shadow-neon rounded-2xl">
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex flex-wrap items-center gap-2 sm:gap-3 glass-card px-4 sm:px-5 py-3 border border-violet-neon/30 shadow-neon rounded-2xl max-w-[calc(100vw-2rem)]">
               <span className="text-sm text-white/60 font-semibold whitespace-nowrap">
                 {selectedUserIds.size} sélectionné{selectedUserIds.size > 1 ? 's' : ''}
               </span>
@@ -1867,9 +1892,9 @@ export default function AdminBackoffice() {
       {/* ── Scanners tab ── */}
       {tab === 'scanners' && (
         <div>
-          <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center justify-between gap-3 mb-5">
             <p className="text-white/40 text-sm">Créez des comptes scanner et assignez-les à un événement.</p>
-            <Button variant="secondary" size="sm" onClick={() => { setShowScannerForm((v) => !v); setCreatedScannerCreds(null); }}>
+            <Button variant="secondary" size="sm" className="flex-shrink-0" onClick={() => { setShowScannerForm((v) => !v); setCreatedScannerCreds(null); }}>
               {showScannerForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
               {showScannerForm ? 'Annuler' : 'Nouveau scanner'}
             </Button>
@@ -2095,9 +2120,9 @@ export default function AdminBackoffice() {
                   <thead>
                     <tr className="border-b border-white/5 text-white/40 text-xs uppercase tracking-widest">
                       <th className="text-left px-5 py-3">Agent</th>
-                      <th className="text-left px-5 py-3">Téléphone</th>
-                      <th className="text-left px-5 py-3">Événements assignés</th>
-                      <th className="text-center px-5 py-3">Scans</th>
+                      <th className="text-left px-5 py-3 hidden sm:table-cell">Téléphone</th>
+                      <th className="text-left px-5 py-3 hidden md:table-cell">Événements assignés</th>
+                      <th className="text-center px-5 py-3 hidden sm:table-cell">Scans</th>
                       <th className="text-center px-5 py-3">Statut</th>
                       <th className="px-5 py-3" />
                     </tr>
@@ -2105,12 +2130,12 @@ export default function AdminBackoffice() {
                   <tbody>
                     {scannersData.map((s) => (
                       <tr key={s.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-                        <td className="px-5 py-4">
-                          <p className="text-white font-semibold">{s.user.firstName} {s.user.lastName}</p>
-                          {s.user.email && <p className="text-white/30 text-xs mt-0.5">{s.user.email}</p>}
+                        <td className="px-4 sm:px-5 py-4">
+                          <p className="text-white font-semibold text-sm">{s.user.firstName} {s.user.lastName}</p>
+                          {s.user.email && <p className="text-white/30 text-xs mt-0.5 hidden sm:block">{s.user.email}</p>}
                         </td>
-                        <td className="px-5 py-4 text-white/60 text-xs font-mono">{s.user.phone || '—'}</td>
-                        <td className="px-5 py-4">
+                        <td className="px-5 py-4 text-white/60 text-xs font-mono hidden sm:table-cell">{s.user.phone || '—'}</td>
+                        <td className="px-5 py-4 hidden md:table-cell">
                           <div className="flex flex-wrap gap-1 max-w-[260px]">
                             {s.events.slice(0, 3).map((ev) => (
                               <span key={ev.id} className="text-[11px] px-2 py-0.5 rounded-full bg-violet-neon/10 text-violet-neon border border-violet-neon/20 truncate max-w-[140px]" title={ev.title}>
@@ -2125,19 +2150,19 @@ export default function AdminBackoffice() {
                             {s.events.length === 0 && <span className="text-white/20 text-xs">Aucun</span>}
                           </div>
                         </td>
-                        <td className="px-5 py-4 text-center">
+                        <td className="px-5 py-4 text-center hidden sm:table-cell">
                           <p className="text-white font-semibold">{s.scanCount}</p>
                           <p className="text-white/30 text-xs">{s.validScanCount} valides</p>
                         </td>
-                        <td className="px-5 py-4 text-center">
+                        <td className="px-4 sm:px-5 py-4 text-center">
                           {s.user.isActive ? (
-                            <span className="text-xs px-2.5 py-1 rounded-full bg-green-500/20 text-green-400 font-semibold">Actif</span>
+                            <span className="text-xs px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-green-500/20 text-green-400 font-semibold whitespace-nowrap">Actif</span>
                           ) : (
-                            <span className="text-xs px-2.5 py-1 rounded-full bg-rose-neon/20 text-rose-neon font-semibold">Bloqué</span>
+                            <span className="text-xs px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-rose-neon/20 text-rose-neon font-semibold whitespace-nowrap">Bloqué</span>
                           )}
                         </td>
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-2 justify-end">
+                        <td className="px-4 sm:px-5 py-4">
+                          <div className="flex items-center gap-1.5 sm:gap-2 justify-end">
                             <Button
                               variant={s.user.isActive ? 'danger' : 'secondary'}
                               size="sm"
@@ -2265,7 +2290,7 @@ export default function AdminBackoffice() {
 
           {/* Barre d'actions en masse remboursements commandes */}
           {selectedRefundIds.size > 0 && (
-            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 glass-card px-5 py-3 border border-violet-neon/30 shadow-neon rounded-2xl">
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex flex-wrap items-center gap-2 sm:gap-3 glass-card px-4 sm:px-5 py-3 border border-violet-neon/30 shadow-neon rounded-2xl max-w-[calc(100vw-2rem)]">
               <span className="text-sm text-white/60 font-semibold whitespace-nowrap">
                 {selectedRefundIds.size} commande{selectedRefundIds.size > 1 ? 's' : ''}
               </span>
@@ -2381,7 +2406,7 @@ export default function AdminBackoffice() {
 
           {/* Barre d'actions en masse remboursements billets */}
           {selectedTicketRefundIds.size > 0 && (
-            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 glass-card px-5 py-3 border border-violet-neon/30 shadow-neon rounded-2xl">
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex flex-wrap items-center gap-2 sm:gap-3 glass-card px-4 sm:px-5 py-3 border border-violet-neon/30 shadow-neon rounded-2xl max-w-[calc(100vw-2rem)]">
               <span className="text-sm text-white/60 font-semibold whitespace-nowrap">
                 {selectedTicketRefundIds.size} billet{selectedTicketRefundIds.size > 1 ? 's' : ''}
               </span>
@@ -2455,7 +2480,7 @@ export default function AdminBackoffice() {
                     animate={{ opacity: 1, y: 0 }}
                     className="glass-card overflow-hidden border border-white/5"
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 p-5">
+                    <div className="flex flex-col gap-4 p-4 sm:p-5">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-0.5">
                           <h3 className="font-bebas text-xl tracking-wide text-white">{org.companyName}</h3>
@@ -2499,14 +2524,14 @@ export default function AdminBackoffice() {
                         </div>
                       </div>
                       {/* Soldes */}
-                      <div className="flex flex-wrap sm:flex-nowrap gap-3 flex-shrink-0">
+                      <div className="grid grid-cols-2 sm:flex sm:flex-nowrap gap-2 sm:gap-3 flex-shrink-0">
                         {[
                           { label: 'Collecté', val: org.totalCollected, color: 'text-white/70' },
                           { label: 'Net org.', val: org.totalNetAmount, color: 'text-cyan-neon' },
                           { label: 'Déjà viré', val: org.totalPaid, color: 'text-green-400' },
                           { label: 'Restant', val: org.balanceDue, color: org.balanceDue > 0 ? 'text-yellow-400' : 'text-white/30' },
                         ].map((s) => (
-                          <div key={s.label} className="text-center bg-white/[0.04] rounded-xl px-3 py-2 min-w-[80px]">
+                          <div key={s.label} className="text-center bg-white/[0.04] rounded-xl px-2 sm:px-3 py-2 sm:min-w-[80px]">
                             <p className="text-xs text-white/30 uppercase tracking-widest mb-0.5">{s.label}</p>
                             <p className={`font-mono font-bold text-sm ${s.color}`}>{formatPrice(s.val, 'FCFA', '0 FCFA')}</p>
                           </div>
@@ -2608,13 +2633,13 @@ export default function AdminBackoffice() {
               value={auditActionFilter}
               onChange={(e) => { setAuditActionFilter(e.target.value); setAuditPage(1); }}
               placeholder="Filtrer par action..."
-              className="bg-bg-card border border-violet-neon/20 rounded-xl px-4 py-2 text-white placeholder-white/30 focus:outline-none focus:border-violet-neon transition-colors text-sm w-52"
+              className="bg-bg-card border border-violet-neon/20 rounded-xl px-4 py-2 text-white placeholder-white/30 focus:outline-none focus:border-violet-neon transition-colors text-sm w-full sm:w-52"
             />
             <input
               value={auditEntityFilter}
               onChange={(e) => { setAuditEntityFilter(e.target.value); setAuditPage(1); }}
               placeholder="Filtrer par entité..."
-              className="bg-bg-card border border-violet-neon/20 rounded-xl px-4 py-2 text-white placeholder-white/30 focus:outline-none focus:border-violet-neon transition-colors text-sm w-52"
+              className="bg-bg-card border border-violet-neon/20 rounded-xl px-4 py-2 text-white placeholder-white/30 focus:outline-none focus:border-violet-neon transition-colors text-sm w-full sm:w-52"
             />
             {(auditActionFilter || auditEntityFilter) && (
               <button
@@ -2724,7 +2749,7 @@ export default function AdminBackoffice() {
           <div className="glass-card p-6 border border-white/5">
             <h3 className="font-bebas text-xl tracking-wider text-white/60 mb-1">Taux de commission</h3>
             <p className="text-white/30 text-xs mb-4">Taux fixes appliqués par l'organisateur au moment de la création de l'événement.</p>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
                 { label: 'Standard', rate: '10 %', color: 'text-violet-neon', border: 'border-violet-neon/20', perks: 'Essentiel' },
                 { label: 'Intermédiaire', rate: '15 %', color: 'text-rose-neon', border: 'border-rose-neon/20', perks: 'HOT + WhatsApp' },
@@ -2746,7 +2771,7 @@ export default function AdminBackoffice() {
             <div className="glass-card p-6 border border-violet-neon/20">
               <h3 className="font-bebas text-xl tracking-wider text-white/60 mb-1">Frais billet gratuit</h3>
               <p className="text-white/30 text-xs mb-4">Montant prélevé par billet sur les événements gratuits.</p>
-              <div className="flex items-end gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-4">
                 <div className="flex-1">
                   <label className="block text-xs text-white/50 uppercase tracking-widest mb-1.5">Montant (FCFA)</label>
                   <input
@@ -2826,6 +2851,49 @@ export default function AdminBackoffice() {
               </Button>
             </div>
           )}
+
+          {/* QR Code du site */}
+          <div className="glass-card p-6 border border-white/5">
+            <div className="flex items-center gap-2 mb-1">
+              <QrCode className="w-4 h-4 text-violet-neon" />
+              <h3 className="font-bebas text-xl tracking-wider text-white/60">QR Code du site</h3>
+            </div>
+            <p className="text-white/30 text-xs mb-4">
+              Imprimez ce QR code sur vos supports marketing — il redirige vers billetgab.com et est scannable depuis l'appareil photo de tout smartphone.
+            </p>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
+              <div className="w-32 h-32 rounded-xl overflow-hidden bg-white p-1.5 flex-shrink-0">
+                {siteQrObjectUrl ? (
+                  <img src={siteQrObjectUrl} alt="QR billetgab.com" className="w-full h-full object-contain" />
+                ) : (
+                  <div className="w-full h-full bg-white/10 animate-pulse rounded-lg" />
+                )}
+              </div>
+              <div className="space-y-2">
+                <p className="text-white font-semibold text-sm">billetgab.com</p>
+                <p className="text-white/35 text-xs max-w-xs leading-relaxed">
+                  QR haute résolution 500×500 px. Idéal pour flyers, affiches et supports imprimés.
+                </p>
+                <button
+                  onClick={async () => {
+                    try {
+                      const { data } = await api.get(`/utils/qr?url=${encodeURIComponent('https://billetgab.com')}`, { responseType: 'blob' });
+                      const link = document.createElement('a');
+                      link.href = URL.createObjectURL(new Blob([data], { type: 'image/png' }));
+                      link.download = 'qr-billetgab.png';
+                      link.click();
+                      URL.revokeObjectURL(link.href);
+                    } catch {
+                      toast.error('Erreur téléchargement QR code');
+                    }
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-neon/10 border border-violet-neon/30 text-violet-neon hover:bg-violet-neon/20 transition-colors text-sm font-semibold"
+                >
+                  <Download className="w-4 h-4" /> Télécharger en PNG
+                </button>
+              </div>
+            </div>
+          </div>
 
         </div>
       )}

@@ -281,12 +281,16 @@ export default function ScannerApp() {
     if (pending.length === 0) return;
     setIsSyncing(true);
     const synced: string[] = [];
+    let falsePositives = 0;
     for (const scan of pending) {
       try {
-        await api.post('/scans/verify', { qrPayload: scan.qrPayload });
+        const { data } = await api.post('/scans/verify', { qrPayload: scan.qrPayload });
         synced.push(scan.id);
+        // Deux scanners offline sur le même billet : le serveur rejette le second (valid:false).
+        // On corrige le compteur local pour ne pas afficher une entrée qui n'a pas eu lieu.
+        if (scan.localResult.valid && data?.valid === false) falsePositives++;
       } catch {
-        // Laisser pour le prochain essai
+        // Erreur réseau — laisser pour le prochain essai
       }
     }
     if (synced.length > 0) {
@@ -294,6 +298,9 @@ export default function ScannerApp() {
       savePending(remaining);
       setPendingSyncs(remaining);
       toast.success(`${synced.length} scan${synced.length > 1 ? 's' : ''} synchronisé${synced.length > 1 ? 's' : ''}`);
+    }
+    if (falsePositives > 0) {
+      setValidCount(n => Math.max(0, n - falsePositives));
     }
     setIsSyncing(false);
   }, []);

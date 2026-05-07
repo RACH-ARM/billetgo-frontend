@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   Check, ChevronLeft, Ticket, Smartphone, CreditCard,
-  ArrowRight, Trash2, CalendarDays, MapPin, X, Info, Clock, Lock,
+  ArrowRight, Trash2, CalendarDays, MapPin, X, Info, Clock, Lock, Mail,
 } from 'lucide-react';
 import { useCartStore } from '../stores/cartStore';
 import { useAuthStore } from '../stores/authStore';
@@ -56,6 +56,7 @@ export default function Checkout() {
   const [paymentPhone, setPaymentPhone] = useState('');
   const [isExpired, setIsExpired] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [paymentStep, setPaymentStep] = useState<'idle' | 'creating' | 'initiating'>('idle');
   const createOrder = useCreateOrder();
   const initiatePayment = useInitiatePayment();
   const { data: freshEvent } = useEvent(event?.id ?? '');
@@ -200,6 +201,7 @@ export default function Checkout() {
   const handlePayment = async () => {
     unlockAudio(); // débloque AudioContext pendant l'interaction utilisateur
     setPaymentError(null);
+    setPaymentStep('creating');
     try {
       const order = await createOrder.mutateAsync({
         eventId: event.id,
@@ -212,6 +214,7 @@ export default function Checkout() {
         provider: provider ?? undefined,
       });
 
+      setPaymentStep('initiating');
       const result = await initiatePayment.mutateAsync({
         orderId: order.id,
         method: provider!,
@@ -245,6 +248,7 @@ export default function Checkout() {
         },
       });
     } catch (err: unknown) {
+      setPaymentStep('idle');
       const axiosErr = err as { response?: { status?: number; data?: { message?: string; code?: string } }; code?: string };
       const status = axiosErr.response?.status;
       const isConnectionError = !axiosErr.response || axiosErr.code === 'ERR_NETWORK' || (status != null && status >= 500 && !axiosErr.response.data?.message);
@@ -629,8 +633,27 @@ export default function Checkout() {
                     </div>
                   )}
 
+                  {/* Confirmation email guest */}
+                  {!user && guestInfo.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestInfo.email) && (
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-violet-neon/8 border border-violet-neon/25">
+                      <Mail className="w-4 h-4 text-violet-neon flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-white/40">Vos billets seront envoyés à</p>
+                        <p className="text-sm font-semibold text-white truncate">{guestInfo.email}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setGuestInfo((g) => ({ ...g, email: '' }))}
+                        className="text-white/25 hover:text-rose-neon transition-colors flex-shrink-0"
+                        title="Modifier l'email"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+
                   <div className="flex gap-3">
-                    <Button variant="secondary" size="lg" onClick={() => { setStep(1 as Step); setPaymentError(null); }} className="flex-1">
+                    <Button variant="secondary" size="lg" onClick={() => { setStep(1 as Step); setPaymentError(null); }} className="flex-1" disabled={paymentStep !== 'idle'}>
                       <ChevronLeft className="w-4 h-4" /> Retour
                     </Button>
                     <Button
@@ -638,11 +661,13 @@ export default function Checkout() {
                       size="lg"
                       onClick={handlePayment}
                       disabled={!canPay}
-                      isLoading={createOrder.isLoading || initiatePayment.isLoading}
+                      isLoading={paymentStep !== 'idle'}
                       className="flex-1"
                     >
                       <Lock className="w-4 h-4" />
-                      Payer {formatPrice(totalToPay)}
+                      {paymentStep === 'creating' ? 'Création de la commande…' :
+                       paymentStep === 'initiating' ? `Envoi vers ${provider === 'AIRTEL_MONEY' ? 'Airtel' : 'Moov'}…` :
+                       `Payer ${formatPrice(totalToPay)}`}
                     </Button>
                   </div>
                 </motion.div>

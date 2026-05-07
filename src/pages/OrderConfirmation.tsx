@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useLocation, useNavigate, Link, Navigate } from 'react-router-dom';
+// useLocation est utilisé uniquement dans le guard OrderConfirmation (résolution sessionStorage)
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CheckCircle2, XCircle, Clock, Ticket,
@@ -54,8 +55,8 @@ interface NavState {
 }
 
 // ─── Config ───────────────────────────────────────────────────────────────────
-const MAX_WAIT_MS = 2 * 60 * 1000; // 2 minutes
-const POLL_INTERVAL_MS = 3000;
+const MAX_WAIT_MS = 4 * 60 * 1000; // 4 minutes — USSD peut prendre 60-90s à apparaître + confirmation
+const POLL_INTERVAL_MS = 5000;     // 5s — réduit la charge serveur sans dégradation UX
 const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL || 'billetgab01@gmail.com';
 
 // ─── Waiting animation ────────────────────────────────────────────────────────
@@ -202,21 +203,36 @@ function GuestInfoBlock() {
 }
 
 // ─── Guard : accès direct à l'URL sans passer par le checkout ────────────────
+// Persiste le NavState dans sessionStorage pour survivre à un F5.
+// sessionStorage est isolé par onglet et effacé à la fermeture — pas de fuite cross-session.
 export default function OrderConfirmation() {
+  const { orderId } = useParams<{ orderId: string }>();
   const location = useLocation();
-  if (!location.state) return <Navigate to="/" replace />;
-  return <OrderConfirmationInner />;
+  const storageKey = `confirm-${orderId}`;
+
+  const resolvedState: NavState | null = (() => {
+    if (location.state) {
+      try { sessionStorage.setItem(storageKey, JSON.stringify(location.state)); } catch {}
+      return location.state as NavState;
+    }
+    try {
+      const saved = sessionStorage.getItem(storageKey);
+      return saved ? (JSON.parse(saved) as NavState) : null;
+    } catch { return null; }
+  })();
+
+  if (!resolvedState) return <Navigate to="/" replace />;
+  return <OrderConfirmationInner initialState={resolvedState} />;
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
-function OrderConfirmationInner() {
+function OrderConfirmationInner({ initialState }: { initialState: NavState }) {
   const { orderId } = useParams<{ orderId: string }>();
-  const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isAuthenticated, user } = useAuthStore();
 
-  const state = location.state as NavState;
+  const state = initialState;
 
   const [confirmationState, setConfirmationState] = useState<ConfirmationState>('WAITING');
   const [failureType, setFailureType] = useState<FailureType>('other');
@@ -333,7 +349,7 @@ function OrderConfirmationInner() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -16 }}
-              className="text-center space-y-8"
+              className="text-center space-y-7"
             >
               <WaitingRings />
 
@@ -342,27 +358,60 @@ function OrderConfirmationInner() {
                   Traitement en cours…
                 </h1>
                 <p className="text-white/55 text-sm max-w-xs mx-auto leading-relaxed">
-                  {state?.provider === 'AIRTEL_MONEY' ? 'Airtel Money' : 'Moov Money'} vous envoie
-                  une demande de confirmation. Validez sur votre téléphone et patientez quelques
-                  secondes.
+                  {state?.provider === 'AIRTEL_MONEY' ? 'Airtel Money' : 'Moov Money'} traite votre paiement.
                 </p>
+              </div>
+
+              {/* Guide étapes USSD */}
+              <div className="glass-card p-5 border border-violet-neon/25 space-y-3 text-left">
+                <p className="text-xs text-white/40 uppercase tracking-widest font-semibold">Que faire maintenant ?</p>
+                {[
+                  {
+                    icon: <Smartphone className="w-4 h-4 flex-shrink-0" />,
+                    label: 'Regardez votre téléphone',
+                    desc: `Une demande de confirmation ${state?.provider === 'AIRTEL_MONEY' ? 'Airtel Money' : 'Moov Money'} va apparaître sous forme de popup ou de message USSD.`,
+                    color: 'text-violet-neon',
+                  },
+                  {
+                    icon: <Check className="w-4 h-4 flex-shrink-0" />,
+                    label: 'Confirmez avec votre PIN',
+                    desc: 'Saisissez votre code PIN Mobile Money pour valider le paiement.',
+                    color: 'text-cyan-neon',
+                  },
+                  {
+                    icon: <Clock className="w-4 h-4 flex-shrink-0" />,
+                    label: 'Restez sur cette page',
+                    desc: 'La confirmation est automatique — vos billets s\'afficheront dès que le paiement sera validé.',
+                    color: 'text-white/50',
+                  },
+                ].map((step, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <div className={`w-7 h-7 rounded-full bg-white/[0.06] flex items-center justify-center flex-shrink-0 mt-0.5 ${step.color}`}>
+                      {step.icon}
+                    </div>
+                    <div>
+                      <p className={`text-sm font-semibold ${step.color}`}>{step.label}</p>
+                      <p className="text-white/40 text-xs mt-0.5 leading-relaxed">{step.desc}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
 
               {/* Récapitulatif rassurant */}
               {state && (
-                <div className="glass-card p-4 border border-violet-neon/20 space-y-2.5 text-sm">
+                <div className="glass-card p-4 border border-white/10 space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-white/50">Événement</span>
+                    <span className="text-white/40">Événement</span>
                     <span className="text-white font-semibold line-clamp-1 max-w-[60%] text-right">
                       {state.eventName}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-white/50">Montant</span>
+                    <span className="text-white/40">Montant débité</span>
                     <span className="text-cyan-neon font-mono font-bold">{formatPrice(state.amount)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-white/50">Billets</span>
+                    <span className="text-white/40">Billets</span>
                     <span className="text-white">
                       {state.ticketsCount} billet{state.ticketsCount > 1 ? 's' : ''}
                     </span>
@@ -370,9 +419,9 @@ function OrderConfirmationInner() {
                 </div>
               )}
 
-              <div className="flex items-center justify-center gap-2 text-white/30 text-xs">
+              <div className="flex items-center justify-center gap-2 text-white/25 text-xs">
                 <Clock className="w-3.5 h-3.5 flex-shrink-0" />
-                <span>Ne fermez pas cette page avant la confirmation</span>
+                <span>Ne fermez pas cette page — la confirmation peut prendre jusqu'à 2 minutes</span>
               </div>
 
               {orderId && (
@@ -459,10 +508,12 @@ function OrderConfirmationInner() {
                       }
                     </div>
                     <button
-                      disabled={!qrDataUrl || qrSaving}
+                      disabled={!qrDataUrl}
                       onClick={async () => {
-                        if (!qrDataUrl || !canvasRef.current) return;
+                        if (qrSaving || !qrDataUrl || !canvasRef.current) return;
                         setQrSaving(true);
+                        // Céder un frame au browser pour peindre le spinner avant le travail canvas
+                        await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
                         try {
                           const categoryLabel = state?.orderItems.length === 1
                             ? `${state.ticketsCount} billet${state.ticketsCount > 1 ? 's' : ''} — ${state.orderItems[0].name}`
@@ -497,11 +548,15 @@ function OrderConfirmationInner() {
                           setQrSaving(false);
                         }
                       }}
-                      className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-neon/20 border border-violet-neon/40 text-violet-neon hover:bg-violet-neon/30 transition-all text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
+                      className={`flex items-center gap-2 px-5 py-2.5 rounded-xl border transition-all text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed ${
+                        qrSaving
+                          ? 'bg-violet-neon/30 border-violet-neon/60 text-violet-neon cursor-wait'
+                          : 'bg-violet-neon/20 border-violet-neon/40 text-violet-neon hover:bg-violet-neon/30'
+                      }`}
                     >
                       {qrSaving
-                        ? <><span className="w-4 h-4 border-2 border-violet-neon/40 border-t-violet-neon rounded-full animate-spin" />Génération…</>
-                        : <><ImageDown className="w-4 h-4" />Enregistrer dans la galerie</>
+                        ? <><span className="w-4 h-4 border-2 border-violet-neon/40 border-t-violet-neon rounded-full animate-spin flex-shrink-0" />Préparation…</>
+                        : <><ImageDown className="w-4 h-4" />Télécharger mon billet</>
                       }
                     </button>
                   </div>
@@ -628,11 +683,14 @@ function OrderConfirmationInner() {
                 </p>
               </div>
 
-              <div className="glass-card p-4 border border-violet-neon/15 text-sm text-white/50 leading-relaxed max-w-sm mx-auto">
+              <div className="glass-card p-4 border border-violet-neon/15 text-sm text-white/50 leading-relaxed space-y-2">
+                <p>
+                  <span className="text-white/80 font-semibold">Vous avez confirmé sur votre téléphone ?</span>{' '}
+                  Vos billets apparaîtront automatiquement dans « Mes billets » dès que le paiement sera enregistré. Vérifiez dans quelques minutes.
+                </p>
                 <p>
                   <span className="text-white/80 font-semibold">Pas reçu la demande USSD ?</span>{' '}
-                  Votre compte n'a pas été débité. Patientez quelques minutes, puis retournez sur
-                  la page de l'événement pour recommencer l'achat.
+                  Votre compte n'a pas été débité. Retournez sur la page de l'événement pour recommencer l'achat.
                 </p>
               </div>
 

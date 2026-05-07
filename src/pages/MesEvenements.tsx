@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  CalendarDays, Ticket, Download, Search,
+  CalendarDays, Ticket, Download, Search, QrCode,
   ChevronRight, ArrowLeft, Phone, Mail, CreditCard,
   Plus, Trash2, AlertTriangle, Check,
   Pencil, Clock, Ban, X, Banknote, Images, ImagePlus, MapPin,
@@ -1236,7 +1236,25 @@ export default function MesEvenements() {
   const [cancelTarget, setCancelTarget] = useState<{ id: string; title: string } | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [waitlistEvent, setWaitlistEvent] = useState<OrganizerEventStat | null>(null);
+  const [qrDownloading, setQrDownloading] = useState<string | null>(null);
   const cancelEvent = useCancelEvent();
+
+  const downloadEventQR = async (eventId: string, title: string) => {
+    setQrDownloading(eventId);
+    try {
+      const eventUrl = `https://billetgab.com/events/${eventId}`;
+      const { data: blob } = await api.get(`/utils/qr?url=${encodeURIComponent(eventUrl)}`, { responseType: 'blob' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(new Blob([blob], { type: 'image/png' }));
+      link.download = `qr-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}.png`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    } catch {
+      toast.error('Erreur téléchargement QR code');
+    } finally {
+      setQrDownloading(null);
+    }
+  };
 
   // Redirect if profile not loaded or not approved — dashboard handles that guard
   if (isLoading) {
@@ -1438,6 +1456,20 @@ export default function MesEvenements() {
                       >
                         <Clock className="w-3 h-3" /> Waitlist
                       </button>
+                      {['PUBLISHED', 'APPROVED', 'COMPLETED'].includes(event.status) && (
+                        <button
+                          onClick={() => downloadEventQR(event.eventId, event.title)}
+                          disabled={qrDownloading === event.eventId}
+                          className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-white/5 text-white/40 hover:bg-violet-neon/10 hover:text-violet-neon border border-white/5 hover:border-violet-neon/20 transition-colors disabled:opacity-50"
+                        >
+                          {qrDownloading === event.eventId ? (
+                            <span className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                          ) : (
+                            <QrCode className="w-3 h-3" />
+                          )}
+                          QR flyer
+                        </button>
+                      )}
                       {['PUBLISHED', 'APPROVED'].includes(event.status) && (
                         <button
                           onClick={() => setCancelTarget({ id: event.eventId, title: event.title })}
