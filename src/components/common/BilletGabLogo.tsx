@@ -1,25 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useId } from 'react';
 
 interface Props {
   className?: string;
   height?: number;
 }
 
-export default function BilletGabLogo({ className = '', height = 36 }: Props) {
-  const [, forceUpdate] = useState(0);
-
-  useEffect(() => {
-    // Garantit un re-rendu SVG une fois Bebas Neue chargée (sécurité Android)
-    document.fonts?.load("1em 'Bebas Neue'").then(() => forceUpdate(n => n + 1));
-  }, []);
-
-  // Ratio original du viewBox 256×48
-  const width = Math.round(height * (256 / 48));
+export default function BilletGabLogo({ className = '', height = 40 }: Props) {
+  const uid = useId().replace(/:/g, '');
+  const width = Math.round(height * (190 / 56));
 
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 256 48"
+      viewBox="0 0 190 56"
       width={width}
       height={height}
       className={className}
@@ -27,37 +20,46 @@ export default function BilletGabLogo({ className = '', height = 36 }: Props) {
       role="img"
     >
       <defs>
-        <linearGradient id="bg-logo" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#1A0A3E" />
-          <stop offset="100%" stopColor="#0E0B20" />
+        <linearGradient id={`${uid}g`} x1="0" y1="5" x2="0" y2="52" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#7B2FBE" />
+          <stop offset="60%" stopColor="#6A22B5" />
+          <stop offset="100%" stopColor="#00E5FF" />
         </linearGradient>
-        <linearGradient id="border-logo" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#9B4FDE" />
-          <stop offset="100%" stopColor="#E040FB" />
-        </linearGradient>
+        {/* Forme du B utilisée comme clipPath */}
+        <clipPath id={`${uid}cp`}>
+          <text
+            x="22" y="52"
+            textAnchor="middle"
+            fontFamily="'Arial Black', 'Franklin Gothic Heavy', Impact, sans-serif"
+            fontSize="66"
+            fontWeight="900"
+          >B</text>
+        </clipPath>
+        {/* Masque pour les encoches */}
+        <mask id={`${uid}m`}>
+          <rect width="190" height="56" fill="white" />
+          <circle cx="1" cy="20" r="9" fill="black" />
+          <circle cx="1" cy="37" r="9" fill="black" />
+        </mask>
       </defs>
 
-      {/* Cadre */}
-      <rect x="0" y="0" width="48" height="48" rx="11" fill="url(#bg-logo)" />
-      <rect x="0.75" y="0.75" width="46.5" height="46.5" rx="10.4"
-        fill="none" stroke="url(#border-logo)" strokeWidth="1.5" />
+      {/* Rect gradient clipé à la forme du B → fiable sur tous navigateurs */}
+      <rect
+        x="0" y="0" width="45" height="56"
+        fill={`url(#${uid}g)`}
+        clipPath={`url(#${uid}cp)`}
+        mask={`url(#${uid}m)`}
+      />
 
-      {/* B + ILLETGAB — police héritée de la page → Bebas Neue disponible */}
+      {/* illet violet + Gab cyan */}
       <text
-        x="24" y="34"
-        textAnchor="middle"
-        fontFamily="'Bebas Neue', 'Arial Black', Arial, sans-serif"
-        fontSize="30"
-        fill="#E040FB"
-      >B</text>
-      <text
-        x="54" y="34"
-        fontFamily="'Bebas Neue', 'Arial Black', Arial, sans-serif"
-        fontSize="30"
-        letterSpacing="1"
+        x="47" y="40"
+        fontFamily="'Arial Black', 'Franklin Gothic Heavy', sans-serif"
+        fontSize="34"
+        fontWeight="900"
       >
-        <tspan fill="#E040FB">ILLET</tspan>
-        <tspan fill="#00E5FF">GAB</tspan>
+        <tspan fill="#7B2FBE">illet</tspan>
+        <tspan fill="#00E5FF">Gab</tspan>
       </text>
     </svg>
   );
