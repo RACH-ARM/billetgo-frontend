@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import {
   Banknote, Check, Mail, Wallet,
   TrendingUp, TrendingDown, CheckCheck,
-  History, CalendarDays,
+  History, CalendarDays, Clock, XCircle, AlertTriangle,
 } from 'lucide-react';
 import {
   useOrganizerPayouts,
@@ -23,16 +23,37 @@ import {
 import WithdrawModal, { type WithdrawContext } from '../components/common/WithdrawModal';
 
 // ─── Payout history row ───────────────────────────────────────────────────────
+
+const PAYOUT_STATUS_CFG = {
+  SUCCESS:      { Icon: Check,          bg: 'bg-green-500/10',   text: 'text-green-400',   label: 'Confirmé',   amount: 'text-green-400'          },
+  PENDING:      { Icon: Clock,          bg: 'bg-amber-400/10',   text: 'text-amber-400',   label: 'En cours',   amount: 'text-white/50'            },
+  PENDING_LOCK: { Icon: Clock,          bg: 'bg-amber-400/10',   text: 'text-amber-400',   label: 'En cours',   amount: 'text-white/50'            },
+  FAILED:       { Icon: XCircle,        bg: 'bg-rose-500/10',    text: 'text-rose-400',    label: 'Échoué',     amount: 'text-rose-400/60 line-through' },
+  PARTIAL:      { Icon: AlertTriangle,  bg: 'bg-orange-400/10',  text: 'text-orange-400',  label: 'Partiel',    amount: 'text-orange-400'         },
+  SCHEDULED:    { Icon: CalendarDays,   bg: 'bg-violet-neon/10', text: 'text-violet-neon', label: 'Programmé',  amount: 'text-white/40'            },
+} as const;
+
 function PayoutRow({ payout }: { payout: OrganizerPayout }) {
   const date    = new Date(payout.processedAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
   const opLabel = payout.operator === 'AIRTEL_MONEY' ? 'Airtel Money' : 'Moov Money';
+  const cfg     = PAYOUT_STATUS_CFG[payout.pvitStatus as keyof typeof PAYOUT_STATUS_CFG]
+                  ?? PAYOUT_STATUS_CFG.PENDING;
+  const { Icon } = cfg;
+
   return (
     <div className="flex items-center gap-3 px-4 py-3.5">
-      <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0">
-        <Check className="w-3.5 h-3.5 text-green-400" />
+      <div className={`w-8 h-8 rounded-full ${cfg.bg} flex items-center justify-center flex-shrink-0`}>
+        <Icon className={`w-3.5 h-3.5 ${cfg.text}`} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-mono font-bold text-green-400 text-sm">{formatPrice(payout.amountReceived ?? payout.amountSent, 'FCFA')}</p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className={`font-mono font-bold text-sm ${cfg.amount}`}>
+            {formatPrice(payout.amountReceived ?? payout.amountSent, 'FCFA')}
+          </p>
+          <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${cfg.bg} ${cfg.text} font-semibold leading-none`}>
+            {cfg.label}
+          </span>
+        </div>
         <p className="text-xs text-white/30 mt-0.5">{opLabel} · {payout.mobileMoney}</p>
         {payout.transactionRef && (
           <p className="font-mono text-[11px] text-white/15 truncate mt-0.5">Réf : {payout.transactionRef}</p>
