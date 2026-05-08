@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, ArrowDownToLine, Loader2, CheckCircle2,
   AlertTriangle, ChevronRight, Receipt, Smartphone, Check,
+  Info, CalendarDays, Lightbulb,
 } from 'lucide-react';
 import { formatPrice } from '../../utils/formatPrice';
 import { normalizeGabonPhone, isValidGabonPhone, isPhoneMatchingProvider } from '../../utils/phone';
@@ -10,8 +11,8 @@ import { normalizeGabonPhone, isValidGabonPhone, isPhoneMatchingProvider } from 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface WithdrawContext {
-  grossAmount: number;       // solde total disponible (max retiable)
-  presetAmount?: number;     // montant pré-rempli (ex: gains d'un événement)
+  grossAmount: number;
+  presetAmount?: number;
   airtelPayoutRate: number;
   moovPayoutRate: number;
   label: string;
@@ -23,21 +24,57 @@ interface Props {
   onClose: () => void;
 }
 
+// Limites journalières par numéro destinataire — Gabon 2026
+// Ces limites s'appliquent PAR NUMÉRO : deux numéros différents = deux compteurs indépendants
+const DAILY_LIMITS: Record<'AIRTEL_MONEY' | 'MOOV_MONEY', number> = {
+  AIRTEL_MONEY: 2_500_000,
+  MOOV_MONEY:   1_000_000,
+};
+
 const PROVIDERS = [
-  { id: 'AIRTEL_MONEY' as const, name: 'Airtel Money', color: 'text-rose-neon', border: 'border-rose-neon', bg: 'bg-rose-neon/10' },
-  { id: 'MOOV_MONEY'  as const, name: 'Moov Money',   color: 'text-cyan-neon', border: 'border-cyan-neon', bg: 'bg-cyan-neon/10'  },
+  {
+    id:     'AIRTEL_MONEY' as const,
+    name:   'Airtel Money',
+    prefix: '07X',
+    color:  'text-rose-neon',
+    border: 'border-rose-neon',
+    bg:     'bg-rose-neon/10',
+  },
+  {
+    id:     'MOOV_MONEY' as const,
+    name:   'Moov Money',
+    prefix: '06X',
+    color:  'text-cyan-neon',
+    border: 'border-cyan-neon',
+    bg:     'bg-cyan-neon/10',
+  },
 ];
 
-// Plafonds journaliers opérateurs — comptes non vérifiés (Gabon)
-const DAILY_LIMITS: Record<'AIRTEL_MONEY' | 'MOOV_MONEY', number> = {
-  AIRTEL_MONEY: 1_500_000,
-  MOOV_MONEY:   3_000_000,
-};
-const CHUNK_MAX = 500_000;
-
-// ─── Step 1 : Choix montant + opérateur + numéro ─────────────────────────────
-
 const MIN_AMOUNT = 1_000;
+
+// Calcule les tranches journalières pour afficher le planning
+function computeTranches(amount: number, dailyLimit: number) {
+  const tranches: { day: number; amount: number }[] = [];
+  let remaining = amount;
+  let day = 0;
+  while (remaining > 0 && day < 30) {
+    const chunk = Math.min(remaining, dailyLimit);
+    tranches.push({ day, amount: chunk });
+    remaining -= chunk;
+    day++;
+  }
+  return tranches;
+}
+
+function dayLabel(daysFromNow: number): string {
+  if (daysFromNow === 0) return "Aujourd'hui";
+  if (daysFromNow === 1) return 'Demain';
+  const d = new Date();
+  d.setDate(d.getDate() + daysFromNow);
+  return d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+// ─── Step 1 ───────────────────────────────────────────────────────────────────
 
 function PaymentStep({
   ctx,
@@ -60,12 +97,17 @@ function PaymentStep({
     : null;
   const amountValid = amount >= MIN_AMOUNT && amount <= ctx.grossAmount;
 
-  const phoneValid = provider !== null && amountValid && isValidGabonPhone(phone) && isPhoneMatchingProvider(phone, provider);
-  const mismatch   = provider !== null && phone.length >= 2 && isValidGabonPhone(phone) && !isPhoneMatchingProvider(phone, provider);
+  const phoneValid = provider !== null && amountValid
+    && isValidGabonPhone(phone) && isPhoneMatchingProvider(phone, provider);
+  const mismatch = provider !== null && phone.length >= 2
+    && isValidGabonPhone(phone) && !isPhoneMatchingProvider(phone, provider);
 
-  const rate = provider === 'MOOV_MONEY' ? ctx.moovPayoutRate : ctx.airtelPayoutRate;
-  const fee  = Math.round(amount * rate);
-  const net  = amount - fee;
+  const rate       = provider === 'MOOV_MONEY' ? ctx.moovPayoutRate : ctx.airtelPayoutRate;
+  const fee        = Math.round(amount * rate);
+  const net        = amount - fee;
+  const dailyLimit = provider ? DAILY_LIMITS[provider] : 0;
+  const exceedsDaily = provider !== null && amountValid && amount > dailyLimit;
+  const tranches   = (provider && exceedsDaily) ? computeTranches(amount, dailyLimit) : [];
 
   const handleAmountChange = (val: string) => {
     setRawInput(val);
@@ -81,18 +123,31 @@ function PaymentStep({
         <p className="font-semibold text-white truncate">{ctx.label}</p>
       </div>
 
+      {/* Conseil multi-numéros — toujours visible */}
+      <div className="flex items-start gap-2.5 px-3.5 py-3 rounded-xl bg-violet-neon/[0.06] border border-violet-neon/20">
+        <Lightbulb className="w-4 h-4 text-violet-neon flex-shrink-0 mt-0.5" />
+        <p className="text-xs text-white/60 leading-relaxed">
+          <span className="text-white/80 font-semibold">Astuce :</span> La limite journalière s'applique{' '}
+          <span className="text-violet-neon font-semibold">par numéro</span>. Vous pouvez retirer sur
+          plusieurs numéros le même jour — par exemple 4 numéros Airtel = jusqu'à{' '}
+          <span className="text-white/80 font-semibold">10 000 000 FCFA en une journée</span>.
+        </p>
+      </div>
+
       {/* Saisie montant */}
       <div>
         <p className="text-xs text-white/50 uppercase tracking-widest mb-2">
           Montant à retirer <span className="text-rose-neon">*</span>
         </p>
-        <div className={`flex items-center gap-2 bg-white/5 rounded-xl border transition-colors ${amountError ? 'border-rose-neon/60' : 'border-white/10 focus-within:border-violet-neon/60'}`}>
+        <div className={`flex items-center gap-2 bg-white/5 rounded-xl border transition-colors ${
+          amountError ? 'border-rose-neon/60' : 'border-white/10 focus-within:border-violet-neon/60'
+        }`}>
           <input
             type="text"
             inputMode="numeric"
             value={rawInput}
             onChange={(e) => handleAmountChange(e.target.value)}
-            placeholder="Ex : 50 000"
+            placeholder="Ex : 500 000"
             className="flex-1 bg-transparent px-4 py-3 text-white placeholder-white/20 font-mono text-lg focus:outline-none"
           />
           <span className="pr-4 text-white/30 text-sm font-mono flex-shrink-0">FCFA</span>
@@ -100,9 +155,10 @@ function PaymentStep({
         {amountError ? (
           <p className="text-xs text-rose-neon mt-1.5">{amountError}</p>
         ) : (
-          <p className="text-xs text-white/25 mt-1.5">Solde disponible : {formatPrice(ctx.grossAmount, 'FCFA')}</p>
+          <p className="text-xs text-white/25 mt-1.5">
+            Solde disponible : {formatPrice(ctx.grossAmount, 'FCFA')}
+          </p>
         )}
-        {/* Raccourci "Tout retirer" */}
         {amount !== ctx.grossAmount && ctx.grossAmount > 0 && (
           <button
             onClick={() => { setAmount(ctx.grossAmount); setRawInput(String(ctx.grossAmount)); }}
@@ -113,66 +169,7 @@ function PaymentStep({
         )}
       </div>
 
-      {/* Récap frais (visible seulement si opérateur sélectionné et montant valide) */}
-      {provider && amountValid && (
-        <div className="rounded-2xl bg-white/[0.03] border border-white/[0.07] overflow-hidden divide-y divide-white/[0.06]">
-          <div className="flex items-center justify-between px-4 py-3">
-            <span className="flex items-center gap-2 text-sm text-white/50"><Receipt className="w-4 h-4 text-white/25" />Frais {provider === 'AIRTEL_MONEY' ? 'Airtel Money' : 'Moov Money'} ({Math.round(rate * 100)}%)</span>
-            <span className="font-mono text-rose-neon/70">− {formatPrice(fee, 'FCFA', '0 FCFA')}</span>
-          </div>
-          <div className="flex items-center justify-between px-4 py-3.5 bg-violet-neon/[0.04]">
-            <span className="text-sm font-bold text-white">Vous recevez</span>
-            <span className="font-mono font-bold text-xl text-violet-neon">{formatPrice(net, 'FCFA', '0 FCFA')}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Notes limites opérateur */}
-      {provider && amountValid && amount > CHUNK_MAX && (() => {
-        const dailyLimit = DAILY_LIMITS[provider];
-        const chunks = Math.ceil(amount / CHUNK_MAX);
-        const exceedsDaily = amount > dailyLimit;
-        const maxToday = Math.min(amount, dailyLimit);
-        const chunksToday = Math.floor(dailyLimit / CHUNK_MAX);
-        const remainder = amount - maxToday;
-
-        return (
-          <div className="space-y-2">
-            {/* Toujours : info multi-virements */}
-            <div className="flex items-start gap-2.5 px-3.5 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08]">
-              <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-              <div className="space-y-1">
-                <p className="text-xs font-semibold text-white/80">Virement découpé en {chunks} opérations</p>
-                <p className="text-xs text-white/45 leading-relaxed">
-                  {provider === 'AIRTEL_MONEY' ? 'Airtel Money' : 'Moov Money'} plafonne chaque opération à 500 000 FCFA. Votre retrait de {formatPrice(amount, 'FCFA', '0 FCFA')} sera envoyé en {chunks} virements successifs, l'un après l'autre, vers votre numéro.
-                </p>
-                <p className="text-xs text-white/30 leading-relaxed">
-                  Si un virement échoue en cours de route, les fonds déjà envoyés sont acquis. Le solde restant reste disponible sur votre tableau de bord pour un prochain retrait.
-                </p>
-              </div>
-            </div>
-
-            {/* Si dépassement limite journalière */}
-            {exceedsDaily && (
-              <div className="flex items-start gap-2.5 px-3.5 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-amber-300">Plafond journalier {provider === 'AIRTEL_MONEY' ? 'Airtel Money' : 'Moov Money'} atteint</p>
-                  <p className="text-xs text-amber-200/70 leading-relaxed">
-                    {provider === 'AIRTEL_MONEY' ? 'Airtel Money' : 'Moov Money'} limite les réceptions à {formatPrice(dailyLimit, 'FCFA')} par jour sur un compte non vérifié.
-                    Aujourd'hui, seulement {chunksToday} virement{chunksToday > 1 ? 's' : ''} ({formatPrice(maxToday, 'FCFA')}) pourront être traités.
-                  </p>
-                  <p className="text-xs text-amber-200/50 leading-relaxed">
-                    Le solde de {formatPrice(remainder, 'FCFA')} restera disponible sur votre tableau de bord et pourra être retiré dès demain.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      })()}
-
-      {/* Choix opérateur */}
+      {/* Choix opérateur avec limite journalière visible */}
       <div>
         <p className="text-xs text-white/50 uppercase tracking-widest mb-2.5">Choisir l'opérateur</p>
         <div className="grid grid-cols-2 gap-3">
@@ -180,7 +177,7 @@ function PaymentStep({
             <button
               key={p.id}
               onClick={() => { setProvider(p.id); setPhone(''); }}
-              className={`relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+              className={`relative flex flex-col items-center gap-1.5 p-4 rounded-xl border-2 transition-all ${
                 provider === p.id ? `${p.border} ${p.bg}` : 'border-white/10 hover:border-white/20'
               }`}
             >
@@ -193,10 +190,72 @@ function PaymentStep({
                 <Smartphone className={`w-4 h-4 ${p.color}`} />
               </div>
               <span className={`font-bebas text-base tracking-wider ${p.color}`}>{p.name}</span>
+              {/* Limite journalière affichée sous le nom */}
+              <span className="text-[10px] text-white/35 leading-none">
+                {formatPrice(DAILY_LIMITS[p.id], 'FCFA')}/j par n°
+              </span>
             </button>
           ))}
         </div>
       </div>
+
+      {/* Info limite une fois l'opérateur sélectionné */}
+      {provider && (
+        <div className="flex items-start gap-2.5 px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.07]">
+          <Info className="w-4 h-4 text-white/30 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-white/45 leading-relaxed">
+            Limite {provider === 'AIRTEL_MONEY' ? 'Airtel Money' : 'Moov Money'} :{' '}
+            <span className="text-white/70 font-semibold">{formatPrice(dailyLimit, 'FCFA')} par jour par numéro</span>.
+            Les virements individuels sont découpés à 500 000 FCFA max (limite opérateur) — c'est automatique, vous n'avez rien à faire.
+          </p>
+        </div>
+      )}
+
+      {/* Planning automatique si dépassement limite journalière */}
+      {exceedsDaily && tranches.length > 1 && (
+        <div className="rounded-xl bg-amber-500/[0.07] border border-amber-500/20 overflow-hidden">
+          <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-amber-500/10">
+            <CalendarDays className="w-4 h-4 text-amber-400 flex-shrink-0" />
+            <p className="text-xs font-semibold text-amber-300">
+              Réparti automatiquement sur {tranches.length} jours
+            </p>
+          </div>
+          <div className="divide-y divide-amber-500/10">
+            {tranches.map((t) => (
+              <div key={t.day} className="flex items-center justify-between px-3.5 py-2">
+                <div className="flex items-center gap-2">
+                  <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${t.day === 0 ? 'bg-green-400' : 'bg-amber-400/50'}`} />
+                  <span className="text-xs text-white/50 capitalize">{dayLabel(t.day)}</span>
+                </div>
+                <span className={`font-mono text-xs font-semibold ${t.day === 0 ? 'text-green-400' : 'text-amber-300/70'}`}>
+                  {formatPrice(t.amount, 'FCFA')}
+                </span>
+              </div>
+            ))}
+          </div>
+          <p className="px-3.5 py-2.5 text-[11px] text-amber-200/40 leading-relaxed border-t border-amber-500/10">
+            Les tranches suivantes sont programmées automatiquement et envoyées à 6h chaque matin.
+            Pour retirer plus rapidement, utilisez un autre numéro {provider === 'AIRTEL_MONEY' ? 'Airtel Money' : 'Moov Money'}.
+          </p>
+        </div>
+      )}
+
+      {/* Récap frais */}
+      {provider && amountValid && (
+        <div className="rounded-2xl bg-white/[0.03] border border-white/[0.07] overflow-hidden divide-y divide-white/[0.06]">
+          <div className="flex items-center justify-between px-4 py-3">
+            <span className="flex items-center gap-2 text-sm text-white/50">
+              <Receipt className="w-4 h-4 text-white/25" />
+              Frais {provider === 'AIRTEL_MONEY' ? 'Airtel Money' : 'Moov Money'} ({Math.round(rate * 100)}%)
+            </span>
+            <span className="font-mono text-rose-neon/70">− {formatPrice(fee, 'FCFA', '0 FCFA')}</span>
+          </div>
+          <div className="flex items-center justify-between px-4 py-3.5 bg-violet-neon/[0.04]">
+            <span className="text-sm font-bold text-white">Vous recevez</span>
+            <span className="font-mono font-bold text-xl text-violet-neon">{formatPrice(net, 'FCFA', '0 FCFA')}</span>
+          </div>
+        </div>
+      )}
 
       {/* Saisie numéro */}
       <AnimatePresence mode="wait">
@@ -229,7 +288,7 @@ function PaymentStep({
             </div>
             {mismatch && (
               <p className="text-xs text-rose-neon">
-                Ce numéro ne correspond pas à {provider === 'AIRTEL_MONEY' ? 'Airtel Money (07X...)' : 'Moov Money (06X...)'}
+                Ce numéro ne correspond pas à {provider === 'AIRTEL_MONEY' ? 'Airtel Money (07X…)' : 'Moov Money (06X…)'}
               </p>
             )}
           </motion.div>
@@ -248,7 +307,10 @@ function PaymentStep({
         >
           Vérifier et continuer <ChevronRight className="w-4 h-4" />
         </button>
-        <button onClick={onClose} className="w-full py-2.5 rounded-2xl text-sm text-white/35 hover:text-white hover:bg-white/5 transition-all">
+        <button
+          onClick={onClose}
+          className="w-full py-2.5 rounded-2xl text-sm text-white/35 hover:text-white hover:bg-white/5 transition-all"
+        >
           Annuler
         </button>
       </div>
@@ -256,7 +318,7 @@ function PaymentStep({
   );
 }
 
-// ─── Step 2 : Confirmation avant envoi ───────────────────────────────────────
+// ─── Step 2 : Confirmation ────────────────────────────────────────────────────
 
 function ConfirmStep({
   ctx,
@@ -276,10 +338,14 @@ function ConfirmStep({
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
 
-  const rate    = operator === 'MOOV_MONEY' ? ctx.moovPayoutRate : ctx.airtelPayoutRate;
-  const fee     = Math.round(amount * rate);
-  const net     = amount - fee;
-  const opMeta  = PROVIDERS.find((p) => p.id === operator)!;
+  const rate   = operator === 'MOOV_MONEY' ? ctx.moovPayoutRate : ctx.airtelPayoutRate;
+  const fee    = Math.round(amount * rate);
+  const net    = amount - fee;
+  const opMeta = PROVIDERS.find((p) => p.id === operator)!;
+  const dailyLimit     = DAILY_LIMITS[operator];
+  const exceedsDaily   = amount > dailyLimit;
+  const todayAmount    = Math.min(amount, dailyLimit);
+  const todayNet       = todayAmount - Math.round(todayAmount * rate);
 
   const handle = async () => {
     setLoading(true);
@@ -303,7 +369,7 @@ function ConfirmStep({
       {/* Récap */}
       <div className="rounded-2xl bg-white/[0.03] border border-white/[0.07] divide-y divide-white/[0.06] overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3">
-          <span className="text-sm text-white/50">Montant brut</span>
+          <span className="text-sm text-white/50">Montant demandé</span>
           <span className="font-mono font-bold text-white text-sm">{formatPrice(amount, 'FCFA')}</span>
         </div>
         <div className="flex items-center justify-between px-4 py-3">
@@ -315,14 +381,39 @@ function ConfirmStep({
           <span className="font-mono text-white text-sm">{phone}</span>
         </div>
         <div className="flex items-center justify-between px-4 py-3">
-          <span className="text-sm text-white/50">Frais {opMeta.name}</span>
+          <span className="text-sm text-white/50">Frais {opMeta.name} ({Math.round(rate * 100)}%)</span>
           <span className="font-mono text-rose-neon/70 text-sm">− {formatPrice(fee, 'FCFA')}</span>
         </div>
-        <div className="flex items-center justify-between px-4 py-4 bg-violet-neon/[0.04]">
-          <span className="font-bold text-white">Vous recevez</span>
-          <span className="font-mono font-bold text-2xl text-violet-neon">{formatPrice(net, 'FCFA')}</span>
-        </div>
+        {exceedsDaily ? (
+          <>
+            <div className="flex items-center justify-between px-4 py-3 bg-green-500/[0.05]">
+              <span className="text-sm text-green-400/80">Reçu aujourd'hui</span>
+              <span className="font-mono font-bold text-green-400 text-sm">{formatPrice(todayNet, 'FCFA')}</span>
+            </div>
+            <div className="flex items-center justify-between px-4 py-3 bg-amber-500/[0.04]">
+              <span className="text-sm text-amber-400/70">Programmé (jours suivants)</span>
+              <span className="font-mono text-amber-400/70 text-sm">
+                {formatPrice(net - todayNet, 'FCFA')}
+              </span>
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center justify-between px-4 py-4 bg-violet-neon/[0.04]">
+            <span className="font-bold text-white">Vous recevez</span>
+            <span className="font-mono font-bold text-2xl text-violet-neon">{formatPrice(net, 'FCFA')}</span>
+          </div>
+        )}
       </div>
+
+      {exceedsDaily && (
+        <div className="flex items-start gap-2.5 px-3.5 py-3 rounded-xl bg-amber-500/[0.07] border border-amber-500/20">
+          <CalendarDays className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-amber-200/60 leading-relaxed">
+            <span className="text-amber-300 font-semibold">{formatPrice(todayNet, 'FCFA')}</span> seront envoyés immédiatement.
+            Le reste est programmé automatiquement et sera viré à 6h les jours suivants.
+          </p>
+        </div>
+      )}
 
       {error && (
         <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20">
@@ -342,7 +433,11 @@ function ConfirmStep({
             : <><ArrowDownToLine className="w-4 h-4" /> Confirmer le virement</>
           }
         </button>
-        <button onClick={onBack} disabled={loading} className="w-full py-2.5 rounded-2xl text-sm text-white/35 hover:text-white hover:bg-white/5 transition-all">
+        <button
+          onClick={onBack}
+          disabled={loading}
+          className="w-full py-2.5 rounded-2xl text-sm text-white/35 hover:text-white hover:bg-white/5 transition-all"
+        >
           Modifier
         </button>
       </div>
@@ -352,7 +447,19 @@ function ConfirmStep({
 
 // ─── Step 3 : Succès ─────────────────────────────────────────────────────────
 
-function SuccessStep({ net, phone, message, onClose }: { net: number; phone: string; message: string; onClose: () => void }) {
+function SuccessStep({
+  net,
+  phone,
+  message,
+  onClose,
+}: {
+  net: number;
+  phone: string;
+  message: string;
+  onClose: () => void;
+}) {
+  const isScheduled = message.toLowerCase().includes('programm');
+
   return (
     <div className="flex flex-col items-center text-center space-y-5 py-2">
       <motion.div
@@ -365,8 +472,12 @@ function SuccessStep({ net, phone, message, onClose }: { net: number; phone: str
       </motion.div>
 
       <div>
-        <p className="font-bebas text-3xl tracking-wider text-gradient leading-none">{formatPrice(net, 'FCFA')}</p>
-        <p className="text-sm text-white/50 mt-1">{message}</p>
+        <p className="font-bebas text-3xl tracking-wider text-gradient leading-none">
+          {formatPrice(net, 'FCFA')}
+        </p>
+        <p className="text-sm text-white/50 mt-1">
+          {isScheduled ? 'Virement initié + tranches programmées' : 'Virement en cours de traitement'}
+        </p>
       </div>
 
       <div className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/[0.03] border border-white/[0.07]">
@@ -374,9 +485,10 @@ function SuccessStep({ net, phone, message, onClose }: { net: number; phone: str
         <p className="font-mono text-white/70 text-sm">{phone}</p>
       </div>
 
-      <p className="text-xs text-white/25 leading-relaxed">
-        Virement en cours de traitement par votre opérateur.<br />
-        Vous recevrez un SMS de confirmation sous quelques minutes.
+      <p className="text-xs text-white/30 leading-relaxed px-2">{message}</p>
+
+      <p className="text-xs text-white/20 leading-relaxed">
+        Vous recevrez un SMS de confirmation de votre opérateur sous quelques minutes.
       </p>
 
       <button
@@ -394,18 +506,15 @@ function SuccessStep({ net, phone, message, onClose }: { net: number; phone: str
 type Step = 'payment' | 'confirm' | 'success';
 
 export default function WithdrawModal({ context, onConfirm, onClose }: Props) {
-  const [step, setStep]           = useState<Step>('payment');
-  const [phone, setPhone]         = useState('');
-  const [operator, setOperator]   = useState<'AIRTEL_MONEY' | 'MOOV_MONEY' | null>(null);
+  const [step, setStep]                   = useState<Step>('payment');
+  const [phone, setPhone]                 = useState('');
+  const [operator, setOperator]           = useState<'AIRTEL_MONEY' | 'MOOV_MONEY' | null>(null);
   const [selectedAmount, setSelectedAmount] = useState(0);
-  const [successMsg, setSuccessMsg]         = useState('');
-  const [netReceived, setNetReceived]       = useState(0);
+  const [successMsg, setSuccessMsg]       = useState('');
+  const [netReceived, setNetReceived]     = useState(0);
 
   const handleNext = (p: string, op: 'AIRTEL_MONEY' | 'MOOV_MONEY', amt: number) => {
-    setPhone(p);
-    setOperator(op);
-    setSelectedAmount(amt);
-    setStep('confirm');
+    setPhone(p); setOperator(op); setSelectedAmount(amt); setStep('confirm');
   };
 
   const handleConfirm = async () => {
@@ -419,7 +528,6 @@ export default function WithdrawModal({ context, onConfirm, onClose }: Props) {
 
   const handleClose = () => {
     onClose();
-    // Reset après fermeture
     setTimeout(() => { setStep('payment'); setPhone(''); setOperator(null); setSuccessMsg(''); }, 300);
   };
 
@@ -429,9 +537,7 @@ export default function WithdrawModal({ context, onConfirm, onClose }: Props) {
         <>
           <motion.div
             key="backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={step === 'success' ? handleClose : undefined}
             className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm"
           />
