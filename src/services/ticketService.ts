@@ -12,17 +12,9 @@ export const ticketService = {
     return `${import.meta.env.VITE_API_URL || '/api/v1'}/tickets/${ticketId}/qr?token=${token}`;
   },
 
-  downloadTicketPDF: async (ticketId: string): Promise<void> => {
-    const response = await api.get(`/tickets/${ticketId}/pdf`, { responseType: 'blob' });
-    const url = URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `billet-${ticketId}.pdf`;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  downloadTicketPDF: (ticketId: string): void => {
+    const token = localStorage.getItem('accessToken') ?? '';
+    const base  = import.meta.env.VITE_API_URL || '/api/v1';
+    window.open(`${base}/tickets/${ticketId}/pdf?token=${encodeURIComponent(token)}`, '_blank');
   },
 };
