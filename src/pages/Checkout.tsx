@@ -238,6 +238,7 @@ export default function Checkout() {
           venueName: event.venueName,
           coverImageUrl: event.coverImageUrl ?? null,
           amount: totalToPay,
+          baseAmount: payinBase,
           ticketsCount: items.reduce((s, i) => s + i.quantity, 0),
           provider,
           orderItems: items.map((i) => ({

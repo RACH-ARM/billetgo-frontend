@@ -49,6 +49,7 @@ interface NavState {
   venueName: string;
   coverImageUrl: string | null;
   amount: number;
+  baseAmount?: number;
   ticketsCount: number;
   provider: PaymentProvider;
   orderItems: OrderItem[];
@@ -527,7 +528,7 @@ function OrderConfirmationInner({ initialState }: { initialState: NavState }) {
                             coverImageUrl: state?.coverImageUrl || undefined,
                             buyerName: user ? `${user.firstName} ${user.lastName}`.trim() : undefined,
                             buyerEmail: user?.email ?? undefined,
-                            price: state?.amount,
+                            price: state?.baseAmount ?? state?.amount,
                           });
                           const blob: Blob = await new Promise(res => canvasRef.current!.toBlob(b => res(b!), 'image/png'));
                           const file = new File([blob], 'billet-billetgab.png', { type: 'image/png' });
