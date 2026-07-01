@@ -195,6 +195,11 @@ export default function CGU() {
               BilletGab peut demander des justificatifs supplémentaires avant de procéder à un virement
               et peut signaler aux autorités toute opération suspecte.
             </p>
+            <p>
+              BilletGab peut demander tout document ou information complémentaire permettant de vérifier
+              l'identité d'un utilisateur ou l'origine des fonds lorsqu'une opération paraît inhabituelle.
+              Le refus de fournir ces éléments peut entraîner la suspension du compte et le gel des versements.
+            </p>
           </Section>
 
           <Section title="10. Transferts de billets et remboursements">
@@ -254,6 +259,12 @@ export default function CGU() {
               ou régionale, panne d'un opérateur de télécommunications, grève, décision gouvernementale ou tout
               autre événement imprévisible et irrésistible échappant au contrôle raisonnable de BilletGab.
             </p>
+            <p>
+              BilletGab ne peut être tenu responsable d'une interruption ou d'une défaillance provenant d'un
+              prestataire tiers, notamment : opérateur Mobile Money (Airtel, Moov), hébergeur (Vercel, Railway,
+              Supabase), fournisseur Internet ou tout autre prestataire technique intervenant dans la chaîne de
+              service.
+            </p>
           </Section>
 
           <Section title="15. Limitation de responsabilité">
@@ -293,7 +304,7 @@ export default function CGU() {
           <Section title="18. Contact">
             <p>
               Pour toute question relative aux présentes CGU :{' '}
-              <a href="mailto:billetgab01@gmail.com" className="text-violet-neon hover:underline">billetgab01@gmail.com</a>
+              <a href="mailto:contact@billetgab.com" className="text-violet-neon hover:underline">contact@billetgab.com</a>
               {' '}ou par téléphone au +241 62 557 655.
             </p>
           </Section>

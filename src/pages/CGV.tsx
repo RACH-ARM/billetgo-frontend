@@ -212,6 +212,10 @@ export default function CGV() {
               à en informer BilletGab et les acheteurs dans les meilleurs délais. BilletGab ne saurait être
               tenu responsable des préjudices découlant de tels événements.
             </p>
+            <p>
+              BilletGab ne peut être tenu responsable d'une interruption ou d'une défaillance provenant d'un
+              prestataire tiers (opérateur Mobile Money, hébergeur, fournisseur Internet ou prestataire technique).
+            </p>
           </Section>
 
           <Section title="12. Limitation de responsabilité">
@@ -247,7 +251,7 @@ export default function CGV() {
           <Section title="15. Contact et réclamations">
             <p>
               Pour toute réclamation relative à un achat :{' '}
-              <a href="mailto:billetgab01@gmail.com" className="text-violet-neon hover:underline">billetgab01@gmail.com</a>
+              <a href="mailto:contact@billetgab.com" className="text-violet-neon hover:underline">contact@billetgab.com</a>
               {' '}ou par téléphone au +241 62 557 655.
             </p>
             <p>Nos équipes vous répondent du lundi au samedi de 08h00 à 20h00 (heure de Libreville).</p>

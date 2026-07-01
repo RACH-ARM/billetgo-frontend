@@ -67,7 +67,7 @@ export default function Confidentialite() {
             </p>
             <p>
               Contact :{' '}
-              <a href="mailto:billetgab01@gmail.com" className="text-violet-neon hover:underline">billetgab01@gmail.com</a>
+              <a href="mailto:contact@billetgab.com" className="text-violet-neon hover:underline">contact@billetgab.com</a>
             </p>
           </Section>
 
@@ -79,7 +79,7 @@ export default function Confidentialite() {
               <li>Prénom et nom de famille</li>
               <li>Adresse email (optionnelle si numéro de téléphone fourni)</li>
               <li>Numéro de téléphone (optionnel si email fourni)</li>
-              <li>Mot de passe (stocké sous forme hachée et chiffrée, inaccessible même par BilletGab)</li>
+              <li>Mot de passe (stocké sous forme hachée à l'aide d'un algorithme sécurisé et jamais conservé en clair, inaccessible même par BilletGab)</li>
               <li>Nom de la société ou de l'organisation (pour les comptes organisateurs)</li>
             </ul>
 
@@ -235,7 +235,7 @@ export default function Confidentialite() {
             </ul>
             <p>
               Pour exercer ces droits, contactez-nous à{' '}
-              <a href="mailto:billetgab01@gmail.com" className="text-violet-neon hover:underline">billetgab01@gmail.com</a>.
+              <a href="mailto:contact@billetgab.com" className="text-violet-neon hover:underline">contact@billetgab.com</a>.
               Nous répondons dans un délai de 30 jours.
             </p>
           </Section>
@@ -260,7 +260,7 @@ export default function Confidentialite() {
           <Section title="11. Contact">
             <p>
               Pour toute question relative à la protection de vos données personnelles :{' '}
-              <a href="mailto:billetgab01@gmail.com" className="text-violet-neon hover:underline">billetgab01@gmail.com</a>
+              <a href="mailto:contact@billetgab.com" className="text-violet-neon hover:underline">contact@billetgab.com</a>
               {' '}ou par téléphone au +241 62 557 655.
             </p>
           </Section>

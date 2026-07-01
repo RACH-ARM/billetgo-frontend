@@ -52,7 +52,7 @@ export default function MentionsLegales() {
         <div className="flex items-center justify-between gap-4 flex-wrap mb-10">
           <div>
             <h1 className="font-bebas text-5xl tracking-wider text-gradient mb-2">Mentions Légales</h1>
-            <p className="text-white/30 text-xs">Dernière mise à jour : 16 avril 2026</p>
+            <p className="text-white/30 text-xs">Dernière mise à jour : 1er juillet 2026</p>
           </div>
           <button
             onClick={handleDownload}
@@ -69,11 +69,11 @@ export default function MentionsLegales() {
           <Section title="Éditeur du site">
             <Row label="Nom commercial" value="BilletGab" />
             <Row label="Concepteur / Exploitant" value="Tiamiyou Arèmou" />
-            <Row label="Forme juridique" value="[À compléter après immatriculation]" />
-            <Row label="N° RCCM" value="[À compléter — Registre du Commerce de Libreville]" />
+            <Row label="Forme juridique" value="Entreprise Individuelle (EI)" />
+            <Row label="N° RCCM" value="GA-LBV-01-2026-A10-03152" />
             <Row label="Siège social" value="Libreville, Gabon" />
             <Row label="Directeur de publication" value="Tiamiyou Arèmou" />
-            <Row label="Email de contact" value={<a href="mailto:contact@billetgab.com" className="text-violet-neon hover:underline">contact@billetgab.com</a>} />
+            <Row label="Email de contact" value={<a href="mailto:billetgab01@gmail.com" className="text-violet-neon hover:underline">billetgab01@gmail.com</a>} />
             <Row label="Téléphone" value="+241 62 557 655" />
           </Section>
 
