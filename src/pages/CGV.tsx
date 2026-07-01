@@ -45,7 +45,7 @@ export default function CGV() {
         <div className="flex items-center justify-between gap-4 flex-wrap mb-10">
           <div>
             <h1 className="font-bebas text-5xl tracking-wider text-gradient mb-2">Conditions Générales de Vente</h1>
-            <p className="text-white/30 text-xs">Dernière mise à jour : 16 avril 2026</p>
+            <p className="text-white/30 text-xs">Dernière mise à jour : 1er juillet 2026</p>
           </div>
           <button
             onClick={handleDownload}
@@ -121,8 +121,8 @@ export default function CGV() {
           <Section title="5. Livraison des billets">
             <p>
               Dès confirmation du paiement, vos billets sont générés instantanément et accessibles dans votre
-              espace « Mes Billets » sur la plateforme. Chaque billet est associé à un QR Code unique, signé
-              cryptographiquement (HMAC-SHA256), permettant sa validation à l'entrée de l'événement.
+              espace « Mes Billets » sur la plateforme. Chaque billet est associé à un QR Code unique et sécurisé
+              permettant sa validation à l'entrée de l'événement.
             </p>
             <p>
               Vos billets peuvent être enregistrés dans votre galerie photo pour un accès hors connexion.
@@ -137,7 +137,9 @@ export default function CGV() {
           <Section title="6. Politique de remboursement">
             <p>
               En raison de la nature des billets d'événements culturels et de loisirs à date déterminée,
-              <span className="text-white font-semibold"> les ventes sont définitives et les billets sont non remboursables</span>.
+              <span className="text-white font-semibold"> les ventes sont définitives et les billets sont non
+              remboursables</span>, sauf disposition légale contraire ou décision exceptionnelle de BilletGab —
+              notamment lorsque les fonds n'ont pas encore été reversés à l'organisateur.
               L'acheteur est invité à vérifier soigneusement les informations de l'événement avant de confirmer sa commande.
             </p>
             <p>
@@ -184,7 +186,48 @@ export default function CGV() {
             </p>
           </Section>
 
-          <Section title="10. Droit de rétractation">
+          <Section title="10. Prévention de la fraude">
+            <p>
+              BilletGab se réserve le droit d'annuler toute commande présentant des indices de fraude :
+              paiement frauduleux, usurpation d'identité, création de multiples comptes destinés à contourner
+              des restrictions, ou contestation abusive de transaction (chargeback injustifié).
+            </p>
+            <p>
+              En cas de fraude avérée ou de manquement grave aux CGU, BilletGab peut suspendre ou clôturer
+              définitivement le compte de l'acheteur concerné, annuler les billets associés sans remboursement
+              et, le cas échéant, transmettre les éléments aux autorités judiciaires compétentes.
+            </p>
+          </Section>
+
+          <Section title="11. Force majeure">
+            <p>
+              BilletGab et les organisateurs ne peuvent être tenus responsables de l'inexécution partielle ou
+              totale de leurs obligations lorsque celle-ci résulte d'un cas de force majeure tel que : incendie,
+              inondation, catastrophe naturelle, coupure de réseau internet ou électrique, grève, décision
+              gouvernementale, épidémie, ou tout autre événement imprévisible, irrésistible et extérieur aux
+              parties.
+            </p>
+            <p>
+              En cas de force majeure rendant l'organisation d'un événement impossible, l'organisateur s'engage
+              à en informer BilletGab et les acheteurs dans les meilleurs délais. BilletGab ne saurait être
+              tenu responsable des préjudices découlant de tels événements.
+            </p>
+          </Section>
+
+          <Section title="12. Limitation de responsabilité">
+            <p>
+              BilletGab agit en qualité d'intermédiaire technique entre acheteurs et organisateurs. En cas de
+              préjudice subi par un acheteur du fait d'un organisateur (annulation, non-remboursement,
+              modification d'événement), la responsabilité de BilletGab ne saurait être engagée au-delà de
+              son rôle de facilitation des paiements.
+            </p>
+            <p>
+              En tout état de cause, la responsabilité totale de BilletGab ne pourra excéder le montant des
+              commissions effectivement perçues sur la ou les transactions litigieuses.
+            </p>
+          </Section>
+
+          <Section title="13. Droit de rétractation">
             <p>
               Conformément aux usages applicables aux services d'accès à des événements culturels et de loisirs
               dont la date est déterminée, <span className="text-white font-semibold">le droit de rétractation
@@ -193,7 +236,7 @@ export default function CGV() {
             </p>
           </Section>
 
-          <Section title="11. Droit applicable et juridiction">
+          <Section title="14. Droit applicable et juridiction">
             <p>
               Les présentes CGV sont soumises au droit gabonais et, le cas échéant, au droit OHADA.
               Tout litige relatif à leur interprétation ou exécution sera soumis aux tribunaux compétents
@@ -201,10 +244,10 @@ export default function CGV() {
             </p>
           </Section>
 
-          <Section title="12. Contact et réclamations">
+          <Section title="15. Contact et réclamations">
             <p>
               Pour toute réclamation relative à un achat :{' '}
-              <a href="mailto:contact@billetgab.com" className="text-violet-neon hover:underline">contact@billetgab.com</a>
+              <a href="mailto:billetgab01@gmail.com" className="text-violet-neon hover:underline">billetgab01@gmail.com</a>
               {' '}ou par téléphone au +241 62 557 655.
             </p>
             <p>Nos équipes vous répondent du lundi au samedi de 08h00 à 20h00 (heure de Libreville).</p>

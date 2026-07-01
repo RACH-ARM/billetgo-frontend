@@ -45,7 +45,7 @@ export default function CGU() {
         <div className="flex items-center justify-between gap-4 flex-wrap mb-10">
           <div>
             <h1 className="font-bebas text-5xl tracking-wider text-gradient mb-2">Conditions Générales d'Utilisation</h1>
-            <p className="text-white/30 text-xs">Dernière mise à jour : 16 avril 2026</p>
+            <p className="text-white/30 text-xs">Dernière mise à jour : 1er juillet 2026</p>
           </div>
           <button
             onClick={handleDownload}
@@ -115,11 +115,29 @@ export default function CGU() {
               <li>Le contournement des mécanismes de sécurité de la plateforme.</li>
               <li>L'utilisation automatisée (bots, scripts) sans autorisation écrite préalable.</li>
               <li>La diffusion de contenus illicites, diffamatoires ou portant atteinte aux droits des tiers.</li>
-              <li>Toute tentative de fraude au paiement ou de remboursement abusif.</li>
+              <li>Toute tentative de fraude au paiement, de remboursement abusif, de blanchiment ou de financement d'activités illicites.</li>
             </ul>
           </Section>
 
-          <Section title="5. Conditions spécifiques aux organisateurs">
+          <Section title="5. Suspension et fermeture de compte">
+            <p>
+              BilletGab se réserve le droit de suspendre ou de fermer immédiatement et sans préavis tout compte,
+              notamment en cas de :
+            </p>
+            <ul className="list-disc list-inside space-y-1 pl-2">
+              <li>Suspicion de fraude, d'usurpation d'identité ou de falsification de documents KYC.</li>
+              <li>Activité suspecte susceptible de constituer du blanchiment de capitaux ou du financement du terrorisme.</li>
+              <li>Utilisation de la plateforme à des fins de phishing ou d'arnaque envers d'autres utilisateurs.</li>
+              <li>Non-respect répété des présentes CGU.</li>
+              <li>Réquisition ou injonction d'une autorité judiciaire ou administrative compétente.</li>
+            </ul>
+            <p>
+              En cas de suspension, les versements éventuellement dus peuvent être retenus le temps de l'instruction.
+              BilletGab peut, si la situation le justifie, signaler les faits aux autorités compétentes.
+            </p>
+          </Section>
+
+          <Section title="6. Conditions spécifiques aux organisateurs">
             <p>
               Pour devenir organisateur sur BilletGab, toute personne physique ou morale doit :
             </p>
@@ -140,7 +158,16 @@ export default function CGU() {
             </p>
           </Section>
 
-          <Section title="6. Validation et publication des événements">
+          <Section title="7. Propriété des contenus organisateurs">
+            <p>
+              Les événements, descriptions, affiches et visuels publiés par les organisateurs restent leur propriété
+              intellectuelle. En les publiant sur BilletGab, l'organisateur accorde à BilletGab une licence
+              non exclusive, gratuite et mondiale pour les reproduire, afficher et diffuser à des fins de
+              promotion de l'événement et de la plateforme, pendant la durée de publication de l'événement.
+            </p>
+          </Section>
+
+          <Section title="8. Validation et publication des événements">
             <p>
               Tout événement créé sur BilletGab est soumis à une procédure de validation avant publication :
             </p>
@@ -156,29 +183,36 @@ export default function CGU() {
             </p>
           </Section>
 
-          <Section title="7. Collecte des fonds et versements">
+          <Section title="9. Collecte des fonds, versements et lutte contre la fraude">
             <p>
               BilletGab collecte les fonds des acheteurs via son prestataire de paiement et les reverse
               à l'organisateur selon les modalités en vigueur. Les organisateurs peuvent demander un virement
-              de leur solde disponible depuis la page Versements. BilletGab se réserve le droit
-              de retarder ou de suspendre un versement en cas de litige ou de suspicion de fraude.
+              de leur solde disponible depuis la page Versements.
+            </p>
+            <p>
+              BilletGab se réserve le droit de retarder ou de suspendre un versement en cas de litige,
+              de suspicion de fraude, d'activité anormale ou sur demande d'une autorité compétente.
+              BilletGab peut demander des justificatifs supplémentaires avant de procéder à un virement
+              et peut signaler aux autorités toute opération suspecte.
             </p>
           </Section>
 
-          <Section title="8. Transferts de billets">
+          <Section title="10. Transferts de billets et remboursements">
             <p>
               Les acheteurs peuvent transférer un billet à une autre personne via la fonctionnalité de transfert
               disponible dans leur espace « Mes Billets ». Le transfert invalide l'ancien QR Code et génère
               un nouveau QR Code au nom du destinataire.
             </p>
             <p>
-              <span className="text-white font-semibold">Les billets sont non remboursables.</span>{' '}
-              En cas d'annulation d'un événement, les acheteurs doivent contacter directement l'organisateur
-              pour toute demande de remboursement. BilletGab n'intervient pas dans le traitement des remboursements.
+              Les billets sont en principe non remboursables. En cas d'annulation d'un événement, la responsabilité
+              principale du remboursement incombe à l'organisateur. Sauf disposition légale contraire ou décision
+              exceptionnelle de BilletGab — notamment lorsque les fonds n'ont pas encore été reversés à
+              l'organisateur — BilletGab n'intervient pas dans le traitement des remboursements et ne peut en
+              garantir l'exécution par l'organisateur.
             </p>
           </Section>
 
-          <Section title="9. Liste d'attente">
+          <Section title="11. Liste d'attente">
             <p>
               Pour les événements complets (sold-out), les utilisateurs peuvent s'inscrire sur une liste d'attente
               en fournissant leur email et/ou numéro de téléphone. En cas de libération d'une place, les personnes
@@ -187,21 +221,20 @@ export default function CGU() {
             </p>
           </Section>
 
-          <Section title="10. QR Codes et sécurité des billets">
+          <Section title="12. QR Codes et sécurité des billets">
             <p>
-              Chaque billet généré sur BilletGab est associé à un QR Code unique, signé cryptographiquement
-              par un algorithme HMAC-SHA256. Tout QR Code falsifié, dupliqué ou altéré sera détecté lors du
-              scan à l'entrée et le billet correspondant sera invalide. BilletGab ne saurait être tenu responsable
-              de l'accès refusé résultant d'un billet frauduleux ou partagé à des tiers.
+              Chaque billet généré sur BilletGab est associé à un QR Code unique, signé cryptographiquement,
+              permettant sa validation à l'entrée de l'événement. Tout QR Code falsifié, dupliqué ou altéré
+              sera détecté lors du scan et le billet correspondant sera invalide. BilletGab ne saurait être
+              tenu responsable de l'accès refusé résultant d'un billet frauduleux ou partagé à des tiers.
             </p>
             <p>
-              Les tokens de session (refresh tokens) sont hachés en SHA-256 en base de données — aucune donnée
-              d'authentification n'est stockée en clair. La vérification des QR codes utilise une comparaison
-              résistante aux attaques temporelles (timing-safe).
+              BilletGab met en œuvre des mesures techniques et organisationnelles conformes aux bonnes pratiques
+              de sécurité pour protéger l'intégrité des billets et des données utilisateurs.
             </p>
           </Section>
 
-          <Section title="11. Propriété intellectuelle">
+          <Section title="13. Propriété intellectuelle">
             <p>
               L'ensemble des éléments de la plateforme BilletGab (logo, design, textes, code source, base de données)
               est la propriété exclusive de Tiamiyou Arèmou, concepteur et exploitant de BilletGab.
@@ -209,29 +242,39 @@ export default function CGU() {
             </p>
           </Section>
 
-          <Section title="12. Disponibilité du service">
+          <Section title="14. Disponibilité du service et force majeure">
             <p>
               BilletGab s'efforce d'assurer la disponibilité de la plateforme 24h/24 et 7j/7. Toutefois,
               des interruptions pour maintenance ou pour des raisons techniques peuvent survenir. BilletGab ne
               saurait être tenu responsable des conséquences d'une interruption de service.
             </p>
+            <p>
+              BilletGab ne saurait être tenu responsable de tout manquement à ses obligations en cas de force majeure,
+              notamment : catastrophe naturelle, incendie, inondation, coupure d'électricité ou d'Internet nationale
+              ou régionale, panne d'un opérateur de télécommunications, grève, décision gouvernementale ou tout
+              autre événement imprévisible et irrésistible échappant au contrôle raisonnable de BilletGab.
+            </p>
           </Section>
 
-          <Section title="13. Responsabilité">
+          <Section title="15. Limitation de responsabilité">
             <p>
               BilletGab agit en tant qu'intermédiaire technique entre les acheteurs et les organisateurs.
               BilletGab ne saurait être tenu responsable du contenu des événements, des annulations décidées
-              par les organisateurs, ni des problèmes survenant lors des événements eux-mêmes (incidents,
-              blessures, force majeure, etc.).
+              par les organisateurs, ni des problèmes survenant lors des événements eux-mêmes.
             </p>
             <p>
               En cas d'annulation d'un événement, la responsabilité du remboursement des acheteurs incombe
-              exclusivement à l'organisateur. BilletGab n'assume aucune obligation de remboursement
-              et n'intervient pas dans le traitement des indemnisations entre acheteurs et organisateurs.
+              exclusivement à l'organisateur, sauf décision exceptionnelle de BilletGab dans les conditions
+              précisées à l'article 10.
+            </p>
+            <p>
+              Dans toute la mesure permise par la loi applicable, la responsabilité totale de BilletGab ne pourra
+              excéder le montant des commissions effectivement perçues par BilletGab pour la ou les transactions
+              concernées, sauf disposition légale impérative contraire.
             </p>
           </Section>
 
-          <Section title="14. Modifications des CGU">
+          <Section title="16. Modifications des CGU">
             <p>
               BilletGab se réserve le droit de modifier les présentes CGU à tout moment. Les utilisateurs seront
               informés de toute modification significative par notification sur la plateforme ou par email.
@@ -239,7 +282,7 @@ export default function CGU() {
             </p>
           </Section>
 
-          <Section title="15. Droit applicable et juridiction">
+          <Section title="17. Droit applicable et juridiction">
             <p>
               Les présentes CGU sont soumises au droit gabonais et, le cas échéant, au droit OHADA
               (Organisation pour l'Harmonisation en Afrique du Droit des Affaires). Tout litige relatif
@@ -247,10 +290,10 @@ export default function CGU() {
             </p>
           </Section>
 
-          <Section title="16. Contact">
+          <Section title="18. Contact">
             <p>
               Pour toute question relative aux présentes CGU :{' '}
-              <a href="mailto:contact@billetgab.com" className="text-violet-neon hover:underline">contact@billetgab.com</a>
+              <a href="mailto:billetgab01@gmail.com" className="text-violet-neon hover:underline">billetgab01@gmail.com</a>
               {' '}ou par téléphone au +241 62 557 655.
             </p>
           </Section>

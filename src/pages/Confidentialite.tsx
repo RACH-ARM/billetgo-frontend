@@ -45,7 +45,7 @@ export default function Confidentialite() {
         <div className="flex items-center justify-between gap-4 flex-wrap mb-10">
           <div>
             <h1 className="font-bebas text-5xl tracking-wider text-gradient mb-2">Politique de Confidentialité</h1>
-            <p className="text-white/30 text-xs">Dernière mise à jour : 16 avril 2026</p>
+            <p className="text-white/30 text-xs">Dernière mise à jour : 1er juillet 2026</p>
           </div>
           <button
             onClick={handleDownload}
@@ -67,7 +67,7 @@ export default function Confidentialite() {
             </p>
             <p>
               Contact :{' '}
-              <a href="mailto:contact@billetgab.com" className="text-violet-neon hover:underline">contact@billetgab.com</a>
+              <a href="mailto:billetgab01@gmail.com" className="text-violet-neon hover:underline">billetgab01@gmail.com</a>
             </p>
           </Section>
 
@@ -79,7 +79,7 @@ export default function Confidentialite() {
               <li>Prénom et nom de famille</li>
               <li>Adresse email (optionnelle si numéro de téléphone fourni)</li>
               <li>Numéro de téléphone (optionnel si email fourni)</li>
-              <li>Mot de passe (stocké sous forme hachée avec bcrypt, inaccessible même par BilletGab)</li>
+              <li>Mot de passe (stocké sous forme hachée et chiffrée, inaccessible même par BilletGab)</li>
               <li>Nom de la société ou de l'organisation (pour les comptes organisateurs)</li>
             </ul>
 
@@ -134,7 +134,31 @@ export default function Confidentialite() {
             </ul>
           </Section>
 
-          <Section title="4. Partage des données">
+          <Section title="4. Bases légales du traitement">
+            <p>
+              BilletGab traite vos données personnelles sur les bases légales suivantes :
+            </p>
+            <ul className="list-disc list-inside space-y-1 pl-2">
+              <li>
+                <span className="text-white">Exécution du contrat</span> — traitement des commandes, génération
+                des billets, gestion des versements aux organisateurs.
+              </li>
+              <li>
+                <span className="text-white">Obligation légale</span> — conservation des données de transaction
+                à des fins comptables et fiscales, coopération avec les autorités judiciaires sur réquisition.
+              </li>
+              <li>
+                <span className="text-white">Intérêt légitime</span> — prévention de la fraude, sécurité de
+                la plateforme, amélioration des services, gestion des litiges.
+              </li>
+              <li>
+                <span className="text-white">Consentement</span> — envoi de communications marketing
+                (vous pouvez retirer ce consentement à tout moment via votre espace compte ou par email).
+              </li>
+            </ul>
+          </Section>
+
+          <Section title="5. Partage des données">
             <p>
               BilletGab ne vend jamais vos données personnelles à des tiers. Vos données peuvent être
               partagées uniquement dans les cas suivants :
@@ -160,9 +184,16 @@ export default function Confidentialite() {
                 judiciaire ou obligation légale gabonaise.
               </li>
             </ul>
+            <p>
+              Certains de ces prestataires opèrent des serveurs en dehors du Gabon, notamment aux États-Unis
+              (Vercel, Cloudinary, Upstash, Resend) ou en Europe (Railway). Ces transferts internationaux sont
+              encadrés par des engagements contractuels garantissant un niveau de protection adéquat des données.
+              En utilisant BilletGab, vous acceptez ces transferts dans le cadre du fonctionnement normal de la
+              plateforme.
+            </p>
           </Section>
 
-          <Section title="5. Durée de conservation">
+          <Section title="6. Durée de conservation">
             <p>Vos données sont conservées pour les durées suivantes :</p>
             <ul className="list-disc list-inside space-y-1 pl-2">
               <li>Données de compte : pendant toute la durée de vie du compte, puis 3 ans après suppression.</li>
@@ -175,26 +206,23 @@ export default function Confidentialite() {
             </ul>
           </Section>
 
-          <Section title="6. Sécurité des données">
+          <Section title="7. Sécurité des données">
             <p>
-              BilletGab met en œuvre les mesures techniques et organisationnelles suivantes pour protéger vos données :
+              BilletGab met en œuvre des mesures techniques et organisationnelles conformes aux bonnes pratiques
+              de sécurité pour protéger vos données, notamment :
             </p>
             <ul className="list-disc list-inside space-y-1 pl-2">
-              <li>Hachage des mots de passe avec bcrypt (coût 12).</li>
-              <li>QR codes signés cryptographiquement (HMAC-SHA256) pour prévenir la falsification.</li>
+              <li>Chiffrement des mots de passe — les mots de passe ne sont jamais stockés en clair et sont inaccessibles même par BilletGab.</li>
               <li>Communications chiffrées en HTTPS/TLS sur l'ensemble de la plateforme.</li>
-              <li>Authentification JWT à durée limitée (15 minutes) avec mécanisme de rotation des tokens (refresh).</li>
-              <li>Refresh tokens de session hachés en SHA-256 en base de données — aucune donnée d'authentification stockée en clair.</li>
-              <li>Vérification des QR codes avec comparaison cryptographique résistante aux attaques temporelles (timing-safe).</li>
+              <li>Authentification à durée limitée avec mécanisme de rotation automatique des sessions.</li>
+              <li>Contrôle des accès et stockage sécurisé des documents KYC avec URLs à accès restreint.</li>
               <li>Limitation de débit (rate limiting) sur toutes les routes sensibles : connexion, paiement, réinitialisation de mot de passe.</li>
               <li>Verrouillage de compte après plusieurs tentatives de connexion échouées.</li>
-              <li>Stockage des documents KYC sur Cloudinary avec accès restreint et URLs signées.</li>
-              <li>Base de données hébergée sur infrastructure sécurisée (Supabase PostgreSQL).</li>
-              <li>Journaux d'audit de toutes les actions sensibles (administrateur, libération de versement).</li>
+              <li>Journaux d'audit de toutes les actions sensibles (administration, libération de versement, modifications de compte).</li>
             </ul>
           </Section>
 
-          <Section title="7. Vos droits">
+          <Section title="8. Vos droits">
             <p>
               Conformément aux principes de protection des données personnelles, vous disposez des droits suivants :
             </p>
@@ -207,12 +235,12 @@ export default function Confidentialite() {
             </ul>
             <p>
               Pour exercer ces droits, contactez-nous à{' '}
-              <a href="mailto:contact@billetgab.com" className="text-violet-neon hover:underline">contact@billetgab.com</a>.
+              <a href="mailto:billetgab01@gmail.com" className="text-violet-neon hover:underline">billetgab01@gmail.com</a>.
               Nous répondons dans un délai de 30 jours.
             </p>
           </Section>
 
-          <Section title="8. Cookies et stockage local">
+          <Section title="9. Cookies et stockage local">
             <p>
               BilletGab n'utilise pas de cookies publicitaires ni de traceurs tiers à des fins de ciblage.
               Le stockage local du navigateur (localStorage) est utilisé exclusivement pour maintenir votre
@@ -221,7 +249,7 @@ export default function Confidentialite() {
             </p>
           </Section>
 
-          <Section title="9. Modifications de la politique">
+          <Section title="10. Modifications de la politique">
             <p>
               Cette politique de confidentialité peut être mise à jour pour refléter les évolutions de la
               plateforme ou les exigences légales. En cas de modification substantielle, les utilisateurs
@@ -229,10 +257,10 @@ export default function Confidentialite() {
             </p>
           </Section>
 
-          <Section title="10. Contact">
+          <Section title="11. Contact">
             <p>
               Pour toute question relative à la protection de vos données personnelles :{' '}
-              <a href="mailto:contact@billetgab.com" className="text-violet-neon hover:underline">contact@billetgab.com</a>
+              <a href="mailto:billetgab01@gmail.com" className="text-violet-neon hover:underline">billetgab01@gmail.com</a>
               {' '}ou par téléphone au +241 62 557 655.
             </p>
           </Section>
