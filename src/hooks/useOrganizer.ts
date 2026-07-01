@@ -14,7 +14,7 @@ export interface PlatformRates {
 }
 
 const FALLBACK_RATES: PlatformRates = {
-  standardCommission: 0.10,
+  standardCommission: 0.07,
   intermediateCommission: 0.10,
   premiumCommission: 0.10,
   freeTicketFee: 500,

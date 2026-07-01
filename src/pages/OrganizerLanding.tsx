@@ -43,7 +43,7 @@ const FEATURES = [
   {
     Icon: ShieldCheck,
     title: 'Commission transparente, rien de caché',
-    desc: 'Commission unique à 10% sur chaque billet vendu. 0 FCFA tant que vous ne vendez pas. Pas d\'abonnement, pas de frais cachés.',
+    desc: 'Commission unique à 7% sur chaque billet vendu. 0 FCFA tant que vous ne vendez pas. Pas d\'abonnement, pas de frais cachés.',
     color: 'rose' as const,
   },
 ] as const;
@@ -91,7 +91,7 @@ const COLORS: Record<ColorKey, { text: string; bg: string; border: string }> = {
 
 // ── Stats ─────────────────────────────────────────────────────
 const STATS = [
-  { value: '10%', label: 'de commission fixe', sub: 'sur chaque billet vendu' },
+  { value: '7%', label: 'de commission fixe', sub: 'sur chaque billet vendu' },
   { value: '< 30s', label: 'pour payer', sub: 'via Mobile Money' },
   { value: '100%', label: 'sécurisé', sub: 'QR code anti-fraude HMAC' },
   { value: '0 FCFA', label: 'à l\'avance', sub: 'aucun abonnement' },
@@ -296,14 +296,14 @@ export default function OrganizerLanding() {
           >
             <p className="text-xs text-violet-neon uppercase tracking-widest font-semibold mb-3">Tarification</p>
             <h2 className="font-bebas text-3xl sm:text-4xl tracking-wider text-white mb-2">Une seule commission. Tout inclus.</h2>
-            <p className="text-white/40 text-sm max-w-xl mx-auto">Pas d'abonnement. Pas de frais de création. Pas de niveaux confus. Une règle simple : BilletGab perçoit 10% uniquement sur les billets que vous vendez.</p>
+            <p className="text-white/40 text-sm max-w-xl mx-auto">Pas d'abonnement. Pas de frais de création. Pas de niveaux confus. Une règle simple : BilletGab perçoit 7% uniquement sur les billets que vous vendez.</p>
           </motion.div>
 
           <div className="glass-card border border-violet-neon/30 overflow-hidden">
             {/* Header */}
             <div className="p-5 sm:p-6 bg-violet-neon/5 border-b border-violet-neon/20 text-center">
               <div className="inline-flex items-baseline gap-2 mb-2">
-                <span className="font-mono text-5xl font-bold text-violet-neon">10%</span>
+                <span className="font-mono text-5xl font-bold text-violet-neon">7%</span>
                 <span className="text-white/50 text-base">de commission</span>
               </div>
               <p className="text-white/40 text-sm">Déduit automatiquement au moment du versement. Vous recevez le reste.</p>
@@ -311,7 +311,7 @@ export default function OrganizerLanding() {
 
             {/* Inclus */}
             <div className="p-5 sm:p-6">
-              <p className="text-xs text-white/40 uppercase tracking-widest mb-6">Tout ce qui est inclus dans ces 10%</p>
+              <p className="text-xs text-white/40 uppercase tracking-widest mb-6">Tout ce qui est inclus dans ces 7%</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
                   'Page événement dédiée avec affiche HD, description, lieu et compte à rebours',
@@ -343,11 +343,11 @@ export default function OrganizerLanding() {
                     <p className="text-white/30 text-xs mt-1">FCFA — ventes totales</p>
                   </div>
                   <div>
-                    <p className="font-mono text-2xl text-red-400 font-bold">− 750 000</p>
-                    <p className="text-white/30 text-xs mt-1">FCFA — commission BilletGab (10%)</p>
+                    <p className="font-mono text-2xl text-red-400 font-bold">− 525 000</p>
+                    <p className="text-white/30 text-xs mt-1">FCFA — commission BilletGab (7%)</p>
                   </div>
                   <div>
-                    <p className="font-mono text-2xl text-green-400 font-bold">6 750 000</p>
+                    <p className="font-mono text-2xl text-green-400 font-bold">6 975 000</p>
                     <p className="text-white/30 text-xs mt-1">FCFA — vous recevez</p>
                   </div>
                 </div>

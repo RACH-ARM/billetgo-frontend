@@ -583,7 +583,7 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
         <div className="glass-card p-4 flex items-center gap-3">
           <Banknote className="w-5 h-5 text-violet-neon flex-shrink-0" />
           <p className="text-sm text-white/60">
-            <span className="text-white font-semibold">10% de commission</span> prélevée sur chaque billet vendu.
+            <span className="text-white font-semibold">7% de commission</span> prélevée sur chaque billet vendu.
             Les billets gratuits sont soumis à des frais fixes de <span className="text-white font-semibold">500 FCFA</span>.
           </p>
         </div>
@@ -728,7 +728,7 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
           />
           <span className="text-xs text-white/50 leading-relaxed">
             J'accepte les conditions de la plateforme BilletGab, notamment la commission de{' '}
-            <span className="text-white font-semibold">10%</span>{' '}
+            <span className="text-white font-semibold">7%</span>{' '}
             prélevée sur chaque billet vendu.
             Je certifie être habilité à soumettre cet événement.
           </span>
