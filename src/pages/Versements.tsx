@@ -4,7 +4,7 @@ import {
   Banknote, Check, Mail, Wallet,
   TrendingUp, TrendingDown, CheckCheck,
   History, CalendarDays, Clock, XCircle, AlertTriangle,
-  Smartphone, Settings,
+  Smartphone,
 } from 'lucide-react';
 import {
   useOrganizerPayouts,
@@ -21,7 +21,6 @@ import {
   SkeletonPayoutHistoryRow,
 } from '../components/common/Skeleton';
 import WithdrawModal, { type WithdrawContext } from '../components/common/WithdrawModal';
-import { Link } from 'react-router-dom';
 
 // ─── Payout history row ───────────────────────────────────────────────────────
 
@@ -85,7 +84,7 @@ function OperatorBalanceCard({
   const bg          = isAirtel ? 'bg-rose-neon/10'  : 'bg-cyan-neon/10';
   const iconColor   = isAirtel ? 'text-rose-neon'   : 'text-cyan-neon';
 
-  const canWithdraw = balance > 0 && !!phone;
+  const canWithdraw = balance > 0;
 
   return (
     <button
@@ -108,11 +107,7 @@ function OperatorBalanceCard({
       <p className={`font-mono font-bold text-xl leading-tight ${canWithdraw ? color : 'text-white/20'}`}>
         {formatPrice(balance, 'FCFA', '0 FCFA')}
       </p>
-      {phone ? (
-        <p className="text-[11px] text-white/30 mt-1 font-mono truncate">{phone}</p>
-      ) : (
-        <p className="text-[11px] text-amber-400/70 mt-1">Numéro non configuré</p>
-      )}
+      {phone && <p className="text-[11px] text-white/30 mt-1 font-mono truncate">{phone}</p>}
       {canWithdraw && <p className={`text-[10px] mt-1.5 ${color}/60`}>Appuyer pour retirer</p>}
     </button>
   );
@@ -130,14 +125,15 @@ export default function Versements() {
     const balance = operator === 'AIRTEL_MONEY'
       ? (payoutsData?.airtelBalance ?? 0)
       : (payoutsData?.moovBalance ?? 0);
-    const phone = operator === 'AIRTEL_MONEY'
-      ? (payoutsData?.airtelNumber ?? null)
-      : (payoutsData?.moovNumber ?? null);
-    if (balance <= 0 || !phone) return;
+    if (balance <= 0) return;
+    // Le numéro de profil pré-remplit le champ, mais l'organisateur peut saisir n'importe quel numéro
+    const defaultPhone = operator === 'AIRTEL_MONEY'
+      ? (payoutsData?.airtelNumber ?? undefined)
+      : (payoutsData?.moovNumber ?? undefined);
     setWithdrawCtx({
       grossAmount:      balance,
       defaultOperator:  operator,
-      defaultPhone:     phone,
+      defaultPhone,
       airtelPayoutRate: 0.005,
       moovPayoutRate:   0.01,
       label:            operator === 'AIRTEL_MONEY' ? 'Solde Airtel Money' : 'Solde Moov Money',
@@ -153,7 +149,6 @@ export default function Versements() {
     setWithdrawCtx(null);
   };
 
-  const balanceDue       = payoutsData?.balanceDue       ?? 0;
   const totalCollected   = payoutsData?.totalCollected   ?? 0;
   const totalPlatformFee = payoutsData?.totalPlatformFee ?? 0;
   const totalNetAmount   = payoutsData?.totalNetAmount   ?? 0;
@@ -163,8 +158,6 @@ export default function Versements() {
   const airtelNumber     = payoutsData?.airtelNumber     ?? null;
   const moovNumber       = payoutsData?.moovNumber       ?? null;
   const historyPayouts   = payoutsData?.payouts          ?? [];
-
-  const hasNoPhone = !airtelNumber && !moovNumber;
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
@@ -201,17 +194,9 @@ export default function Versements() {
 
       {/* ── Solde par opérateur ── */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }} className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Wallet className="w-4 h-4 text-white/30" />
-            <h2 className="font-bebas text-2xl tracking-wider text-white leading-none">Solde disponible</h2>
-          </div>
-          {balanceDue > 0 && hasNoPhone && (
-            <Link to="/organizer/profile" className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 transition-colors">
-              <Settings className="w-3.5 h-3.5" />
-              Configurer mes numéros
-            </Link>
-          )}
+        <div className="flex items-center gap-2">
+          <Wallet className="w-4 h-4 text-white/30" />
+          <h2 className="font-bebas text-2xl tracking-wider text-white leading-none">Solde disponible</h2>
         </div>
 
         {payoutsLoading ? <SkeletonKpiGrid count={2} /> : (
@@ -231,30 +216,6 @@ export default function Versements() {
           </div>
         )}
 
-        {/* Alerte si solde mais aucun numéro configuré */}
-        {!payoutsLoading && balanceDue > 0 && hasNoPhone && (
-          <div className="flex items-start gap-2.5 px-3.5 py-3 rounded-xl bg-amber-500/[0.07] border border-amber-500/20">
-            <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-amber-200/70 leading-relaxed">
-              Vous avez <span className="text-white font-semibold">{formatPrice(balanceDue, 'FCFA')}</span> à retirer.
-              Pour initier un virement, configurez vos numéros Airtel et Moov dans votre{' '}
-              <Link to="/organizer/profile" className="text-amber-400 underline underline-offset-2">profil organisateur</Link>.
-            </p>
-          </div>
-        )}
-
-        {/* Alerte si solde mais numéro manquant pour un seul opérateur */}
-        {!payoutsLoading && !hasNoPhone && (
-          (!airtelNumber && airtelBalance > 0) || (!moovNumber && moovBalance > 0)
-        ) && (
-          <div className="flex items-start gap-2.5 px-3.5 py-3 rounded-xl bg-amber-500/[0.07] border border-amber-500/20">
-            <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-amber-200/70 leading-relaxed">
-              Un numéro Mobile Money manque pour retirer le solde {!airtelNumber && airtelBalance > 0 ? 'Airtel Money' : 'Moov Money'}.{' '}
-              <Link to="/organizer/profile" className="text-amber-400 underline underline-offset-2">Configurer mon profil</Link>
-            </p>
-          </div>
-        )}
       </motion.div>
 
       {/* ── Gains par événement ── */}
