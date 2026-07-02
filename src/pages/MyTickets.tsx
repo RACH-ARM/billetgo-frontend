@@ -71,8 +71,15 @@ export default function MyTickets() {
 
   const prefetchedGuestData = (location.state as any)?.guestData as { email: string; tickets: any[] } | undefined;
 
-  if (!isAuthenticated && (token || prefetchedGuestData)) {
-    return <GuestTicketsView token={token ?? undefined} prefetchedData={prefetchedGuestData} />;
+  // Si l'utilisateur actualise la page, location.state est perdu — on fallback sur
+  // l'email persisté en sessionStorage pour re-fetch automatiquement les billets.
+  const storedGuestEmail =
+    !isAuthenticated && !prefetchedGuestData && !token
+      ? (sessionStorage.getItem('billetgab_guest_email') ?? undefined)
+      : undefined;
+
+  if (!isAuthenticated && (token || prefetchedGuestData || storedGuestEmail)) {
+    return <GuestTicketsView token={token ?? undefined} prefetchedData={prefetchedGuestData} storedEmail={storedGuestEmail} />;
   }
 
   return <AuthenticatedMyTickets />;
@@ -161,12 +168,21 @@ function GuestOrderGroups({ tickets }: { tickets: any[] }) {
   );
 }
 
-function GuestTicketsView({ token, prefetchedData }: { token?: string; prefetchedData?: { email: string; tickets: any[] } }) {
+function GuestTicketsView({ token, prefetchedData, storedEmail }: { token?: string; prefetchedData?: { email: string; tickets: any[] }; storedEmail?: string }) {
   const [guestData, setGuestData] = useState<{ email: string; tickets: any[] } | null>(prefetchedData ?? null);
-  const [loading, setLoading] = useState(!prefetchedData && !!token);
+  const [loading, setLoading] = useState(!prefetchedData && (!!token || !!storedEmail));
+  const [refreshing, setRefreshing] = useState(false);
   const [expired, setExpired] = useState(false);
-  const [error, setError] = useState(!prefetchedData && !token);
+  const [error, setError] = useState(!prefetchedData && !token && !storedEmail);
 
+  // Persiste l'email dès qu'on a des données — survit à un rechargement de page
+  useEffect(() => {
+    if (guestData?.email) {
+      sessionStorage.setItem('billetgab_guest_email', guestData.email);
+    }
+  }, [guestData?.email]);
+
+  // Accès via lien magique (token)
   useEffect(() => {
     if (prefetchedData || !token) return;
     api.get(`/tickets/by-token?token=${encodeURIComponent(token)}`)
@@ -177,6 +193,30 @@ function GuestTicketsView({ token, prefetchedData }: { token?: string; prefetche
       })
       .finally(() => setLoading(false));
   }, [token, prefetchedData]);
+
+  // Rechargement de page — re-fetch depuis l'email persisté en sessionStorage
+  useEffect(() => {
+    if (prefetchedData || token || !storedEmail) return;
+    api.post('/tickets/by-email', { email: storedEmail })
+      .then(({ data }) => setGuestData(data.data))
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
+  }, [storedEmail, prefetchedData, token]);
+
+  // Rafraîchissement manuel — recharge les statuts depuis le serveur
+  const handleRefresh = async () => {
+    const email = guestData?.email;
+    if (!email || refreshing) return;
+    setRefreshing(true);
+    try {
+      const { data } = await api.post('/tickets/by-email', { email });
+      setGuestData(data.data);
+    } catch {
+      // échec silencieux — les anciennes données restent affichées
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const backendBase = import.meta.env.VITE_BACKEND_URL ?? import.meta.env.VITE_API_URL ?? '';
   const googleUrl = `${backendBase}/api/v1/auth/google?origin=${encodeURIComponent(window.location.origin)}`;
@@ -238,7 +278,18 @@ function GuestTicketsView({ token, prefetchedData }: { token?: string; prefetche
       </Link>
 
       <h1 className="font-bebas text-5xl tracking-wider text-gradient mb-2">MES BILLETS</h1>
-      <p className="text-white/40 text-sm mb-6">Accès temporaire pour <span className="text-white/70">{guestData.email}</span></p>
+      <div className="flex items-center gap-3 mb-6 flex-wrap">
+        <p className="text-white/40 text-sm">Accès temporaire pour <span className="text-white/70">{guestData.email}</span></p>
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          title="Rafraîchir les statuts"
+          className="inline-flex items-center gap-1.5 text-xs text-white/30 hover:text-violet-neon transition-colors disabled:opacity-40"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-violet-neon' : ''}`} />
+          {refreshing ? 'Mise à jour...' : 'Rafraîchir'}
+        </button>
+      </div>
 
       <div className="mb-4">
         <div className="flex items-start gap-3 glass-card p-4 border border-cyan-neon/20 bg-cyan-neon/5">

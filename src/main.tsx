@@ -1,5 +1,16 @@
 import './lib/sentry'; // doit être le premier import
 
+// Nouveau déploiement Vercel : les anciens chunks (hash périmé) n'existent plus.
+// Vite émet 'vite:preloadError' → on recharge une seule fois pour récupérer
+// le nouvel index.html avec les bons hashes. Le flag sessionStorage évite
+// une boucle infinie si le chunk est réellement absent du nouveau déploiement.
+window.addEventListener('vite:preloadError', () => {
+  if (!sessionStorage.getItem('vite-chunk-reload')) {
+    sessionStorage.setItem('vite-chunk-reload', '1');
+    window.location.reload();
+  }
+});
+
 // Safari BFCache : quand l'utilisateur revient sur un onglet mis en veille,
 // Safari restaure la page depuis la mémoire (persisted=true) sans refaire de
 // requête réseau → les chunks JS ont des hashes périmés et plantent.
