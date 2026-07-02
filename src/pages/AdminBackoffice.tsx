@@ -45,6 +45,10 @@ interface AdminPayoutOrganizer {
   organizerId: string;
   companyName: string;
   mobileMoneyNumber: string | null;
+  airtelNumber: string | null;
+  moovNumber: string | null;
+  airtelBalance: number;
+  moovBalance: number;
   user: { firstName: string; lastName: string; email: string; phone: string };
   events: { id: string; title: string; eventDate: string }[];
   totalCollected: number;
@@ -2529,7 +2533,8 @@ export default function AdminBackoffice() {
                           { label: 'Collecté', val: org.totalCollected, color: 'text-white/70' },
                           { label: 'Net org.', val: org.totalNetAmount, color: 'text-cyan-neon' },
                           { label: 'Déjà viré', val: org.totalPaid, color: 'text-green-400' },
-                          { label: 'Restant', val: org.balanceDue, color: org.balanceDue > 0 ? 'text-yellow-400' : 'text-white/30' },
+                          { label: 'Airtel', val: org.airtelBalance ?? 0, color: (org.airtelBalance ?? 0) > 0 ? 'text-rose-neon' : 'text-white/30' },
+                          { label: 'Moov', val: org.moovBalance ?? 0, color: (org.moovBalance ?? 0) > 0 ? 'text-cyan-neon' : 'text-white/30' },
                         ].map((s) => (
                           <div key={s.label} className="text-center bg-white/[0.04] rounded-xl px-2 sm:px-3 py-2 sm:min-w-[80px]">
                             <p className="text-xs text-white/30 uppercase tracking-widest mb-0.5">{s.label}</p>

@@ -255,6 +255,8 @@ function TabOrganisateur() {
   const [description, setDescription] = useState('');
   const [website, setWebsite]         = useState('');
   const [mobileMoney, setMobileMoney] = useState('');
+  const [airtelNumber, setAirtelNumber] = useState('');
+  const [moovNumber, setMoovNumber]     = useState('');
   const [dirty, setDirty]             = useState(false);
 
   useEffect(() => {
@@ -263,6 +265,8 @@ function TabOrganisateur() {
     setDescription(org.description ?? '');
     setWebsite(org.website ?? '');
     setMobileMoney(org.mobileMoneyNumber ?? '');
+    setAirtelNumber((org as unknown as { airtelNumber?: string | null }).airtelNumber ?? '');
+    setMoovNumber((org as unknown as { moovNumber?: string | null }).moovNumber ?? '');
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [org]);
 
@@ -278,6 +282,8 @@ function TabOrganisateur() {
         description: description.trim() || null,
         website: website.trim() || null,
         mobileMoneyNumber: mobileMoney.trim() || undefined,
+        airtelNumber: airtelNumber.trim() || null,
+        moovNumber: moovNumber.trim() || null,
       });
       setDirty(false);
       toast.success('Profil organisateur mis à jour');
@@ -348,7 +354,17 @@ function TabOrganisateur() {
         <TextArea label="Description" value={description} onChange={handleChange(setDescription)} placeholder="Décrivez votre organisation..." rows={4} hint="Visible sur votre page publique d'organisateur" />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Site web" value={website} onChange={handleChange(setWebsite)} placeholder="https://monsite.com" optional hint="URL complète de votre site (ex: https://monsite.com)" />
-          <Field label="Numéro Mobile Money" value={mobileMoney} onChange={handleChange(setMobileMoney)} placeholder="ex: 074123456" hint="Numéro sur lequel vous recevez vos reversements" />
+          <Field label="Numéro Mobile Money (principal)" value={mobileMoney} onChange={handleChange(setMobileMoney)} placeholder="ex: 074123456" optional hint="Numéro principal (usage interne)" />
+        </div>
+        <div className="pt-2 border-t border-white/[0.06]">
+          <p className="text-xs text-white/40 uppercase tracking-widest mb-3">Numéros de reversement</p>
+          <p className="text-xs text-white/30 mb-3 leading-relaxed">
+            Configurez un numéro par opérateur. Seul le solde correspondant à l'opérateur pourra être retiré sur ce numéro.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Numéro Airtel Money" value={airtelNumber} onChange={handleChange(setAirtelNumber)} placeholder="ex: 074123456" optional hint="07X XXX XXX — retraits Airtel" />
+            <Field label="Numéro Moov Money" value={moovNumber} onChange={handleChange(setMoovNumber)} placeholder="ex: 062123456" optional hint="06X XXX XXX — retraits Moov" />
+          </div>
         </div>
 
         {dirty && (

@@ -4,11 +4,11 @@ import {
   Banknote, Check, Mail, Wallet,
   TrendingUp, TrendingDown, CheckCheck,
   History, CalendarDays, Clock, XCircle, AlertTriangle,
+  Smartphone, Settings,
 } from 'lucide-react';
 import {
   useOrganizerPayouts,
   useOrganizerProfile,
-  usePlatformRates,
 } from '../hooks/useOrganizer';
 import { useQueryClient } from 'react-query';
 import { type OrganizerPayout } from '../services/organizerService';
@@ -21,6 +21,7 @@ import {
   SkeletonPayoutHistoryRow,
 } from '../components/common/Skeleton';
 import WithdrawModal, { type WithdrawContext } from '../components/common/WithdrawModal';
+import { Link } from 'react-router-dom';
 
 // ─── Payout history row ───────────────────────────────────────────────────────
 
@@ -48,7 +49,7 @@ function PayoutRow({ payout }: { payout: OrganizerPayout }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <p className={`font-mono font-bold text-sm ${cfg.amount}`}>
-            {formatPrice(payout.amountReceived ?? payout.amountSent, 'FCFA')}
+            {formatPrice(payout.amountSent, 'FCFA')}
           </p>
           <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${cfg.bg} ${cfg.text} font-semibold leading-none`}>
             {cfg.label}
@@ -64,23 +65,82 @@ function PayoutRow({ payout }: { payout: OrganizerPayout }) {
   );
 }
 
+// ─── Operator balance card ────────────────────────────────────────────────────
+
+function OperatorBalanceCard({
+  operator,
+  balance,
+  phone,
+  onClick,
+}: {
+  operator: 'AIRTEL_MONEY' | 'MOOV_MONEY';
+  balance: number;
+  phone: string | null;
+  onClick: () => void;
+}) {
+  const isAirtel    = operator === 'AIRTEL_MONEY';
+  const label       = isAirtel ? 'Airtel Money' : 'Moov Money';
+  const color       = isAirtel ? 'text-rose-neon'  : 'text-cyan-neon';
+  const border      = isAirtel ? 'border-rose-neon' : 'border-cyan-neon';
+  const bg          = isAirtel ? 'bg-rose-neon/10'  : 'bg-cyan-neon/10';
+  const iconColor   = isAirtel ? 'text-rose-neon'   : 'text-cyan-neon';
+
+  const canWithdraw = balance > 0 && !!phone;
+
+  return (
+    <button
+      onClick={onClick}
+      disabled={!canWithdraw}
+      className={`glass-card p-4 border text-left transition-all active:scale-95 disabled:cursor-default w-full ${
+        canWithdraw
+          ? `${border}/40 ${bg} hover:opacity-90 cursor-pointer`
+          : 'border-white/[0.06]'
+      }`}
+    >
+      <div className="flex items-center gap-2 mb-3">
+        <div className={`w-7 h-7 rounded-full flex items-center justify-center ${bg}`}>
+          <Smartphone className={`w-3.5 h-3.5 ${iconColor}`} />
+        </div>
+        <span className={`font-bebas text-sm tracking-wider ${canWithdraw ? color : 'text-white/30'}`}>
+          {label}
+        </span>
+      </div>
+      <p className={`font-mono font-bold text-xl leading-tight ${canWithdraw ? color : 'text-white/20'}`}>
+        {formatPrice(balance, 'FCFA', '0 FCFA')}
+      </p>
+      {phone ? (
+        <p className="text-[11px] text-white/30 mt-1 font-mono truncate">{phone}</p>
+      ) : (
+        <p className="text-[11px] text-amber-400/70 mt-1">Numéro non configuré</p>
+      )}
+      {canWithdraw && <p className={`text-[10px] mt-1.5 ${color}/60`}>Appuyer pour retirer</p>}
+    </button>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function Versements() {
   const { data: payoutsData, isLoading: payoutsLoading } = useOrganizerPayouts();
-  const { data: profile,     isLoading: profileLoading } = useOrganizerProfile();
-  const { data: rates }                                  = usePlatformRates();
+  const { isLoading: profileLoading } = useOrganizerProfile();
   const qc = useQueryClient();
 
   const [withdrawCtx, setWithdrawCtx] = useState<WithdrawContext | null>(null);
 
-  const openWithdraw = (presetAmount?: number) => {
-    const balance = payoutsData?.balanceDue ?? 0;
+  const openWithdrawForOperator = (operator: 'AIRTEL_MONEY' | 'MOOV_MONEY') => {
+    const balance = operator === 'AIRTEL_MONEY'
+      ? (payoutsData?.airtelBalance ?? 0)
+      : (payoutsData?.moovBalance ?? 0);
+    const phone = operator === 'AIRTEL_MONEY'
+      ? (payoutsData?.airtelNumber ?? null)
+      : (payoutsData?.moovNumber ?? null);
+    if (balance <= 0 || !phone) return;
     setWithdrawCtx({
       grossAmount:      balance,
-      presetAmount:     presetAmount !== undefined ? Math.min(presetAmount, balance) : undefined,
-      airtelPayoutRate: rates?.airtelPayoutRate ?? 0.01,
-      moovPayoutRate:   rates?.moovPayoutRate   ?? 0.01,
-      label:            'Solde disponible',
+      defaultOperator:  operator,
+      defaultPhone:     phone,
+      airtelPayoutRate: 0.005,
+      moovPayoutRate:   0.01,
+      label:            operator === 'AIRTEL_MONEY' ? 'Solde Airtel Money' : 'Solde Moov Money',
     });
   };
 
@@ -98,7 +158,13 @@ export default function Versements() {
   const totalPlatformFee = payoutsData?.totalPlatformFee ?? 0;
   const totalNetAmount   = payoutsData?.totalNetAmount   ?? 0;
   const totalPaid        = payoutsData?.totalPaid        ?? 0;
+  const airtelBalance    = payoutsData?.airtelBalance    ?? 0;
+  const moovBalance      = payoutsData?.moovBalance      ?? 0;
+  const airtelNumber     = payoutsData?.airtelNumber     ?? null;
+  const moovNumber       = payoutsData?.moovNumber       ?? null;
   const historyPayouts   = payoutsData?.payouts          ?? [];
+
+  const hasNoPhone = !airtelNumber && !moovNumber;
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
@@ -108,15 +174,15 @@ export default function Versements() {
         {profileLoading ? <SkeletonVersementsHeader /> : (
           <div>
             <h1 className="font-bebas text-4xl tracking-wider text-gradient leading-none">MES VERSEMENTS</h1>
-            <p className="text-xs text-white/30 mt-1">Retraits Mobile Money — Airtel ou Moov · {profile?.mobileMoneyNumber ?? ''}</p>
+            <p className="text-xs text-white/30 mt-1">Solde disponible par compte Mobile Money</p>
           </div>
         )}
       </motion.div>
 
       {/* ── KPIs ── */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }}>
-        {payoutsLoading ? <SkeletonKpiGrid count={5} /> : (
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        {payoutsLoading ? <SkeletonKpiGrid count={4} /> : (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {([
               { label: 'Total collecté',   value: formatPrice(totalCollected,   'FCFA', '0 FCFA'), Icon: TrendingUp,  color: 'border-cyan-neon/20 bg-cyan-neon/5',     icon: 'text-cyan-neon'   },
               { label: 'Commission',       value: formatPrice(totalPlatformFee, 'FCFA', '0 FCFA'), Icon: TrendingDown,color: 'border-rose-neon/20 bg-rose-neon/5',     icon: 'text-rose-neon'   },
@@ -129,23 +195,64 @@ export default function Versements() {
                 <p className="font-mono font-bold text-base text-white leading-tight">{value}</p>
               </div>
             ))}
-            {/* Solde disponible — cliquable pour ouvrir le retrait */}
-            <button
-              onClick={() => balanceDue > 0 && openWithdraw()}
-              disabled={balanceDue <= 0}
-              className={`glass-card p-4 border text-left transition-all active:scale-95 disabled:cursor-default ${
-                balanceDue > 0
-                  ? 'border-violet-neon/40 bg-violet-neon/10 hover:bg-violet-neon/20 cursor-pointer'
-                  : 'border-white/[0.06]'
-              }`}
-            >
-              <Wallet className={`w-4 h-4 mb-2 ${balanceDue > 0 ? 'text-violet-neon' : 'text-white/20'}`} />
-              <p className="text-[11px] text-white/40 uppercase tracking-widest leading-none mb-1">Solde disponible</p>
-              <p className={`font-mono font-bold text-base leading-tight ${balanceDue > 0 ? 'text-violet-neon' : 'text-white/20'}`}>
-                {formatPrice(balanceDue, 'FCFA', '0 FCFA')}
-              </p>
-              {balanceDue > 0 && <p className="text-[10px] text-violet-neon/50 mt-1">Appuyer pour retirer</p>}
-            </button>
+          </div>
+        )}
+      </motion.div>
+
+      {/* ── Solde par opérateur ── */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }} className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Wallet className="w-4 h-4 text-white/30" />
+            <h2 className="font-bebas text-2xl tracking-wider text-white leading-none">Solde disponible</h2>
+          </div>
+          {balanceDue > 0 && hasNoPhone && (
+            <Link to="/organizer/profile" className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 transition-colors">
+              <Settings className="w-3.5 h-3.5" />
+              Configurer mes numéros
+            </Link>
+          )}
+        </div>
+
+        {payoutsLoading ? <SkeletonKpiGrid count={2} /> : (
+          <div className="grid grid-cols-2 gap-3">
+            <OperatorBalanceCard
+              operator="AIRTEL_MONEY"
+              balance={airtelBalance}
+              phone={airtelNumber}
+              onClick={() => openWithdrawForOperator('AIRTEL_MONEY')}
+            />
+            <OperatorBalanceCard
+              operator="MOOV_MONEY"
+              balance={moovBalance}
+              phone={moovNumber}
+              onClick={() => openWithdrawForOperator('MOOV_MONEY')}
+            />
+          </div>
+        )}
+
+        {/* Alerte si solde mais aucun numéro configuré */}
+        {!payoutsLoading && balanceDue > 0 && hasNoPhone && (
+          <div className="flex items-start gap-2.5 px-3.5 py-3 rounded-xl bg-amber-500/[0.07] border border-amber-500/20">
+            <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-amber-200/70 leading-relaxed">
+              Vous avez <span className="text-white font-semibold">{formatPrice(balanceDue, 'FCFA')}</span> à retirer.
+              Pour initier un virement, configurez vos numéros Airtel et Moov dans votre{' '}
+              <Link to="/organizer/profile" className="text-amber-400 underline underline-offset-2">profil organisateur</Link>.
+            </p>
+          </div>
+        )}
+
+        {/* Alerte si solde mais numéro manquant pour un seul opérateur */}
+        {!payoutsLoading && !hasNoPhone && (
+          (!airtelNumber && airtelBalance > 0) || (!moovNumber && moovBalance > 0)
+        ) && (
+          <div className="flex items-start gap-2.5 px-3.5 py-3 rounded-xl bg-amber-500/[0.07] border border-amber-500/20">
+            <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-amber-200/70 leading-relaxed">
+              Un numéro Mobile Money manque pour retirer le solde {!airtelNumber && airtelBalance > 0 ? 'Airtel Money' : 'Moov Money'}.{' '}
+              <Link to="/organizer/profile" className="text-amber-400 underline underline-offset-2">Configurer mon profil</Link>
+            </p>
           </div>
         )}
       </motion.div>
@@ -172,7 +279,6 @@ export default function Versements() {
           </div>
         </motion.div>
       )}
-
 
       {/* ── Historique ── */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="space-y-3">

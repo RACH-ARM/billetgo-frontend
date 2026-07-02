@@ -83,6 +83,8 @@ export interface OrganizerProfile {
   description: string | null;
   logoUrl: string | null;
   mobileMoneyNumber: string | null;
+  airtelNumber: string | null;
+  moovNumber: string | null;
   isApproved: boolean;
   isCertified: boolean;
   isPremium: boolean;
@@ -116,8 +118,7 @@ export interface OrganizerPayoutSchedules {
 
 export interface OrganizerPayout {
   id: string;
-  amountSent: number;       // montant brut soldé de la balance
-  amountReceived: number;   // montant net reçu sur le téléphone (après frais PVit)
+  amountSent: number;
   mobileMoney: string;
   operator: string;
   transactionRef: string | null;
@@ -139,6 +140,10 @@ export interface OrganizerPayoutSummary {
   totalNetAmount: number;
   totalPaid: number;
   balanceDue: number;
+  airtelBalance: number;
+  moovBalance: number;
+  airtelNumber: string | null;
+  moovNumber: string | null;
   events: EventEarning[];
   payouts: OrganizerPayout[];
 }
@@ -163,7 +168,7 @@ export const organizerService = {
     return data.data;
   },
 
-  updateProfile: async (payload: { mobileMoneyNumber: string }): Promise<OrganizerProfile> => {
+  updateProfile: async (payload: { mobileMoneyNumber?: string; airtelNumber?: string | null; moovNumber?: string | null; companyName?: string; description?: string | null }): Promise<OrganizerProfile> => {
     const { data } = await api.patch('/organizer/profile', payload);
     return data.data;
   },

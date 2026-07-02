@@ -93,6 +93,8 @@ export const deleteAccount = async (): Promise<void> => {
 
 export const updateOrganizerProfile = async (payload: {
   mobileMoneyNumber?: string;
+  airtelNumber?: string | null;
+  moovNumber?: string | null;
   companyName?: string;
   description?: string | null;
   website?: string | null;
