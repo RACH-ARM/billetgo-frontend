@@ -32,7 +32,7 @@ const CHANNELS = [
   {
     label: 'TikTok',
     cta: 'Voir notre profil →',
-    href: 'https://tiktok.com/@billetgab',
+    href: 'https://www.tiktok.com/@billetgab0?_r=1&_t=ZS-97i3zK6TXr2',
     border: 'border-cyan-neon/30 hover:border-cyan-neon/60',
     bg: 'bg-cyan-neon/10 group-hover:bg-cyan-neon/20',
     text: 'text-cyan-neon group-hover:text-cyan-400',
@@ -45,7 +45,7 @@ const CHANNELS = [
   {
     label: 'Facebook',
     cta: 'Voir notre page →',
-    href: 'https://facebook.com/billetgab',
+    href: 'https://www.facebook.com/share/1E9NyDrFVd/?mibextid=wwXIfr',
     border: 'border-violet-neon/30 hover:border-violet-neon/60',
     bg: 'bg-violet-neon/10 group-hover:bg-violet-neon/20',
     text: 'text-violet-neon group-hover:text-violet-400',
