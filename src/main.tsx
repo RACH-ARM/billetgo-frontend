@@ -5,9 +5,18 @@ import './lib/sentry'; // doit être le premier import
 // le nouvel index.html avec les bons hashes. Le flag sessionStorage évite
 // une boucle infinie si le chunk est réellement absent du nouveau déploiement.
 window.addEventListener('vite:preloadError', () => {
-  if (!sessionStorage.getItem('vite-chunk-reload')) {
-    sessionStorage.setItem('vite-chunk-reload', '1');
-    window.location.reload();
+  const last = sessionStorage.getItem('vite-chunk-reload');
+  const now = Date.now();
+  // Reload si on n'a pas déjà rechargé dans les 10 dernières secondes
+  // (évite la boucle infinie, mais permet de recharger à chaque navigation)
+  if (!last || now - parseInt(last) > 10_000) {
+    sessionStorage.setItem('vite-chunk-reload', String(now));
+    // Couvrir immédiatement la page violette de Sentry avec un overlay propre
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#09060F;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.45);font-family:Sora,sans-serif;font-size:13px;letter-spacing:0.03em';
+    el.textContent = 'Mise à jour en cours…';
+    document.body.appendChild(el);
+    setTimeout(() => window.location.reload(), 900);
   }
 });
 
