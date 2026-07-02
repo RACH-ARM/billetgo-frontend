@@ -51,6 +51,18 @@ export default function Checkout() {
     phone: '',
   });
   const [guestInfo, setGuestInfo] = useState({ firstName: '', lastName: '', email: '' });
+
+  // Sync avec le store si Zustand hydrate après le premier rendu
+  useEffect(() => {
+    if (user && !buyerInfo.name) {
+      setBuyerInfo(prev => ({
+        ...prev,
+        name: `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim(),
+        email: prev.email || user.email || '',
+      }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
   const [provider, setProvider] = useState<'AIRTEL_MONEY' | 'MOOV_MONEY' | null>(null);
   const [cgvAccepted, setCgvAccepted] = useState(false);
   const [paymentPhone, setPaymentPhone] = useState('');
