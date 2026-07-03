@@ -1829,8 +1829,11 @@ export default function AdminBackoffice() {
                     const org = (u.role as string) === 'ORGANIZER' ? (u as Record<string, unknown>).organizer as Record<string, unknown> | null : null;
                     return (
                       <React.Fragment key={uid}>
-                        <tr className={`border-b border-white/5 transition-colors ${isExpanded ? 'bg-white/[0.03]' : 'hover:bg-white/[0.02]'}`}>
-                          <td className="px-4 py-3 w-9">
+                        <tr
+                          className={`border-b border-white/5 transition-colors ${(u.role as string) !== 'ADMIN' ? 'cursor-pointer' : ''} ${isExpanded ? 'bg-white/[0.03]' : 'hover:bg-white/[0.02]'}`}
+                          onClick={() => { if ((u.role as string) !== 'ADMIN') setExpandedUserId(isExpanded ? null : uid); }}
+                        >
+                          <td className="px-4 py-3 w-9" onClick={(e) => e.stopPropagation()}>
                             {(u.role as string) !== 'ADMIN' && (
                               <button
                                 onClick={() => {
@@ -1863,14 +1866,9 @@ export default function AdminBackoffice() {
                               : <span className="inline-block w-2 h-2 rounded-full bg-rose-500" />
                             }
                           </td>
-                          <td className="px-3 py-3">
+                          <td className="px-4 py-3 text-right">
                             {(u.role as string) !== 'ADMIN' && (
-                              <button
-                                onClick={() => setExpandedUserId(isExpanded ? null : uid)}
-                                className="text-white/25 hover:text-white transition-colors"
-                              >
-                                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
-                              </button>
+                              <ChevronDown className={`w-4 h-4 text-white/35 transition-transform duration-200 inline-block ${isExpanded ? 'rotate-180' : ''}`} />
                             )}
                           </td>
                         </tr>
