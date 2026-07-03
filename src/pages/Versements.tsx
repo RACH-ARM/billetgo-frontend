@@ -4,8 +4,10 @@ import {
   Banknote, Check, Mail, Wallet,
   TrendingUp, TrendingDown, CheckCheck,
   History, CalendarDays, Clock, XCircle, AlertTriangle,
-  Smartphone, ArrowDownLeft, Ticket,
+  Smartphone, ArrowDownLeft, Ticket, ChevronLeft, ChevronRight,
 } from 'lucide-react';
+
+const PAGE_SIZE = 10;
 import {
   useOrganizerPayouts,
   useOrganizerProfile,
@@ -104,6 +106,39 @@ function SaleRow({ sale }: { sale: SaleTransaction }) {
   );
 }
 
+// ─── Pagination ──────────────────────────────────────────────────────────────
+
+function Pagination({ page, total, onPrev, onNext }: {
+  page: number; total: number; onPrev: () => void; onNext: () => void;
+}) {
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  if (totalPages <= 1) return null;
+  const start = (page - 1) * PAGE_SIZE + 1;
+  const end   = Math.min(page * PAGE_SIZE, total);
+  return (
+    <div className="flex items-center justify-between px-4 py-3 border-t border-white/[0.04]">
+      <span className="text-[11px] text-white/25">{start}–{end} sur {total}</span>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={onPrev}
+          disabled={page === 1}
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-white/30 hover:text-white hover:bg-white/5 disabled:opacity-20 disabled:cursor-default transition-all"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <span className="text-[11px] text-white/40 px-2 font-mono">{page} / {totalPages}</span>
+        <button
+          onClick={onNext}
+          disabled={page === totalPages}
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-white/30 hover:text-white hover:bg-white/5 disabled:opacity-20 disabled:cursor-default transition-all"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Operator balance card ────────────────────────────────────────────────────
 
 function OperatorBalanceCard({
@@ -161,6 +196,14 @@ export default function Versements() {
 
   const [withdrawCtx, setWithdrawCtx] = useState<WithdrawContext | null>(null);
   const [historyTab, setHistoryTab] = useState<'sales' | 'payouts'>('sales');
+  const [salesPage,  setSalesPage]  = useState(1);
+  const [payoutsPage, setPayoutsPage] = useState(1);
+
+  const switchTab = (tab: 'sales' | 'payouts') => {
+    setHistoryTab(tab);
+    setSalesPage(1);
+    setPayoutsPage(1);
+  };
 
   const openWithdrawForOperator = (operator: 'AIRTEL_MONEY' | 'MOOV_MONEY') => {
     const balance = operator === 'AIRTEL_MONEY'
@@ -293,7 +336,7 @@ export default function Versements() {
         {/* Tabs */}
         <div className="flex gap-1 p-1 rounded-xl bg-white/5 border border-white/[0.06]">
           <button
-            onClick={() => setHistoryTab('sales')}
+            onClick={() => switchTab('sales')}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
               historyTab === 'sales'
                 ? 'bg-green-500/15 text-green-400 border border-green-500/20'
@@ -309,7 +352,7 @@ export default function Versements() {
             )}
           </button>
           <button
-            onClick={() => setHistoryTab('payouts')}
+            onClick={() => switchTab('payouts')}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
               historyTab === 'payouts'
                 ? 'bg-violet-neon/15 text-violet-neon border border-violet-neon/20'
@@ -332,27 +375,42 @@ export default function Versements() {
               <SkeletonPayoutHistoryRow key={i} />
             ))}
           </div>
-        ) : historyTab === 'sales' ? (
-          recentSales.length > 0 ? (
+        ) : historyTab === 'sales' ? (() => {
+          const paginated = recentSales.slice((salesPage - 1) * PAGE_SIZE, salesPage * PAGE_SIZE);
+          return recentSales.length > 0 ? (
             <div className="glass-card overflow-hidden border border-green-500/10 divide-y divide-white/[0.04]">
-              {recentSales.map((s) => <SaleRow key={s.id} sale={s} />)}
+              {paginated.map((s) => <SaleRow key={s.id} sale={s} />)}
+              <Pagination
+                page={salesPage}
+                total={recentSales.length}
+                onPrev={() => setSalesPage(p => p - 1)}
+                onNext={() => setSalesPage(p => p + 1)}
+              />
             </div>
           ) : (
             <div className="glass-card border border-white/[0.06] p-8 text-center">
               <p className="text-white/30 text-sm">Aucune vente pour le moment</p>
             </div>
-          )
-        ) : (
-          historyPayouts.filter((p) => p.pvitStatus !== 'ADJUSTMENT').length > 0 ? (
+          );
+        })() : (() => {
+          const filtered  = historyPayouts.filter((p) => p.pvitStatus !== 'ADJUSTMENT');
+          const paginated = filtered.slice((payoutsPage - 1) * PAGE_SIZE, payoutsPage * PAGE_SIZE);
+          return filtered.length > 0 ? (
             <div className="glass-card overflow-hidden border border-violet-neon/10 divide-y divide-white/[0.04]">
-              {historyPayouts.filter((p) => p.pvitStatus !== 'ADJUSTMENT').map((p) => <PayoutRow key={p.id} payout={p} />)}
+              {paginated.map((p) => <PayoutRow key={p.id} payout={p} />)}
+              <Pagination
+                page={payoutsPage}
+                total={filtered.length}
+                onPrev={() => setPayoutsPage(p => p - 1)}
+                onNext={() => setPayoutsPage(p => p + 1)}
+              />
             </div>
           ) : (
             <div className="glass-card border border-white/[0.06] p-8 text-center">
               <p className="text-white/30 text-sm">Aucun retrait effectué</p>
             </div>
-          )
-        )}
+          );
+        })()}
       </motion.div>
 
       {/* ── Support ── */}
