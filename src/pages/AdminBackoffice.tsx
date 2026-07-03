@@ -7,6 +7,7 @@ import {
   ShieldAlert, LayoutDashboard, ListChecks, X, LogOut, Banknote,
   Star, Flame, Ban, Sparkles, ScanLine, Plus, Eye, EyeOff, Pencil, MessageSquare, FileSearch, RotateCcw, ScrollText, Settings,
   Square, CheckSquare, BadgeCheck, Award, Zap, Shield, MapPin, QrCode, Download, ShoppingCart, UserCheck,
+  ChevronDown, ChevronLeft, ChevronRight, Search, AlertCircle,
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -665,6 +666,11 @@ export default function AdminBackoffice() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<TabType>('dashboard');
   const [dashPeriod, setDashPeriod] = useState<'week' | 'month' | 'year' | 'all'>('month');
+
+  // Onglet retraits
+  const [orgSearch,    setOrgSearch]    = useState('');
+  const [expandedOrg,  setExpandedOrg]  = useState<string | null>(null);
+  const [journalPage,  setJournalPage]  = useState(1);
 
   // Actions en masse — Users
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
@@ -2553,183 +2559,297 @@ export default function AdminBackoffice() {
 
       {/* ── Retraits tab ── */}
       {tab === 'retraits' && (() => {
-        const allPayouts = (payoutsData ?? [])
+        const allOrgs = payoutsData ?? [];
+
+        const allPayouts = allOrgs
           .flatMap((org) => (org.payoutHistory ?? []).map((p) => ({ ...p, companyName: org.companyName })))
           .sort((a, b) => new Date(b.processedAt).getTime() - new Date(a.processedAt).getTime());
 
-        const totalVersé = allPayouts.reduce((s, p) => s + p.amountSent, 0);
-        const totalDû    = (payoutsData ?? []).reduce((s, org) => s + org.balanceDue, 0);
-        const totalBrut  = (payoutsData ?? []).reduce((s, org) => s + org.totalNetAmount, 0);
+        // Corriger le bug : exclure les FAILED du total versé
+        const successPayouts   = allPayouts.filter(p => p.pvitStatus !== 'FAILED');
+        const totalVersé       = successPayouts.reduce((s, p) => s + p.amountSent, 0);
+        const totalNet         = allOrgs.reduce((s, org) => s + org.totalNetAmount, 0);
+        const totalDû          = allOrgs.reduce((s, org) => s + org.balanceDue, 0);
+        const orgsWithBalance  = allOrgs.filter(org => (org.airtelBalance ?? 0) > 0 || (org.moovBalance ?? 0) > 0).length;
+
+        const PAYOUT_ST: Record<string, { label: string; color: string; bg: string }> = {
+          SUCCESS:      { label: 'Confirmé',  color: 'text-green-400',    bg: 'bg-green-500/10'   },
+          PENDING:      { label: 'En cours',  color: 'text-amber-400',    bg: 'bg-amber-400/10'   },
+          PENDING_LOCK: { label: 'En cours',  color: 'text-amber-400',    bg: 'bg-amber-400/10'   },
+          FAILED:       { label: 'Échoué',    color: 'text-rose-400',     bg: 'bg-rose-500/10'    },
+          PARTIAL:      { label: 'Partiel',   color: 'text-orange-400',   bg: 'bg-orange-400/10'  },
+          SCHEDULED:    { label: 'Programmé', color: 'text-violet-neon',  bg: 'bg-violet-neon/10' },
+        };
+
+        const TIER_CFG: Record<string, { label: string; color: string }> = {
+          NEW:       { label: 'Nouveau',  color: 'text-white/30'   },
+          APPROVED:  { label: 'Approuvé', color: 'text-cyan-neon'  },
+          CERTIFIED: { label: 'Certifié', color: 'text-violet-neon'},
+          PREMIUM:   { label: 'Premium',  color: 'text-yellow-400' },
+        };
+
+        const filteredOrgs = allOrgs
+          .filter(org => {
+            const q = orgSearch.toLowerCase();
+            return !q || org.companyName.toLowerCase().includes(q)
+              || `${org.user.firstName} ${org.user.lastName}`.toLowerCase().includes(q);
+          })
+          .sort((a, b) => (b.airtelBalance + b.moovBalance) - (a.airtelBalance + a.moovBalance));
+
+        const JPAGE = 15;
+        const jTotalPages  = Math.ceil(allPayouts.length / JPAGE);
+        const jPaginated   = allPayouts.slice((journalPage - 1) * JPAGE, journalPage * JPAGE);
 
         return (
           <div className="space-y-8">
 
             {/* ── KPIs ── */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {[
-                { label: 'Total versé', value: formatPrice(totalVersé, 'FCFA', '0 FCFA'), color: 'text-green-400', border: 'border-green-500/20' },
-                { label: 'Net dû organisateurs', value: formatPrice(totalBrut, 'FCFA', '0 FCFA'), color: 'text-cyan-neon', border: 'border-cyan-neon/20' },
-                { label: 'Solde restant', value: formatPrice(totalDû, 'FCFA', '0 FCFA'), color: totalDû > 0 ? 'text-yellow-400' : 'text-white/30', border: totalDû > 0 ? 'border-yellow-500/20' : 'border-white/5' },
-              ].map((k) => (
-                <div key={k.label} className={`glass-card p-4 border ${k.border}`}>
-                  <p className="text-xs text-white/40 uppercase tracking-widest mb-1">{k.label}</p>
-                  <p className={`font-mono font-bold text-xl ${k.color}`}>{k.value}</p>
-                </div>
-              ))}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="glass-card p-4 border border-cyan-neon/20">
+                <p className="text-[11px] text-white/40 uppercase tracking-widest mb-1">Net total organisateurs</p>
+                <p className="font-mono font-bold text-lg text-cyan-neon">{formatPrice(totalNet, 'FCFA', '0 FCFA')}</p>
+                <p className="text-[10px] text-white/25 mt-0.5">Montant total à verser</p>
+              </div>
+              <div className="glass-card p-4 border border-green-500/20">
+                <p className="text-[11px] text-white/40 uppercase tracking-widest mb-1">Total versé</p>
+                <p className="font-mono font-bold text-lg text-green-400">{formatPrice(totalVersé, 'FCFA', '0 FCFA')}</p>
+                <p className="text-[10px] text-white/25 mt-0.5">{successPayouts.length} retrait{successPayouts.length > 1 ? 's' : ''} confirmé{successPayouts.length > 1 ? 's' : ''}</p>
+              </div>
+              <div className={`glass-card p-4 border ${totalDû > 0 ? 'border-yellow-500/20' : 'border-white/5'}`}>
+                <p className="text-[11px] text-white/40 uppercase tracking-widest mb-1">Solde restant dû</p>
+                <p className={`font-mono font-bold text-lg ${totalDû > 0 ? 'text-yellow-400' : 'text-white/30'}`}>{formatPrice(totalDû, 'FCFA', '0 FCFA')}</p>
+                <p className="text-[10px] text-white/25 mt-0.5">À virer aux organisateurs</p>
+              </div>
+              <div className={`glass-card p-4 border ${orgsWithBalance > 0 ? 'border-rose-neon/20' : 'border-white/5'}`}>
+                <p className="text-[11px] text-white/40 uppercase tracking-widest mb-1">Orgs. en attente</p>
+                <p className={`font-mono font-bold text-lg ${orgsWithBalance > 0 ? 'text-rose-neon' : 'text-white/30'}`}>{orgsWithBalance}</p>
+                <p className="text-[10px] text-white/25 mt-0.5">Solde non encore retiré</p>
+              </div>
             </div>
 
-            {/* ── 3. Soldes & tier par organisateur ── */}
-            {payoutsLoading ? (
-              <div className="space-y-4">{[1,2,3].map((i) => <SkeletonCard key={i} lines={4} />)}</div>
-            ) : (payoutsData ?? []).length === 0 ? (
-              <div className="glass-card p-16 text-center">
-                <Banknote className="w-12 h-12 text-white/10 mx-auto mb-3" />
-                <p className="text-white/40">Aucun organisateur actif</p>
+            {/* ── Tableau organisateurs ── */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <h2 className="font-bebas text-xl tracking-wider text-white/70">
+                  Organisateurs <span className="text-white/30 text-base">({allOrgs.length})</span>
+                </h2>
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-white/25 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    value={orgSearch}
+                    onChange={e => setOrgSearch(e.target.value)}
+                    placeholder="Rechercher un organisateur…"
+                    className="bg-white/5 border border-white/10 rounded-xl pl-8 pr-4 py-2 text-sm text-white placeholder-white/25 focus:outline-none focus:border-violet-neon transition-colors w-56"
+                  />
+                </div>
               </div>
-            ) : (
-              <div className="space-y-4">
-                <h2 className="font-bebas text-xl tracking-wider text-white/60">Organisateurs</h2>
-                {(payoutsData ?? []).map((org) => (
-                  <motion.div
-                    key={org.organizerId}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="glass-card overflow-hidden border border-white/5"
-                  >
-                    <div className="flex flex-col gap-4 p-4 sm:p-5">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                          <h3 className="font-bebas text-xl tracking-wide text-white">{org.companyName}</h3>
-                          {(() => {
-                            const tierMap: Record<string, { label: string; color: string; Icon: React.ComponentType<{ className?: string }> }> = {
-                              NEW:       { label: 'Nouveau',  color: 'text-white/40',    Icon: Star   },
-                              APPROVED:  { label: 'Approuvé', color: 'text-cyan-neon',   Icon: Shield },
-                              CERTIFIED: { label: 'Certifié', color: 'text-violet-neon', Icon: Award  },
-                              PREMIUM:   { label: 'Premium',  color: 'text-yellow-400',  Icon: Zap    },
-                            };
-                            const tier = org.isPremium ? 'PREMIUM' : org.isCertified ? 'CERTIFIED' : org.isApproved ? 'APPROVED' : 'NEW';
-                            const meta = tierMap[tier];
-                            const { Icon } = meta;
-                            return <span className={`flex items-center gap-1 text-xs font-semibold ${meta.color}`}><Icon className="w-3 h-3" /> {meta.label}</span>;
-                          })()}
-                        </div>
-                        <p className="text-white/40 text-xs mt-0.5">
-                          {org.user.firstName} {org.user.lastName}
-                          {org.user.phone && <span className="ml-2 font-mono text-cyan-neon/70">{org.user.phone}</span>}
-                        </p>
-                                        {/* Tier selector */}
-                        <div className="flex items-center gap-1.5 mt-2">
-                          <p className="text-xs text-white/30">Tier :</p>
-                          {[
-                            { key: 'APPROVED',  label: 'Approuvé', flags: { isApproved: true,  isCertified: false, isPremium: false } },
-                            { key: 'CERTIFIED', label: 'Certifié', flags: { isApproved: true,  isCertified: true,  isPremium: false } },
-                            { key: 'PREMIUM',   label: 'Premium',  flags: { isApproved: true,  isCertified: true,  isPremium: true  } },
-                          ].map((t) => {
-                            const currentTier = org.isPremium ? 'PREMIUM' : org.isCertified ? 'CERTIFIED' : org.isApproved ? 'APPROVED' : 'NEW';
-                            const isActive = currentTier === t.key;
-                            return (
-                              <button
-                                key={t.key}
-                                onClick={() => !isActive && updateOrgTier.mutate({ organizerId: org.organizerId, ...t.flags })}
-                                className={`text-xs px-2.5 py-1 rounded-lg font-semibold transition-all ${isActive ? 'bg-violet-neon/20 text-violet-neon border border-violet-neon/30' : 'text-white/30 hover:text-white hover:bg-white/5 border border-transparent'}`}
-                              >
-                                {t.label}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                      {/* Soldes */}
-                      <div className="grid grid-cols-2 sm:flex sm:flex-nowrap gap-2 sm:gap-3 flex-shrink-0">
-                        {[
-                          { label: 'Collecté', val: org.totalCollected, color: 'text-white/70' },
-                          { label: 'Net org.', val: org.totalNetAmount, color: 'text-cyan-neon' },
-                          { label: 'Déjà viré', val: org.totalPaid, color: 'text-green-400' },
-                          { label: 'Airtel', val: org.airtelBalance ?? 0, color: (org.airtelBalance ?? 0) > 0 ? 'text-rose-neon' : 'text-white/30' },
-                          { label: 'Moov', val: org.moovBalance ?? 0, color: (org.moovBalance ?? 0) > 0 ? 'text-cyan-neon' : 'text-white/30' },
-                        ].map((s) => (
-                          <div key={s.label} className="text-center bg-white/[0.04] rounded-xl px-2 sm:px-3 py-2 sm:min-w-[80px]">
-                            <p className="text-xs text-white/30 uppercase tracking-widest mb-0.5">{s.label}</p>
-                            <p className={`font-mono font-bold text-sm ${s.color}`}>{formatPrice(s.val, 'FCFA', '0 FCFA')}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
 
-                    {/* Événements */}
-                    {org.events.length > 0 && (
-                      <div className="border-t border-white/5 px-5 py-3 flex flex-wrap gap-2">
-                        {org.events.map((ev) => (
-                          <span key={ev.id} className="text-xs bg-white/[0.04] border border-white/10 rounded-full px-3 py-1 text-white/50">{ev.title}</span>
-                        ))}
-                      </div>
-                    )}
+              {payoutsLoading ? <SkeletonTable rows={5} /> : (
+                <div className="glass-card overflow-hidden border border-white/[0.06]">
+                  {/* Header desktop */}
+                  <div className="hidden md:grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_36px] gap-2 px-4 py-2.5 border-b border-white/5 text-[10px] text-white/25 uppercase tracking-widest bg-white/[0.02]">
+                    <span>Société / Tier</span>
+                    <span className="text-right">Collecté</span>
+                    <span className="text-right">Net org.</span>
+                    <span className="text-right">Airtel dû</span>
+                    <span className="text-right">Moov dû</span>
+                    <span className="text-right">Solde total</span>
+                    <span />
+                  </div>
 
-                    {/* Historique virements */}
-                    {org.payoutHistory.length > 0 && (
-                      <div className="border-t border-white/5 px-5 py-3 space-y-2">
-                        <p className="text-xs text-white/30 uppercase tracking-widest mb-2">Virements effectués</p>
-                        {org.payoutHistory.map((p) => (
-                          <div key={p.id} className="flex items-center justify-between text-xs bg-white/[0.03] rounded-lg px-3 py-2">
-                            <div className="flex items-center gap-2">
-                              <CheckCircle className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
-                              <span className="font-mono font-bold text-green-400">{formatPrice(p.amountSent)}</span>
-                              <span className="text-white/30">{p.operator} · {p.mobileMoney}</span>
-                              {p.transactionRef && <span className="font-mono text-white/20">#{p.transactionRef}</span>}
+                  {filteredOrgs.length === 0 ? (
+                    <div className="py-16 text-center text-white/30 text-sm">Aucun résultat</div>
+                  ) : filteredOrgs.map((org) => {
+                    const isExp  = expandedOrg === org.organizerId;
+                    const tier   = org.isPremium ? 'PREMIUM' : org.isCertified ? 'CERTIFIED' : org.isApproved ? 'APPROVED' : 'NEW';
+                    const tc     = TIER_CFG[tier];
+                    const ab     = org.airtelBalance ?? 0;
+                    const mb     = org.moovBalance   ?? 0;
+                    const solde  = ab + mb;
+                    const hasDue = solde > 0;
+
+                    return (
+                      <div key={org.organizerId} className="border-b border-white/[0.04] last:border-0">
+                        {/* Row */}
+                        <button
+                          onClick={() => setExpandedOrg(isExp ? null : org.organizerId)}
+                          className="w-full text-left hover:bg-white/[0.02] transition-colors px-4 py-3.5"
+                        >
+                          {/* Mobile */}
+                          <div className="md:hidden flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-white truncate">{org.companyName}</p>
+                              <p className={`text-[10px] font-semibold ${tc.color}`}>{tc.label} · {org.user.firstName} {org.user.lastName}</p>
                             </div>
-                            <div className="text-right text-white/25">
-                              <div>{new Date(p.processedAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
-                              <div>par {p.processedBy}</div>
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                              <div className="text-right">
+                                <p className={`font-mono font-bold text-sm ${hasDue ? 'text-yellow-400' : 'text-green-400'}`}>
+                                  {hasDue ? formatPrice(solde, 'FCFA') : '✓ Soldé'}
+                                </p>
+                                {hasDue && <p className="text-[10px] text-white/30">dû</p>}
+                              </div>
+                              <ChevronDown className={`w-4 h-4 text-white/25 transition-transform flex-shrink-0 ${isExp ? 'rotate-180' : ''}`} />
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
-              </div>
-            )}
+                          {/* Desktop */}
+                          <div className="hidden md:grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_36px] gap-2 items-center">
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-white truncate">{org.companyName}</p>
+                              <p className={`text-[10px] font-semibold ${tc.color}`}>{tc.label} · {org.user.firstName} {org.user.lastName}</p>
+                            </div>
+                            <p className="font-mono text-xs text-white/50 text-right">{formatPrice(org.totalCollected, 'FCFA', '0')}</p>
+                            <p className="font-mono text-xs text-cyan-neon font-semibold text-right">{formatPrice(org.totalNetAmount, 'FCFA', '0')}</p>
+                            <p className={`font-mono text-xs text-right font-semibold ${ab > 0 ? 'text-rose-neon' : 'text-white/20'}`}>{formatPrice(ab, 'FCFA', '—')}</p>
+                            <p className={`font-mono text-xs text-right font-semibold ${mb > 0 ? 'text-cyan-neon' : 'text-white/20'}`}>{formatPrice(mb, 'FCFA', '—')}</p>
+                            <p className={`font-mono text-xs font-bold text-right ${hasDue ? 'text-yellow-400' : 'text-green-400'}`}>
+                              {hasDue ? formatPrice(solde, 'FCFA') : '✓ Soldé'}
+                            </p>
+                            <div className="flex justify-center">
+                              <ChevronDown className={`w-4 h-4 text-white/25 transition-transform ${isExp ? 'rotate-180' : ''}`} />
+                            </div>
+                          </div>
+                        </button>
 
-            {/* ── 4. Journal global des transactions ── */}
+                        {/* Expanded */}
+                        {isExp && (
+                          <div className="border-t border-white/[0.04] bg-white/[0.015] px-4 py-4 space-y-4">
+                            {/* Tier selector + contacts */}
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                              <div className="flex items-center gap-1.5">
+                                <p className="text-xs text-white/25">Tier :</p>
+                                {[
+                                  { key: 'APPROVED',  label: 'Approuvé', flags: { isApproved: true,  isCertified: false, isPremium: false } },
+                                  { key: 'CERTIFIED', label: 'Certifié', flags: { isApproved: true,  isCertified: true,  isPremium: false } },
+                                  { key: 'PREMIUM',   label: 'Premium',  flags: { isApproved: true,  isCertified: true,  isPremium: true  } },
+                                ].map((t) => {
+                                  const isActive = tier === t.key;
+                                  return (
+                                    <button key={t.key}
+                                      onClick={() => !isActive && updateOrgTier.mutate({ organizerId: org.organizerId, ...t.flags })}
+                                      className={`text-xs px-2.5 py-1 rounded-lg font-semibold transition-all ${isActive ? 'bg-violet-neon/20 text-violet-neon border border-violet-neon/30' : 'text-white/25 hover:text-white hover:bg-white/5 border border-transparent'}`}
+                                    >{t.label}</button>
+                                  );
+                                })}
+                              </div>
+                              <div className="flex flex-wrap gap-3 text-xs text-white/35">
+                                <span>{org.user.email}</span>
+                                {org.user.phone && <span className="font-mono text-cyan-neon/60">{org.user.phone}</span>}
+                                {org.airtelNumber && <span className="text-rose-neon/60">Airtel : {org.airtelNumber}</span>}
+                                {org.moovNumber   && <span className="text-cyan-neon/60">Moov : {org.moovNumber}</span>}
+                              </div>
+                            </div>
+
+                            {/* Événements */}
+                            {org.events.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5">
+                                {org.events.map(ev => (
+                                  <span key={ev.id} className="text-[11px] bg-white/[0.04] border border-white/10 rounded-full px-2.5 py-0.5 text-white/40">{ev.title}</span>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Historique retraits */}
+                            {org.payoutHistory.length > 0 ? (
+                              <div>
+                                <p className="text-[10px] text-white/25 uppercase tracking-widest mb-2">Retraits effectués</p>
+                                <div className="space-y-1.5">
+                                  {org.payoutHistory.map(p => {
+                                    const st = PAYOUT_ST[p.pvitStatus] ?? PAYOUT_ST.PENDING;
+                                    return (
+                                      <div key={p.id} className="flex items-center justify-between bg-white/[0.03] rounded-xl px-3 py-2.5 text-xs">
+                                        <div className="flex items-center gap-2.5 flex-wrap">
+                                          <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${st.bg} ${st.color}`}>{st.label}</span>
+                                          <span className="font-mono font-bold text-white/70">{formatPrice(p.amountSent, 'FCFA')}</span>
+                                          <span className={p.operator === 'AIRTEL_MONEY' ? 'text-rose-neon/70' : 'text-cyan-neon/70'}>{p.operator === 'AIRTEL_MONEY' ? 'Airtel' : 'Moov'}</span>
+                                          <span className="text-white/30 font-mono">{p.mobileMoney}</span>
+                                          {p.transactionRef && <span className="text-white/20 font-mono hidden sm:inline">#{p.transactionRef}</span>}
+                                        </div>
+                                        <span className="text-white/25 flex-shrink-0 ml-2">
+                                          {new Date(p.processedAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-xs text-white/25 italic flex items-center gap-1.5">
+                                <AlertCircle className="w-3.5 h-3.5" /> Aucun retrait pour cet organisateur
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* ── Journal global des retraits ── */}
             {allPayouts.length > 0 && (
-              <div>
-                <h2 className="font-bebas text-xl tracking-wider text-white/60 mb-3">Journal des transactions</h2>
-                <div className="glass-card overflow-hidden">
+              <div className="space-y-3">
+                <h2 className="font-bebas text-xl tracking-wider text-white/70">
+                  Journal des retraits <span className="text-white/30 text-base">({allPayouts.length})</span>
+                </h2>
+                <div className="glass-card overflow-hidden border border-white/[0.06]">
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-white/5 text-white/40 text-xs uppercase tracking-widest">
-                          <th className="text-left px-5 py-3">Date</th>
-                          <th className="text-left px-5 py-3">Organisateur</th>
-                          <th className="text-left px-5 py-3">Montant net</th>
-                          <th className="text-left px-5 py-3 hidden sm:table-cell">Opérateur</th>
-                          <th className="text-left px-5 py-3 hidden md:table-cell">N° Mobile Money</th>
-                          <th className="text-left px-5 py-3 hidden lg:table-cell">Réf.</th>
-                          <th className="text-left px-5 py-3 hidden xl:table-cell">Par</th>
+                        <tr className="border-b border-white/5 text-[10px] text-white/25 uppercase tracking-widest bg-white/[0.02]">
+                          <th className="text-left px-4 py-3">Date</th>
+                          <th className="text-left px-4 py-3">Organisateur</th>
+                          <th className="text-right px-4 py-3">Montant</th>
+                          <th className="text-left px-4 py-3 hidden sm:table-cell">Opérateur</th>
+                          <th className="text-left px-4 py-3 hidden md:table-cell">N° Mobile</th>
+                          <th className="text-left px-4 py-3">Statut</th>
+                          <th className="text-left px-4 py-3 hidden xl:table-cell">Réf.</th>
                         </tr>
                       </thead>
-                      <tbody>
-                        {allPayouts.map((p) => (
-                          <tr key={p.id} className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors">
-                            <td className="px-5 py-3 text-white/50 text-xs whitespace-nowrap">
-                              {new Date(p.processedAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
-                            </td>
-                            <td className="px-5 py-3 text-white font-semibold text-xs">{p.companyName}</td>
-                            <td className="px-5 py-3 font-mono font-bold text-green-400">{formatPrice(p.amountSent, 'FCFA')}</td>
-                            <td className="px-5 py-3 hidden sm:table-cell">
-                              <span className={`text-xs font-semibold ${p.operator === 'AIRTEL_MONEY' ? 'text-rose-neon' : 'text-cyan-neon'}`}>{p.operator.replace('_MONEY', '')}</span>
-                            </td>
-                            <td className="px-5 py-3 hidden md:table-cell font-mono text-xs text-white/50">{p.mobileMoney}</td>
-                            <td className="px-5 py-3 hidden lg:table-cell font-mono text-xs text-white/30">{p.transactionRef ?? '—'}</td>
-                            <td className="px-5 py-3 hidden xl:table-cell text-white/30 text-xs">{p.processedBy}</td>
-                          </tr>
-                        ))}
+                      <tbody className="divide-y divide-white/[0.03]">
+                        {jPaginated.map((p) => {
+                          const st = PAYOUT_ST[p.pvitStatus] ?? PAYOUT_ST.PENDING;
+                          return (
+                            <tr key={p.id} className="hover:bg-white/[0.02] transition-colors">
+                              <td className="px-4 py-3 text-white/40 text-xs whitespace-nowrap">
+                                {new Date(p.processedAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                              </td>
+                              <td className="px-4 py-3 text-white text-xs font-semibold">{p.companyName}</td>
+                              <td className="px-4 py-3 font-mono font-bold text-right whitespace-nowrap text-white/80">{formatPrice(p.amountSent, 'FCFA')}</td>
+                              <td className="px-4 py-3 hidden sm:table-cell">
+                                <span className={`text-xs font-semibold ${p.operator === 'AIRTEL_MONEY' ? 'text-rose-neon' : 'text-cyan-neon'}`}>
+                                  {p.operator === 'AIRTEL_MONEY' ? 'Airtel' : 'Moov'}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 hidden md:table-cell font-mono text-xs text-white/40">{p.mobileMoney}</td>
+                              <td className="px-4 py-3">
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${st.bg} ${st.color}`}>{st.label}</span>
+                              </td>
+                              <td className="px-4 py-3 hidden xl:table-cell font-mono text-xs text-white/25">{p.transactionRef ?? '—'}</td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
-                  <div className="px-5 py-3 border-t border-white/5 flex items-center justify-between">
-                    <p className="text-xs text-white/25">{allPayouts.length} virement{allPayouts.length > 1 ? 's' : ''} au total</p>
-                    <p className="text-xs font-mono text-green-400 font-bold">Total : {formatPrice(totalVersé, 'FCFA')}</p>
+                  <div className="px-4 py-3 border-t border-white/5 flex items-center justify-between gap-4">
+                    <p className="text-xs text-white/25">
+                      {((journalPage-1)*JPAGE)+1}–{Math.min(journalPage*JPAGE, allPayouts.length)} sur {allPayouts.length}
+                    </p>
+                    {jTotalPages > 1 && (
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => setJournalPage(p => p-1)} disabled={journalPage === 1}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center text-white/30 hover:text-white hover:bg-white/5 disabled:opacity-20 transition-all">
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <span className="text-[11px] text-white/35 px-2 font-mono">{journalPage} / {jTotalPages}</span>
+                        <button onClick={() => setJournalPage(p => p+1)} disabled={journalPage === jTotalPages}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center text-white/30 hover:text-white hover:bg-white/5 disabled:opacity-20 transition-all">
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                    <p className="text-xs font-mono text-green-400 font-bold">Total versé : {formatPrice(totalVersé, 'FCFA')}</p>
                   </div>
                 </div>
               </div>
