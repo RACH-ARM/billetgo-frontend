@@ -4,14 +4,14 @@ import {
   Banknote, Check, Mail, Wallet,
   TrendingUp, TrendingDown, CheckCheck,
   History, CalendarDays, Clock, XCircle, AlertTriangle,
-  Smartphone,
+  Smartphone, ArrowDownLeft, Ticket,
 } from 'lucide-react';
 import {
   useOrganizerPayouts,
   useOrganizerProfile,
 } from '../hooks/useOrganizer';
 import { useQueryClient } from 'react-query';
-import { type OrganizerPayout } from '../services/organizerService';
+import { type OrganizerPayout, type SaleTransaction } from '../services/organizerService';
 import api from '../services/api';
 import { formatPrice } from '../utils/formatPrice';
 import { formatDateShort } from '../utils/formatDate';
@@ -60,6 +60,46 @@ function PayoutRow({ payout }: { payout: OrganizerPayout }) {
         )}
       </div>
       <p className="text-[11px] text-white/25 flex-shrink-0">{date}</p>
+    </div>
+  );
+}
+
+// ─── Sale transaction row ────────────────────────────────────────────────────
+
+function SaleRow({ sale }: { sale: SaleTransaction }) {
+  const date     = new Date(sale.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+  const time     = new Date(sale.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  const opLabel  = sale.provider === 'AIRTEL_MONEY' ? 'Airtel Money' : sale.provider === 'MOOV_MONEY' ? 'Moov Money' : null;
+  const opColor  = sale.provider === 'AIRTEL_MONEY' ? 'text-rose-neon' : 'text-cyan-neon';
+
+  return (
+    <div className="flex items-center gap-3 px-4 py-3.5">
+      <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0">
+        <ArrowDownLeft className="w-3.5 h-3.5 text-green-400" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="font-mono font-bold text-sm text-green-400">
+            +{formatPrice(sale.organizerAmount, 'FCFA')}
+          </p>
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-400 font-semibold leading-none">
+            Confirmé
+          </span>
+        </div>
+        <p className="text-xs text-white/60 mt-0.5 truncate">{sale.buyerName}</p>
+        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+          <span className="text-[11px] text-white/25 truncate max-w-[140px]">{sale.eventTitle}</span>
+          {opLabel && <span className={`text-[11px] ${opColor} flex-shrink-0`}>{opLabel}</span>}
+          <span className="text-[11px] text-white/20 flex-shrink-0 flex items-center gap-0.5">
+            <Ticket className="w-2.5 h-2.5" />
+            {sale.ticketCount}
+          </span>
+        </div>
+      </div>
+      <p className="text-[11px] text-white/25 flex-shrink-0 text-right">
+        <span className="block">{date}</span>
+        <span className="block">{time}</span>
+      </p>
     </div>
   );
 }
@@ -120,6 +160,7 @@ export default function Versements() {
   const qc = useQueryClient();
 
   const [withdrawCtx, setWithdrawCtx] = useState<WithdrawContext | null>(null);
+  const [historyTab, setHistoryTab] = useState<'sales' | 'payouts'>('sales');
 
   const openWithdrawForOperator = (operator: 'AIRTEL_MONEY' | 'MOOV_MONEY') => {
     const balance = operator === 'AIRTEL_MONEY'
@@ -158,6 +199,7 @@ export default function Versements() {
   const airtelNumber     = payoutsData?.airtelNumber     ?? null;
   const moovNumber       = payoutsData?.moovNumber       ?? null;
   const historyPayouts   = payoutsData?.payouts          ?? [];
+  const recentSales      = payoutsData?.recentSales      ?? [];
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
@@ -241,31 +283,76 @@ export default function Versements() {
         </motion.div>
       )}
 
-      {/* ── Historique ── */}
+      {/* ── Historique des transactions ── */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="space-y-3">
+        <div className="flex items-center gap-2">
+          <History className="w-4 h-4 text-white/30" />
+          <h2 className="font-bebas text-2xl tracking-wider text-white leading-none">Historique</h2>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-1 p-1 rounded-xl bg-white/5 border border-white/[0.06]">
+          <button
+            onClick={() => setHistoryTab('sales')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+              historyTab === 'sales'
+                ? 'bg-green-500/15 text-green-400 border border-green-500/20'
+                : 'text-white/30 hover:text-white/60'
+            }`}
+          >
+            <ArrowDownLeft className="w-3.5 h-3.5" />
+            Entrées
+            {recentSales.length > 0 && (
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${historyTab === 'sales' ? 'bg-green-500/20 text-green-300' : 'bg-white/10 text-white/30'}`}>
+                {recentSales.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => setHistoryTab('payouts')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
+              historyTab === 'payouts'
+                ? 'bg-violet-neon/15 text-violet-neon border border-violet-neon/20'
+                : 'text-white/30 hover:text-white/60'
+            }`}
+          >
+            <Banknote className="w-3.5 h-3.5" />
+            Retraits
+            {historyPayouts.filter(p => p.pvitStatus !== 'ADJUSTMENT').length > 0 && (
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${historyTab === 'payouts' ? 'bg-violet-neon/20 text-violet-neon/80' : 'bg-white/10 text-white/30'}`}>
+                {historyPayouts.filter(p => p.pvitStatus !== 'ADJUSTMENT').length}
+              </span>
+            )}
+          </button>
+        </div>
+
         {payoutsLoading ? (
-          <>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-white/5 animate-pulse" />
-              <div className="h-6 w-28 bg-white/5 rounded-lg animate-pulse" />
+          <div className="glass-card overflow-hidden border border-white/[0.06] divide-y divide-white/[0.04]">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <SkeletonPayoutHistoryRow key={i} />
+            ))}
+          </div>
+        ) : historyTab === 'sales' ? (
+          recentSales.length > 0 ? (
+            <div className="glass-card overflow-hidden border border-green-500/10 divide-y divide-white/[0.04]">
+              {recentSales.map((s) => <SaleRow key={s.id} sale={s} />)}
             </div>
-            <div className="glass-card overflow-hidden border border-white/[0.06] divide-y divide-white/[0.04]">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <SkeletonPayoutHistoryRow key={i} />
-              ))}
+          ) : (
+            <div className="glass-card border border-white/[0.06] p-8 text-center">
+              <p className="text-white/30 text-sm">Aucune vente pour le moment</p>
             </div>
-          </>
-        ) : historyPayouts.length > 0 ? (
-          <>
-            <div className="flex items-center gap-2">
-              <History className="w-4 h-4 text-white/30" />
-              <h2 className="font-bebas text-2xl tracking-wider text-white leading-none">Historique</h2>
-            </div>
-            <div className="glass-card overflow-hidden border border-white/[0.06] divide-y divide-white/[0.04]">
+          )
+        ) : (
+          historyPayouts.filter((p) => p.pvitStatus !== 'ADJUSTMENT').length > 0 ? (
+            <div className="glass-card overflow-hidden border border-violet-neon/10 divide-y divide-white/[0.04]">
               {historyPayouts.filter((p) => p.pvitStatus !== 'ADJUSTMENT').map((p) => <PayoutRow key={p.id} payout={p} />)}
             </div>
-          </>
-        ) : null}
+          ) : (
+            <div className="glass-card border border-white/[0.06] p-8 text-center">
+              <p className="text-white/30 text-sm">Aucun retrait effectué</p>
+            </div>
+          )
+        )}
       </motion.div>
 
       {/* ── Support ── */}

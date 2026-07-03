@@ -134,6 +134,19 @@ export interface EventEarning {
   organizerAmount: number;
 }
 
+export interface SaleTransaction {
+  id: string;
+  buyerName: string;
+  eventTitle: string;
+  totalAmount: number;
+  organizerAmount: number;
+  platformFee: number;
+  serviceFee: number;
+  provider: string | null;
+  ticketCount: number;
+  createdAt: string;
+}
+
 export interface OrganizerPayoutSummary {
   totalCollected: number;
   totalPlatformFee: number;
@@ -146,6 +159,7 @@ export interface OrganizerPayoutSummary {
   moovNumber: string | null;
   events: EventEarning[];
   payouts: OrganizerPayout[];
+  recentSales: SaleTransaction[];
 }
 
 export interface OrganizerDebt {
