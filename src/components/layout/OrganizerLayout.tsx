@@ -61,7 +61,7 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
     <div className="flex flex-col h-full">
       <div className="px-5 py-6 border-b border-white/5 flex-shrink-0 flex justify-center pl-12">
         <Link to="/dashboard" onClick={onClose}>
-          <BilletGabLogo height={32} />
+          <BilletGabLogo height={48} />
         </Link>
       </div>
 
@@ -159,7 +159,7 @@ export default function OrganizerLayout() {
         </button>
 
         <Link to="/dashboard">
-          <BilletGabLogo height={28} />
+          <BilletGabLogo height={40} />
         </Link>
 
         <Link

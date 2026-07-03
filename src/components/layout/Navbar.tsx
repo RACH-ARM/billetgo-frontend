@@ -56,7 +56,7 @@ export default function Navbar() {
 
         {/* Logo */}
         <Link to="/" onClick={close} className="flex-shrink-0">
-          <BilletGabLogo height={36} />
+          <BilletGabLogo height={52} />
         </Link>
 
         {/* Desktop nav */}

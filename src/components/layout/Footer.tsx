@@ -50,7 +50,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           <div>
-            <BilletGabLogo height={40} />
+            <BilletGabLogo height={52} />
             <p className="mt-2 text-sm text-white/50">Ton événement. Ton ticket. Maintenant.</p>
             <p className="mt-1 text-xs text-white/30">Libreville, Gabon</p>
             <div className="flex gap-3 mt-4">
