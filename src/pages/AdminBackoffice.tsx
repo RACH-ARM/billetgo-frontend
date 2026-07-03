@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -6,7 +6,7 @@ import {
   Users, CalendarDays, TrendingUp, Clock, CheckCircle, XCircle,
   ShieldAlert, LayoutDashboard, ListChecks, X, LogOut, Banknote,
   Star, Flame, Ban, Sparkles, ScanLine, Plus, Eye, EyeOff, Pencil, MessageSquare, FileSearch, RotateCcw, ScrollText, Settings,
-  Square, CheckSquare, BadgeCheck, Award, Zap, Shield, MapPin, QrCode, Download, ShoppingCart, UserCheck,
+  Square, CheckSquare, BadgeCheck, MapPin, QrCode, Download, ShoppingCart, UserCheck,
   ChevronDown, ChevronLeft, ChevronRight, Search, AlertCircle,
 } from 'lucide-react';
 import {
@@ -44,6 +44,7 @@ interface PayoutHistoryEntry {
   noteAdmin: string | null;
   processedAt: string;
   processedBy: string;
+  pvitStatus: string;
 }
 interface AdminPayoutOrganizer {
   organizerId: string;
@@ -674,6 +675,7 @@ export default function AdminBackoffice() {
 
   // Actions en masse — Users
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [expandedUserId,  setExpandedUserId]  = useState<string | null>(null);
 
   // Actions en masse — Remboursements commandes
   const [selectedRefundIds, setSelectedRefundIds] = useState<Set<string>>(new Set());
@@ -1773,12 +1775,12 @@ export default function AdminBackoffice() {
       {tab === 'users' && (
         <div>
           {/* Role filter */}
-          <div className="flex gap-2 mb-5 flex-wrap">
+          <div className="flex gap-1.5 mb-4 flex-wrap">
             {['', 'BUYER', 'ORGANIZER', 'SCANNER', 'ADMIN'].map((r) => (
               <button
                 key={r}
                 onClick={() => setUserRoleFilter(r)}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
                   userRoleFilter === r
                     ? 'bg-neon-gradient text-white'
                     : 'bg-bg-card border border-violet-neon/20 text-white/50 hover:text-white'
@@ -1793,184 +1795,157 @@ export default function AdminBackoffice() {
             <SkeletonTable rows={6} />
           ) : (
             <div className="glass-card overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-white/5 text-white/40 text-xs uppercase tracking-widest">
-                      <th className="px-5 py-3 w-10">
-                        <button
-                          onClick={() => {
-                            const allIds = (usersData?.users ?? [])
-                              .filter((u: Record<string, unknown>) => (u.role as string) !== 'ADMIN')
-                              .map((u: Record<string, unknown>) => u.id as string);
-                            const allSelected = allIds.every((id: string) => selectedUserIds.has(id));
-                            setSelectedUserIds(allSelected ? new Set() : new Set(allIds));
-                          }}
-                          className="text-white/30 hover:text-violet-neon transition-colors"
-                        >
-                          {(usersData?.users ?? [])
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/5 text-white/30 text-[10px] uppercase tracking-widest">
+                    <th className="px-4 py-2.5 w-9">
+                      <button
+                        onClick={() => {
+                          const allIds = (usersData?.users ?? [])
                             .filter((u: Record<string, unknown>) => (u.role as string) !== 'ADMIN')
-                            .every((u: Record<string, unknown>) => selectedUserIds.has(u.id as string)) && selectedUserIds.size > 0
-                            ? <CheckSquare className="w-4 h-4 text-violet-neon" />
-                            : <Square className="w-4 h-4" />
-                          }
-                        </button>
-                      </th>
-                      <th className="text-left px-4 sm:px-5 py-3">Utilisateur</th>
-                      <th className="text-left px-4 sm:px-5 py-3 hidden sm:table-cell">Rôle</th>
-                      <th className="text-left px-4 sm:px-5 py-3 hidden md:table-cell">Téléphone</th>
-                      <th className="text-left px-4 sm:px-5 py-3 hidden lg:table-cell">Inscription</th>
-                      <th className="text-center px-4 sm:px-5 py-3 hidden sm:table-cell">Statut</th>
-                      <th className="px-4 sm:px-5 py-3" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(usersData?.users ?? []).map((u: Record<string, unknown>) => (
-                      <tr key={u.id as string} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-                        <td className="px-5 py-4 w-10">
-                          {(u.role as string) !== 'ADMIN' && (
-                            <button
-                              onClick={() => {
-                                const id = u.id as string;
-                                setSelectedUserIds((prev) => {
-                                  const next = new Set(prev);
-                                  next.has(id) ? next.delete(id) : next.add(id);
-                                  return next;
-                                });
-                              }}
-                              className="text-white/30 hover:text-violet-neon transition-colors"
-                            >
-                              {selectedUserIds.has(u.id as string)
-                                ? <CheckSquare className="w-4 h-4 text-violet-neon" />
-                                : <Square className="w-4 h-4" />
-                              }
-                            </button>
-                          )}
-                        </td>
-                        <td className="px-4 sm:px-5 py-4">
-                          <p className="text-white font-semibold text-sm">{u.firstName as string} {u.lastName as string}</p>
-                          <p className="text-white/40 text-xs">{u.email as string}</p>
-                          {(u.role as string) === 'ORGANIZER' && Boolean((u as Record<string, unknown>).organizer) && (
-                            <p className="text-violet-neon/70 text-xs mt-0.5">
-                              {((u as Record<string, unknown>).organizer as Record<string, unknown>).companyName as string}
-                            </p>
-                          )}
-                          <div className="sm:hidden mt-1">
-                            <RoleBadge role={u.role as string} />
-                          </div>
-                        </td>
-                        <td className="px-4 sm:px-5 py-4 hidden sm:table-cell">
-                          <RoleBadge role={u.role as string} />
-                        </td>
-                        <td className="px-4 sm:px-5 py-4 text-white/50 text-xs hidden md:table-cell">
-                          {(u.phone as string) || '—'}
-                        </td>
-                        <td className="px-4 sm:px-5 py-4 text-white/40 text-xs hidden lg:table-cell">
-                          {new Date(u.createdAt as string).toLocaleDateString('fr-FR')}
-                        </td>
-                        <td className="px-4 sm:px-5 py-4 text-center hidden sm:table-cell">
-                          <div className="flex flex-col items-center gap-1">
-                            {u.isActive ? (
-                              <span className="text-xs px-2.5 py-1 rounded-full bg-green-500/20 text-green-400 font-semibold">Actif</span>
-                            ) : (
-                              <span className="text-xs px-2.5 py-1 rounded-full bg-rose-neon/20 text-rose-neon font-semibold">Bloqué</span>
-                            )}
-                            {(u.role as string) === 'ORGANIZER' && Boolean((u as Record<string, unknown>).organizer) && (
-                              ((u as Record<string, unknown>).organizer as Record<string, unknown>).isApproved ? (
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-neon/10 text-cyan-neon font-semibold">Approuvé</span>
-                              ) : (
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-400/10 text-yellow-400 font-semibold">Non approuvé</span>
-                              )
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 sm:px-5 py-4">
-                          <div className="flex flex-col gap-1.5 items-start">
-                            <div className="sm:hidden mb-1">
-                              {u.isActive ? (
-                                <span className="text-xs px-2.5 py-1 rounded-full bg-green-500/20 text-green-400 font-semibold">Actif</span>
-                              ) : (
-                                <span className="text-xs px-2.5 py-1 rounded-full bg-rose-neon/20 text-rose-neon font-semibold">Bloqué</span>
-                              )}
-                            </div>
+                            .map((u: Record<string, unknown>) => u.id as string);
+                          const allSelected = allIds.every((id: string) => selectedUserIds.has(id));
+                          setSelectedUserIds(allSelected ? new Set() : new Set(allIds));
+                        }}
+                        className="text-white/30 hover:text-violet-neon transition-colors"
+                      >
+                        {(usersData?.users ?? [])
+                          .filter((u: Record<string, unknown>) => (u.role as string) !== 'ADMIN')
+                          .every((u: Record<string, unknown>) => selectedUserIds.has(u.id as string)) && selectedUserIds.size > 0
+                          ? <CheckSquare className="w-3.5 h-3.5 text-violet-neon" />
+                          : <Square className="w-3.5 h-3.5" />
+                        }
+                      </button>
+                    </th>
+                    <th className="text-left px-4 py-2.5">Utilisateur</th>
+                    <th className="text-center px-4 py-2.5 w-14">Statut</th>
+                    <th className="px-3 py-2.5 w-8" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {(usersData?.users ?? []).map((u: Record<string, unknown>) => {
+                    const uid = u.id as string;
+                    const isExpanded = expandedUserId === uid;
+                    const org = (u.role as string) === 'ORGANIZER' ? (u as Record<string, unknown>).organizer as Record<string, unknown> | null : null;
+                    return (
+                      <React.Fragment key={uid}>
+                        <tr className={`border-b border-white/5 transition-colors ${isExpanded ? 'bg-white/[0.03]' : 'hover:bg-white/[0.02]'}`}>
+                          <td className="px-4 py-3 w-9">
                             {(u.role as string) !== 'ADMIN' && (
-                              <>
+                              <button
+                                onClick={() => {
+                                  setSelectedUserIds((prev) => {
+                                    const next = new Set(prev);
+                                    next.has(uid) ? next.delete(uid) : next.add(uid);
+                                    return next;
+                                  });
+                                }}
+                                className="text-white/30 hover:text-violet-neon transition-colors"
+                              >
+                                {selectedUserIds.has(uid)
+                                  ? <CheckSquare className="w-3.5 h-3.5 text-violet-neon" />
+                                  : <Square className="w-3.5 h-3.5" />
+                                }
+                              </button>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-white text-sm font-medium">{u.firstName as string} {u.lastName as string}</span>
+                              <RoleBadge role={u.role as string} />
+                            </div>
+                            <p className="text-white/35 text-xs mt-0.5">{(u.email as string) || (u.phone as string)}</p>
+                            {org && <p className="text-violet-neon/60 text-[11px] mt-0.5">{org.companyName as string}</p>}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            {u.isActive
+                              ? <span className="inline-block w-2 h-2 rounded-full bg-green-400" />
+                              : <span className="inline-block w-2 h-2 rounded-full bg-rose-500" />
+                            }
+                          </td>
+                          <td className="px-3 py-3">
+                            {(u.role as string) !== 'ADMIN' && (
+                              <button
+                                onClick={() => setExpandedUserId(isExpanded ? null : uid)}
+                                className="text-white/25 hover:text-white transition-colors"
+                              >
+                                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                        {isExpanded && (
+                          <tr className="border-b border-white/5 bg-white/[0.015]">
+                            <td colSpan={4} className="px-5 py-3">
+                              <div className="flex flex-wrap items-center gap-2">
                                 <Button
                                   variant={u.isActive ? 'danger' : 'secondary'}
                                   size="sm"
-                                  onClick={() => toggleUser.mutate({ id: u.id as string, isActive: !u.isActive })}
+                                  onClick={() => toggleUser.mutate({ id: uid, isActive: !u.isActive })}
                                   isLoading={toggleUser.isLoading}
                                 >
                                   {u.isActive ? 'Bloquer' : 'Activer'}
                                 </Button>
-                                {(u.firstName as string) !== 'Compte' && (
-                                  <button
-                                    onClick={() => {
-                                      if (window.confirm(`Anonymiser ${u.firstName} ${u.lastName} ? Cette action est irréversible.`)) {
-                                        anonymizeUserMutation.mutate(u.id as string);
-                                      }
-                                    }}
-                                    className="text-xs text-white/25 hover:text-rose-neon transition-colors whitespace-nowrap"
-                                  >
-                                    Anonymiser (RGPD)
-                                  </button>
-                                )}
-                              </>
-                            )}
-                            {(u.role as string) === 'ORGANIZER' && Boolean((u as Record<string, unknown>).organizer) && (() => {
-                              const org = (u as Record<string, unknown>).organizer as Record<string, unknown>;
-                              return (
-                                <>
-                                  {org.kycDocumentUrl && (() => {
-                                    const url = org.kycDocumentUrl as string;
-                                    return (
+                                {org && (
+                                  <>
+                                    {org.kycDocumentUrl ? (
                                       <a
-                                        href={/\.(jpg|jpeg|png|webp)$/i.test(url) || url.includes('/image/upload/') ? url : `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`}
+                                        href={/\.(jpg|jpeg|png|webp)$/i.test(org.kycDocumentUrl as string) || (org.kycDocumentUrl as string).includes('/image/upload/')
+                                          ? (org.kycDocumentUrl as string)
+                                          : `https://docs.google.com/viewer?url=${encodeURIComponent(org.kycDocumentUrl as string)}&embedded=true`}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-violet-neon/10 text-violet-neon text-xs font-semibold border border-violet-neon/20 hover:bg-violet-neon/20 transition-colors whitespace-nowrap"
+                                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-violet-neon/10 text-violet-neon text-xs font-semibold border border-violet-neon/20 hover:bg-violet-neon/20 transition-colors"
                                       >
                                         <FileSearch className="w-3.5 h-3.5" />
                                         KYC
                                       </a>
-                                    );
-                                  })()}
-                                  {!org.kycDocumentUrl && (
-                                    <span className="text-xs text-white/25 italic">Pas de KYC</span>
-                                  )}
-                                  <Button
-                                    variant={org.isApproved ? 'danger' : 'primary'}
-                                    size="sm"
-                                    onClick={() => approveOrganizer.mutate({
-                                      organizerId: org.id as string,
-                                      isApproved: !org.isApproved,
-                                    })}
-                                    isLoading={approveOrganizer.isLoading}
+                                    ) : (
+                                      <span className="text-xs text-white/25 italic">Pas de KYC</span>
+                                    )}
+                                    <Button
+                                      variant={org.isApproved ? 'danger' : 'primary'}
+                                      size="sm"
+                                      onClick={() => approveOrganizer.mutate({ organizerId: org.id as string, isApproved: !org.isApproved })}
+                                      isLoading={approveOrganizer.isLoading}
+                                    >
+                                      {org.isApproved ? 'Désapprouver' : 'Approuver'}
+                                    </Button>
+                                    <Button
+                                      variant={org.isCertified ? 'danger' : 'secondary'}
+                                      size="sm"
+                                      onClick={() => certifyOrganizer.mutate({ organizerId: org.id as string, isCertified: !org.isCertified })}
+                                      isLoading={certifyOrganizer.isLoading}
+                                    >
+                                      {org.isCertified ? 'Retirer certif.' : 'Certifier'}
+                                    </Button>
+                                  </>
+                                )}
+                                {(u.firstName as string) !== 'Compte' && (
+                                  <button
+                                    onClick={() => {
+                                      if (window.confirm(`Anonymiser ${u.firstName} ${u.lastName} ? Cette action est irréversible.`)) {
+                                        anonymizeUserMutation.mutate(uid);
+                                      }
+                                    }}
+                                    className="text-xs text-white/25 hover:text-rose-neon transition-colors ml-1"
                                   >
-                                    {org.isApproved ? 'Désapprouver' : 'Approuver'}
-                                  </Button>
-                                  <Button
-                                    variant={org.isCertified ? 'danger' : 'secondary'}
-                                    size="sm"
-                                    onClick={() => certifyOrganizer.mutate({
-                                      organizerId: org.id as string,
-                                      isCertified: !org.isCertified,
-                                    })}
-                                    isLoading={certifyOrganizer.isLoading}
-                                  >
-                                    {org.isCertified ? 'Retirer certif.' : 'Certifier'}
-                                  </Button>
-                                </>
-                              );
-                            })()}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="px-5 py-3 border-t border-white/5 text-xs text-white/30">
+                                    Anonymiser (RGPD)
+                                  </button>
+                                )}
+                                <span className="ml-auto text-[11px] text-white/25 font-mono">
+                                  {(u.phone as string) || '—'} · {new Date(u.createdAt as string).toLocaleDateString('fr-FR')}
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+              <div className="px-4 py-2.5 border-t border-white/5 text-xs text-white/30">
                 {usersData?.total ?? 0} utilisateur{(usersData?.total ?? 0) > 1 ? 's' : ''}
               </div>
             </div>
