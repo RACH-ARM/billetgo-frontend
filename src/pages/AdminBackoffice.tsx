@@ -6,8 +6,11 @@ import {
   Users, CalendarDays, TrendingUp, Clock, CheckCircle, XCircle,
   ShieldAlert, LayoutDashboard, ListChecks, X, LogOut, Banknote,
   Star, Flame, Ban, Sparkles, ScanLine, Plus, Eye, EyeOff, Pencil, MessageSquare, FileSearch, RotateCcw, ScrollText, Settings,
-  Square, CheckSquare, BadgeCheck, Award, Zap, Shield, MapPin, QrCode, Download,
+  Square, CheckSquare, BadgeCheck, Award, Zap, Shield, MapPin, QrCode, Download, ShoppingCart, UserCheck,
 } from 'lucide-react';
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+} from 'recharts';
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
 import Button from '../components/common/Button';
@@ -661,6 +664,7 @@ export default function AdminBackoffice() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const [tab, setTab] = useState<TabType>('dashboard');
+  const [dashPeriod, setDashPeriod] = useState<'week' | 'month' | 'year' | 'all'>('month');
 
   // Actions en masse — Users
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
@@ -682,10 +686,14 @@ export default function AdminBackoffice() {
   const [editingScanner, setEditingScanner] = useState<ScannerRow | null>(null);
   const qc = useQueryClient();
 
-  const { data: dashboard, isLoading: dashLoading } = useQuery('admin-dashboard', async () => {
-    const { data } = await api.get('/admin/dashboard');
-    return data.data;
-  }, { enabled: tab === 'dashboard' });
+  const { data: dashboard, isLoading: dashLoading } = useQuery(
+    ['admin-dashboard', dashPeriod],
+    async () => {
+      const { data } = await api.get(`/admin/dashboard?period=${dashPeriod}`);
+      return data.data;
+    },
+    { enabled: tab === 'dashboard', staleTime: 60_000 }
+  );
 
   const { data: eventsData, isLoading: eventsLoading } = useQuery('admin-events', async () => {
     const { data } = await api.get('/admin/events?status=PENDING_REVIEW');
@@ -1111,24 +1119,128 @@ export default function AdminBackoffice() {
 
       {/* ── Dashboard tab ── */}
       {tab === 'dashboard' && (
-        dashLoading ? (
-          <div className="space-y-6">
-            <SkeletonKpiGrid count={4} />
-            <SkeletonKpiGrid count={3} />
-          </div>
-        ) :
         <div className="space-y-6">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <KpiCard title="Utilisateurs" value={dashboard?.totalUsers ?? 0} Icon={Users} color="violet" />
-            <KpiCard title="Organisateurs" value={dashboard?.totalOrganizers ?? 0} Icon={ShieldAlert} color="cyan" />
-            <KpiCard title="Événements publiés" value={dashboard?.totalEvents ?? 0} Icon={CalendarDays} color="violet" />
-            <KpiCard title="En attente" value={dashboard?.pendingEvents ?? 0} subtitle="Validation requise" Icon={Clock} color="rose" />
+
+          {/* Sélecteur de période */}
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="font-bebas text-2xl tracking-wider text-white/80 leading-none">Vue d'ensemble</h2>
+            <div className="flex gap-1 p-1 rounded-xl bg-white/5 border border-white/[0.06]">
+              {([
+                { key: 'week',  label: '7 J'  },
+                { key: 'month', label: '30 J' },
+                { key: 'year',  label: '1 AN' },
+                { key: 'all',   label: 'TOUT' },
+              ] as const).map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setDashPeriod(key)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold tracking-wider transition-all ${
+                    dashPeriod === key
+                      ? 'bg-violet-neon/20 text-violet-neon border border-violet-neon/30'
+                      : 'text-white/30 hover:text-white/60'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <KpiCard title="Commandes complètes" value={(dashboard?.totalOrders ?? 0).toLocaleString('fr-FR')} Icon={CheckCircle} color="green" />
-            <KpiCard title="Revenus plateforme" value={formatPrice(dashboard?.platformRevenue ?? 0, 'FCFA', '0 FCFA')} subtitle="Commission BilletGab" Icon={TrendingUp} color="rose" />
-            <KpiCard title="Volume transactions" value={formatPrice(dashboard?.totalTransactionVolume ?? 0, 'FCFA', '0 FCFA')} subtitle="Total brut" Icon={TrendingUp} color="cyan" />
-          </div>
+
+          {dashLoading ? (
+            <div className="space-y-6">
+              <SkeletonKpiGrid count={3} />
+              <div className="glass-card h-56 animate-pulse border border-white/[0.06]" />
+              <SkeletonKpiGrid count={4} />
+            </div>
+          ) : (
+            <>
+              {/* KPIs période */}
+              <div>
+                <p className="text-[10px] text-white/25 uppercase tracking-widest mb-3">
+                  {dashPeriod === 'week' ? '7 derniers jours' : dashPeriod === 'month' ? '30 derniers jours' : dashPeriod === 'year' ? 'Depuis le 1er janvier' : 'Depuis le début'}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <KpiCard title="Volume de transactions" value={formatPrice(dashboard?.periodVolume ?? 0, 'FCFA', '0 FCFA')} subtitle="Total brut encaissé" Icon={TrendingUp} color="cyan" />
+                  <KpiCard title="Revenus plateforme" value={formatPrice(dashboard?.periodRevenue ?? 0, 'FCFA', '0 FCFA')} subtitle="Commission BilletGab" Icon={Banknote} color="violet" />
+                  <KpiCard title="Commandes" value={(dashboard?.periodOrders ?? 0).toLocaleString('fr-FR')} subtitle="Paiements confirmés" Icon={ShoppingCart} color="green" />
+                </div>
+              </div>
+
+              {/* Graphe */}
+              {(dashboard?.chartData?.length ?? 0) > 0 && (() => {
+                const maxVol = Math.max(...(dashboard!.chartData.map((d: { volume: number }) => d.volume)), 1);
+                const formatK = (v: number) => v >= 1_000_000 ? `${(v/1_000_000).toFixed(1)}M` : v >= 1_000 ? `${(v/1_000).toFixed(0)}k` : String(v);
+                const fmtDate = (str: string) => {
+                  const d = new Date(str);
+                  return dashPeriod === 'year'
+                    ? d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
+                    : d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+                };
+                return (
+                  <div className="glass-card border border-white/[0.06] p-5">
+                    <p className="text-xs text-white/40 uppercase tracking-widest mb-4">Évolution sur la période</p>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <AreaChart data={dashboard!.chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="gradVol" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%"  stopColor="#00FFFF" stopOpacity={0.15} />
+                            <stop offset="95%" stopColor="#00FFFF" stopOpacity={0} />
+                          </linearGradient>
+                          <linearGradient id="gradRev" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%"  stopColor="#9B5CF6" stopOpacity={0.2} />
+                            <stop offset="95%" stopColor="#9B5CF6" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                        <XAxis
+                          dataKey="date"
+                          tickFormatter={fmtDate}
+                          tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 10 }}
+                          axisLine={false}
+                          tickLine={false}
+                          interval="preserveStartEnd"
+                        />
+                        <YAxis
+                          tickFormatter={formatK}
+                          tick={{ fill: 'rgba(255,255,255,0.25)', fontSize: 10 }}
+                          axisLine={false}
+                          tickLine={false}
+                          width={44}
+                          domain={[0, maxVol * 1.1]}
+                        />
+                        <Tooltip
+                          contentStyle={{ background: '#1A1A2E', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, fontSize: 12 }}
+                          labelStyle={{ color: 'rgba(255,255,255,0.5)', marginBottom: 4 }}
+                          labelFormatter={fmtDate}
+                          formatter={(value: number, name: string) => [
+                            formatPrice(value, 'FCFA'),
+                            name === 'volume' ? 'Volume' : 'Revenus',
+                          ]}
+                        />
+                        <Legend
+                          formatter={(value) => value === 'volume' ? 'Volume transactions' : 'Revenus plateforme'}
+                          wrapperStyle={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', paddingTop: 8 }}
+                        />
+                        <Area type="monotone" dataKey="volume"  stroke="#00FFFF" strokeWidth={1.5} fill="url(#gradVol)" dot={false} activeDot={{ r: 4, fill: '#00FFFF' }} />
+                        <Area type="monotone" dataKey="revenue" stroke="#9B5CF6" strokeWidth={1.5} fill="url(#gradRev)" dot={false} activeDot={{ r: 4, fill: '#9B5CF6' }} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                );
+              })()}
+
+              {/* KPIs globaux (toujours all-time) */}
+              <div>
+                <p className="text-[10px] text-white/25 uppercase tracking-widest mb-3">Totaux globaux</p>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <KpiCard title="Acheteurs" value={(dashboard?.buyerCount ?? 0).toLocaleString('fr-FR')} subtitle="Comptes enregistrés" Icon={UserCheck} color="green" />
+                  <KpiCard title="Organisateurs" value={(dashboard?.totalOrganizers ?? 0).toLocaleString('fr-FR')} subtitle="Comptes actifs" Icon={ShieldAlert} color="cyan" />
+                  <KpiCard title="Événements actifs" value={(dashboard?.totalEvents ?? 0).toLocaleString('fr-FR')} subtitle="Publiés en ce moment" Icon={CalendarDays} color="violet" />
+                  <KpiCard title="En attente" value={(dashboard?.pendingEvents ?? 0).toLocaleString('fr-FR')} subtitle="Validation requise" Icon={Clock} color="rose" />
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 
