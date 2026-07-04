@@ -117,14 +117,21 @@ function parseMapsCoords(url: string): { lat: number; lng: number } | null {
 
 // ── Event categories ──────────────────────────────────────────
 const EVENT_CATEGORIES = [
-  { value: 'CLUB', label: 'Club / Soirée' },
-  { value: 'FESTIVAL', label: 'Festival' },
-  { value: 'BEACH', label: 'Beach Party' },
-  { value: 'CONCERT', label: 'Concert' },
-  { value: 'SPORT', label: 'Sport' },
-  { value: 'CULTUREL', label: 'Culturel' },
-  { value: 'RANDONNEE', label: 'Randonnée' },
-  { value: 'AUTRE', label: 'Autre' },
+  { value: 'CONCERT',    label: 'Concert'            },
+  { value: 'FESTIVAL',   label: 'Festival'           },
+  { value: 'CLUB',       label: 'Club / Soirée'      },
+  { value: 'BEACH',      label: 'Beach Party'        },
+  { value: 'SPORT',      label: 'Sport'              },
+  { value: 'CULTUREL',   label: 'Culturel'           },
+  { value: 'FORMATION',  label: 'Formation'          },
+  { value: 'CONFERENCE', label: 'Conférence'         },
+  { value: 'ATELIER',    label: 'Atelier / Workshop' },
+  { value: 'CAMP',       label: 'Camp / Bootcamp'    },
+  { value: 'ETUDIANT',   label: 'Étudiant / Gala'   },
+  { value: 'RELIGIEUX',  label: 'Religieux'          },
+  { value: 'ENTREPRISE', label: 'Entreprise / B2B'   },
+  { value: 'RANDONNEE',  label: 'Randonnée'          },
+  { value: 'AUTRE',      label: 'Autre'              },
 ];
 
 // ── Buyers panel ──────────────────────────────────────────────

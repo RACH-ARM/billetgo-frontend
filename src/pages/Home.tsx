@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import {
   LayoutGrid, Headphones, Tent, Waves, Mic2, Trophy, Theater, Footprints,
+  GraduationCap, Users, Palette, TreePine, BookOpen, Heart, Briefcase,
   Search, X, Flame, MapPin, MousePointerClick, Smartphone, Calendar,
 } from 'lucide-react';
 import { useEvents } from '../hooks/useEvents';
@@ -16,14 +17,21 @@ import type { EventCategory } from '../types/event';
 type CategoryIcon = React.ComponentType<{ className?: string }>;
 
 const CATEGORIES: { value: EventCategory | ''; label: string; Icon: CategoryIcon }[] = [
-  { value: '', label: 'Tous', Icon: LayoutGrid },
-  { value: 'CLUB', label: 'Club', Icon: Headphones },
-  { value: 'FESTIVAL', label: 'Festival', Icon: Tent },
-  { value: 'BEACH', label: 'Beach', Icon: Waves },
-  { value: 'CONCERT', label: 'Concert', Icon: Mic2 },
-  { value: 'SPORT', label: 'Sport', Icon: Trophy },
-  { value: 'CULTUREL', label: 'Culturel', Icon: Theater },
-  { value: 'RANDONNEE', label: 'Randonnée', Icon: Footprints },
+  { value: '',           label: 'Tous',        Icon: LayoutGrid    },
+  { value: 'CONCERT',   label: 'Concert',      Icon: Mic2          },
+  { value: 'FESTIVAL',  label: 'Festival',     Icon: Tent          },
+  { value: 'CLUB',      label: 'Club',         Icon: Headphones    },
+  { value: 'BEACH',     label: 'Beach',        Icon: Waves         },
+  { value: 'SPORT',     label: 'Sport',        Icon: Trophy        },
+  { value: 'CULTUREL',  label: 'Culturel',     Icon: Theater       },
+  { value: 'FORMATION', label: 'Formation',    Icon: GraduationCap },
+  { value: 'CONFERENCE',label: 'Conférence',   Icon: Users         },
+  { value: 'ATELIER',   label: 'Atelier',      Icon: Palette       },
+  { value: 'CAMP',      label: 'Camp',         Icon: TreePine      },
+  { value: 'ETUDIANT',  label: 'Étudiant',     Icon: BookOpen      },
+  { value: 'RELIGIEUX', label: 'Religieux',    Icon: Heart         },
+  { value: 'ENTREPRISE',label: 'Entreprise',   Icon: Briefcase     },
+  { value: 'RANDONNEE', label: 'Randonnée',    Icon: Footprints    },
 ];
 
 type DateFilter = '' | 'today' | 'weekend' | 'week' | 'month';
@@ -155,29 +163,30 @@ export default function Home() {
   }, [allData]);
 
   const activeDateLabel = DATE_FILTERS.find((d) => d.value === dateFilter)?.label;
+  const activeCategoryLabel = CATEGORIES.find((c) => c.value === category)?.label;
   const sectionTitle =
     search ? `Résultats pour "${search}"` :
-    category && dateFilter ? `${category} — ${activeDateLabel}` :
-    category ? `Événements — ${category}` :
+    category && dateFilter ? `${activeCategoryLabel} — ${activeDateLabel}` :
+    category ? `${activeCategoryLabel}` :
     dateFilter ? `Événements — ${activeDateLabel}` :
     'Tous les événements';
 
   return (
     <div className="min-h-screen">
       <Helmet>
-        <title>BilletGab — Billetterie en ligne au Gabon</title>
-        <meta name="description" content="Achetez vos billets pour les meilleurs événements au Gabon : concerts, clubs, festivals, sport et plus. Paiement sécurisé par Airtel Money et Moov Money." />
+        <title>BilletGab — Inscriptions & billets en ligne au Gabon</title>
+        <meta name="description" content="Achetez vos billets et inscrivez-vous aux meilleurs événements au Gabon : concerts, formations, conférences, ateliers, camps, sport et plus. Paiement sécurisé par Airtel Money et Moov Money." />
         <link rel="canonical" href="https://billetgab.com" />
         <meta property="og:type" content="website" />
-        <meta property="og:title" content="BilletGab — Billetterie en ligne au Gabon" />
-        <meta property="og:description" content="Achetez vos billets pour les meilleurs événements au Gabon. Paiement sécurisé par Airtel Money et Moov Money." />
+        <meta property="og:title" content="BilletGab — Inscriptions & billets en ligne au Gabon" />
+        <meta property="og:description" content="Achetez vos billets et inscrivez-vous aux meilleurs événements au Gabon. Paiement sécurisé par Airtel Money et Moov Money." />
         <meta property="og:url" content="https://billetgab.com" />
         <meta property="og:image" content="https://billetgab.com/og-default.jpg" />
         <meta property="og:site_name" content="BilletGab" />
         <meta property="og:locale" content="fr_GA" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="BilletGab — Billetterie en ligne au Gabon" />
-        <meta name="twitter:description" content="Achetez vos billets pour les meilleurs événements au Gabon. Paiement sécurisé par Airtel Money et Moov Money." />
+        <meta name="twitter:title" content="BilletGab — Inscriptions & billets en ligne au Gabon" />
+        <meta name="twitter:description" content="Achetez vos billets et inscrivez-vous aux meilleurs événements au Gabon. Paiement sécurisé par Airtel Money et Moov Money." />
         <meta name="twitter:image" content="https://billetgab.com/og-default.jpg" />
       </Helmet>
       {allLoading ? <HeroSkeleton /> : featuredEvent ? <HeroSection event={featuredEvent} /> : null}
