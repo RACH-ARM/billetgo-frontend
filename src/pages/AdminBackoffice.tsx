@@ -1795,6 +1795,7 @@ export default function AdminBackoffice() {
             <SkeletonTable rows={6} />
           ) : (
             <div className="glass-card overflow-hidden">
+              <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-white/5 text-white/30 text-[10px] uppercase tracking-widest">
@@ -1943,6 +1944,7 @@ export default function AdminBackoffice() {
                   })}
                 </tbody>
               </table>
+              </div>
               <div className="px-4 py-2.5 border-t border-white/5 text-xs text-white/30">
                 {usersData?.total ?? 0} utilisateur{(usersData?.total ?? 0) > 1 ? 's' : ''}
               </div>
