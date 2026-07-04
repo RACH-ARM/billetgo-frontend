@@ -25,6 +25,7 @@ interface OrganizerPublicData {
   followerCount: number;
   isFollowedByMe: boolean;
   events: Event[];
+  pastEvents: Event[];
 }
 
 export default function OrganizerPublicPage() {
@@ -192,14 +193,14 @@ export default function OrganizerPublicPage() {
                 {followerCount} abonné{followerCount !== 1 ? 's' : ''}
               </span>
             )}
-            {data.pastEventsCount > 0 && (
-              <span>{data.pastEventsCount} événement{data.pastEventsCount !== 1 ? 's' : ''} passé{data.pastEventsCount !== 1 ? 's' : ''}</span>
+            {(data.pastEvents?.length ?? data.pastEventsCount) > 0 && (
+              <span>{data.pastEvents?.length ?? data.pastEventsCount} événement{(data.pastEvents?.length ?? data.pastEventsCount) !== 1 ? 's' : ''} passé{(data.pastEvents?.length ?? data.pastEventsCount) !== 1 ? 's' : ''}</span>
             )}
           </div>
         </div>
       </motion.div>
 
-      {/* Events grid */}
+      {/* Événements à venir */}
       {data.events.length === 0 ? (
         <motion.div
           initial={{ opacity: 0 }}
@@ -227,6 +228,33 @@ export default function OrganizerPublicPage() {
             ))}
           </div>
         </>
+      )}
+
+      {/* Événements passés */}
+      {data.pastEvents && data.pastEvents.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mt-14"
+        >
+          <h2 className="font-bebas text-2xl tracking-wider text-white/60 mb-5">
+            Événements passés
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {data.pastEvents.map((event, i) => (
+              <motion.div
+                key={event.id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className="opacity-70 hover:opacity-100 transition-opacity"
+              >
+                <EventCard event={event} />
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
       )}
 
       {/* Galerie photos */}
