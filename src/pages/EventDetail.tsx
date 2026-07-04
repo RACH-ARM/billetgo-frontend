@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, X, ArrowRight, Minus, Plus, MapPin, Share2, Copy, Check as CheckIcon, Star, MessageSquare, Bell, BellOff } from 'lucide-react';
+import { ChevronLeft, X, ArrowRight, Minus, Plus, MapPin, Share2, Copy, Check as CheckIcon, Star, MessageSquare, Bell, BellOff, Heart, UserCheck, UserPlus } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { Helmet } from 'react-helmet-async';
 import { useEvent } from '../hooks/useEvents';
 import { eventService } from '../services/eventService';
+import { likeService } from '../services/likeService';
+import { followService } from '../services/followService';
 import { useCartStore } from '../stores/cartStore';
 import { useAuthStore } from '../stores/authStore';
 import { formatEventDate } from '../utils/formatDate';
@@ -15,6 +17,7 @@ import EventCard from '../components/events/EventCard';
 import Badge from '../components/common/Badge';
 import CertifiedBadge from '../components/common/CertifiedBadge';
 import Button from '../components/common/Button';
+import LoginWallModal from '../components/common/LoginWallModal';
 import type { TicketCategory } from '../types/event';
 import api from '../services/api';
 import { availabilityLevel, categoryAvailabilityLevel } from '../utils/availability';
@@ -34,6 +37,15 @@ export default function EventDetail() {
   const [activeGallery, setActiveGallery] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [descExpanded, setDescExpanded] = useState(false);
+  const [loginWallAction, setLoginWallAction] = useState<'like' | 'follow' | null>(null);
+
+  // Like state
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+
+  // Follow state
+  const [following, setFollowing] = useState(false);
+  const [followerCount, setFollowerCount] = useState(0);
 
   // Reviews
   const [reviewRating, setReviewRating] = useState(0);
@@ -59,6 +71,53 @@ export default function EventDetail() {
     () => api.get(`/events/${id}/reviews/mine`).then((r) => r.data.data),
     { enabled: !!id && isAuthenticated && user?.role === 'BUYER', staleTime: 60 * 1000 }
   );
+
+  // Sync like/follow state from event data once loaded (keyed by event.id to avoid overwriting optimistic updates)
+  useEffect(() => {
+    if (!event) return;
+    setLiked(event.isLikedByMe ?? false);
+    setLikeCount(event.likeCount ?? 0);
+    setFollowing(event.organizer?.isFollowedByMe ?? false);
+    setFollowerCount(event.organizer?.followerCount ?? 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [event?.id]);
+
+  const toggleLikeMutation = useMutation(
+    () => likeService.toggleLike(id!),
+    {
+      onSuccess: (data) => {
+        setLiked(data.liked);
+        setLikeCount(data.likeCount);
+        queryClient.invalidateQueries(['event', id]);
+      },
+    }
+  );
+
+  const toggleFollowMutation = useMutation(
+    () => followService.toggleFollow(event!.organizer.id!),
+    {
+      onSuccess: (data) => {
+        setFollowing(data.following);
+        setFollowerCount(data.followerCount);
+        queryClient.invalidateQueries(['my-following']);
+        queryClient.invalidateQueries(['organizer-public', event?.organizer?.id]);
+      },
+    }
+  );
+
+  const handleLike = () => {
+    if (!isAuthenticated) { setLoginWallAction('like'); return; }
+    setLiked((v) => !v);
+    setLikeCount((c) => liked ? c - 1 : c + 1);
+    toggleLikeMutation.mutate();
+  };
+
+  const handleFollow = () => {
+    if (!isAuthenticated) { setLoginWallAction('follow'); return; }
+    setFollowing((v) => !v);
+    setFollowerCount((c) => following ? c - 1 : c + 1);
+    toggleFollowMutation.mutate();
+  };
 
   const submitReview = useMutation(
     (payload: { rating: number; comment: string }) =>
@@ -290,9 +349,19 @@ export default function EventDetail() {
 
         {/* Title overlay */}
         <div className="absolute bottom-8 left-6 right-6 sm:left-10 sm:right-10">
-          <div className="flex flex-wrap gap-2 mb-3">
-            <Badge variant="violet">{event.category}</Badge>
-            {event.isFeatured && <Badge variant="rose">À LA UNE</Badge>}
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="violet">{event.category}</Badge>
+              {event.isFeatured && <Badge variant="rose">À LA UNE</Badge>}
+            </div>
+            {/* Like button */}
+            <button
+              onClick={handleLike}
+              className="flex items-center gap-1.5 bg-black/50 backdrop-blur-sm border border-white/10 hover:border-rose-neon/40 px-3 py-1.5 rounded-full transition-all"
+            >
+              <Heart className={`w-4 h-4 transition-colors ${liked ? 'fill-rose-neon text-rose-neon' : 'text-white/50'}`} />
+              {likeCount > 0 && <span className="text-sm font-mono text-white/70">{likeCount}</span>}
+            </button>
           </div>
           <h1 className="font-bebas text-4xl sm:text-6xl md:text-7xl tracking-wider text-white drop-shadow-2xl leading-none">
             {event.title}
@@ -464,7 +533,7 @@ export default function EventDetail() {
               className="glass-card p-6"
             >
               <h2 className="font-bebas text-xl tracking-wider text-white mb-4">Organisateur</h2>
-              <div className="flex items-center gap-4">
+              <div className="flex items-start gap-4">
                 {event.organizer.logoUrl ? (
                   <img
                     src={event.organizer.logoUrl}
@@ -477,12 +546,32 @@ export default function EventDetail() {
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-white font-semibold">{event.organizer.companyName}</p>
-                    {(event.isCertified || event.organizer.isCertified) && <CertifiedBadge size="md" />}
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-white font-semibold">{event.organizer.companyName}</p>
+                        {(event.isCertified || event.organizer.isCertified) && <CertifiedBadge size="md" />}
+                      </div>
+                      {followerCount > 0 && (
+                        <p className="text-xs text-white/30 mt-0.5">{followerCount} abonné{followerCount !== 1 ? 's' : ''}</p>
+                      )}
+                    </div>
+                    {event.organizer.id && (
+                      <button
+                        onClick={handleFollow}
+                        className={`flex-shrink-0 flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
+                          following
+                            ? 'border-violet-neon/40 text-violet-neon bg-violet-neon/10'
+                            : 'border-white/15 text-white/50 hover:border-violet-neon/40 hover:text-violet-neon'
+                        }`}
+                      >
+                        {following ? <UserCheck className="w-3.5 h-3.5" /> : <UserPlus className="w-3.5 h-3.5" />}
+                        {following ? 'Abonné' : 'Suivre'}
+                      </button>
+                    )}
                   </div>
                   {event.organizer.description && (
-                    <p className="text-white/50 text-sm mt-0.5 line-clamp-2">{event.organizer.description}</p>
+                    <p className="text-white/50 text-sm mt-1.5 line-clamp-2">{event.organizer.description}</p>
                   )}
                   {event.organizer.id && (
                     <Link
@@ -877,6 +966,15 @@ export default function EventDetail() {
           </motion.div>
         )}
       </div>
+
+      {/* Login wall modal */}
+      <AnimatePresence>
+        {loginWallAction && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <LoginWallModal action={loginWallAction} onClose={() => setLoginWallAction(null)} />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Gallery lightbox */}
       <AnimatePresence>

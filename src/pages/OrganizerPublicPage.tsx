@@ -1,12 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useQuery } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
-import { ChevronLeft, CalendarDays, MapPin, Images, X } from 'lucide-react';
+import { ChevronLeft, CalendarDays, MapPin, Users, Images, X, UserCheck, UserPlus } from 'lucide-react';
 import api from '../services/api';
+import { followService } from '../services/followService';
+import { useAuthStore } from '../stores/authStore';
 import EventCard from '../components/events/EventCard';
 import CertifiedBadge from '../components/common/CertifiedBadge';
+import LoginWallModal from '../components/common/LoginWallModal';
 import type { Event } from '../types/event';
 
 const SITE_URL = 'https://billetgab.com';
@@ -19,18 +22,51 @@ interface OrganizerPublicData {
   isApproved: boolean;
   isCertified: boolean;
   pastEventsCount: number;
+  followerCount: number;
+  isFollowedByMe: boolean;
   events: Event[];
 }
 
 export default function OrganizerPublicPage() {
   const { id } = useParams<{ id: string }>();
+  const queryClient = useQueryClient();
+  const { isAuthenticated } = useAuthStore();
   const [activePhoto, setActivePhoto] = useState<string | null>(null);
+  const [showLoginWall, setShowLoginWall] = useState(false);
+  const [following, setFollowing] = useState(false);
+  const [followerCount, setFollowerCount] = useState(0);
 
   const { data, isLoading, isError } = useQuery<OrganizerPublicData>(
     ['organizer-public', id],
     () => api.get(`/organizers/${id}`).then((r) => r.data.data),
     { enabled: !!id, staleTime: 2 * 60 * 1000 }
   );
+
+  useEffect(() => {
+    if (data) {
+      setFollowing(data.isFollowedByMe ?? false);
+      setFollowerCount(data.followerCount ?? 0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.id]);
+
+  const toggleFollowMutation = useMutation(
+    () => followService.toggleFollow(id!),
+    {
+      onSuccess: (result) => {
+        setFollowing(result.following);
+        setFollowerCount(result.followerCount);
+        queryClient.invalidateQueries(['my-following']);
+      },
+    }
+  );
+
+  const handleFollow = () => {
+    if (!isAuthenticated) { setShowLoginWall(true); return; }
+    setFollowing((v) => !v);
+    setFollowerCount((c) => following ? c - 1 : c + 1);
+    toggleFollowMutation.mutate();
+  };
 
   if (isLoading) {
     return (
@@ -118,10 +154,23 @@ export default function OrganizerPublicPage() {
             {data.companyName.charAt(0)}
           </div>
         )}
-        <div>
-          <h1 className="font-bebas text-4xl sm:text-5xl tracking-wider text-gradient leading-none">
-            {data.companyName}
-          </h1>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <h1 className="font-bebas text-4xl sm:text-5xl tracking-wider text-gradient leading-none">
+              {data.companyName}
+            </h1>
+            <button
+              onClick={handleFollow}
+              className={`flex-shrink-0 flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-full border transition-all ${
+                following
+                  ? 'border-violet-neon/40 text-violet-neon bg-violet-neon/10'
+                  : 'border-white/15 text-white/50 hover:border-violet-neon/40 hover:text-violet-neon'
+              }`}
+            >
+              {following ? <UserCheck className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+              {following ? 'Abonné' : 'Suivre'}
+            </button>
+          </div>
           <div className="flex items-start gap-3 mt-2">
             {(data.isCertified || data.events.some((e: any) => e.isCertified)) && <CertifiedBadge size="md" />}
             {data.description && (
@@ -137,6 +186,12 @@ export default function OrganizerPublicPage() {
               <MapPin className="w-3.5 h-3.5" />
               Libreville, Gabon
             </span>
+            {followerCount > 0 && (
+              <span className="flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5" />
+                {followerCount} abonné{followerCount !== 1 ? 's' : ''}
+              </span>
+            )}
             {data.pastEventsCount > 0 && (
               <span>{data.pastEventsCount} événement{data.pastEventsCount !== 1 ? 's' : ''} passé{data.pastEventsCount !== 1 ? 's' : ''}</span>
             )}
@@ -206,6 +261,15 @@ export default function OrganizerPublicPage() {
           </div>
         </motion.div>
       )}
+
+      {/* Login wall modal */}
+      <AnimatePresence>
+        {showLoginWall && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <LoginWallModal action="follow" onClose={() => setShowLoginWall(false)} />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Lightbox */}
       <AnimatePresence>

@@ -23,6 +23,8 @@ export interface Organizer {
   description: string | null;
   isApproved?: boolean;
   isCertified?: boolean;
+  followerCount?: number;
+  isFollowedByMe?: boolean;
 }
 
 export interface Event {
@@ -50,6 +52,8 @@ export interface Event {
   maxTicketsPerOrder: number;
   organizer: Organizer;
   ticketCategories: TicketCategory[];
+  likeCount?: number;
+  isLikedByMe?: boolean;
 }
 
 export interface EventFilters {
