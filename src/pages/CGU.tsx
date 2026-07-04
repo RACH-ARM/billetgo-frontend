@@ -98,7 +98,7 @@ export default function CGU() {
               <li><span className="text-white">Acheteur (BUYER)</span> — peut acheter des billets, accéder à ses commandes et transférer ses billets.</li>
               <li><span className="text-white">Organisateur (ORGANIZER)</span> — peut créer des événements après validation KYC et approbation par l'équipe BilletGab.</li>
               <li><span className="text-white">Scanner</span> — peut valider les billets à l'entrée des événements auxquels il est assigné par un organisateur ou un administrateur.</li>
-              <li><span className="text-white">Administrateur (ADMIN)</span> — gère la plateforme, valide les événements, traite les remboursements et libère les versements (usage interne uniquement).</li>
+              <li><span className="text-white">Administrateur (ADMIN)</span> — gère la plateforme, valide les événements et traite les remboursements (usage interne uniquement).</li>
             </ul>
             <p>
               Chaque utilisateur est responsable de la confidentialité de ses identifiants. Tout accès effectué
