@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Zap, X, ArrowRight, Minus, Plus, MapPin, Share2, Copy, Check as CheckIcon, Star, MessageSquare, Bell, BellOff } from 'lucide-react';
+import { ChevronLeft, X, ArrowRight, Minus, Plus, MapPin, Share2, Copy, Check as CheckIcon, Star, MessageSquare, Bell, BellOff } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { Helmet } from 'react-helmet-async';
 import { useEvent } from '../hooks/useEvents';
@@ -17,7 +17,7 @@ import CertifiedBadge from '../components/common/CertifiedBadge';
 import Button from '../components/common/Button';
 import type { TicketCategory } from '../types/event';
 import api from '../services/api';
-import { categoryAvailabilityLevel } from '../utils/availability';
+import { availabilityLevel, categoryAvailabilityLevel } from '../utils/availability';
 import toast from 'react-hot-toast';
 
 const SITE_URL = 'https://billetgab.com';
@@ -650,10 +650,11 @@ export default function EventDetail() {
               transition={{ delay: 0.25 }}
               className="glass-card p-5"
             >
-              <div className="flex justify-between text-sm mb-3">
-                <span className="text-white/60 font-semibold">{occupancy}% des billets vendus</span>
-                <span className="text-white/40 font-mono">{totalSold}/{totalTickets}</span>
-              </div>
+              {(() => { const av = availabilityLevel(occupancy); return (
+                <div className="flex justify-between text-sm mb-3">
+                  <span className={`font-semibold ${av.color}${av.pulse ? ' animate-pulse' : ''}`}>{av.label}</span>
+                </div>
+              ); })()}
               <div className="h-2 bg-bg-secondary rounded-full overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}
@@ -662,12 +663,6 @@ export default function EventDetail() {
                   className="h-full bg-neon-gradient rounded-full"
                 />
               </div>
-              {totalTickets - totalSold <= 50 && totalTickets - totalSold > 0 && (
-                <p className="mt-2 text-xs text-rose-neon animate-pulse flex items-center gap-1">
-                  <Zap className="w-3 h-3" />
-                  Plus que {totalTickets - totalSold} place(s) disponible(s) !
-                </p>
-              )}
             </motion.div>}
 
           </div>
