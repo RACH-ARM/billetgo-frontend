@@ -17,6 +17,7 @@ import CertifiedBadge from '../components/common/CertifiedBadge';
 import Button from '../components/common/Button';
 import type { TicketCategory } from '../types/event';
 import api from '../services/api';
+import { categoryAvailabilityLevel } from '../utils/availability';
 import toast from 'react-hot-toast';
 
 const SITE_URL = 'https://billetgab.com';
@@ -724,13 +725,14 @@ export default function EventDetail() {
                     )}
 
                     {/* Availability */}
-                    <p className={`text-xs mb-3 font-semibold ${isSoldOut ? 'text-rose-neon' : available <= 10 ? 'text-rose-neon animate-pulse' : 'text-white/30'}`}>
-                      {isSoldOut
-                        ? 'COMPLET'
-                        : available <= 10
-                        ? `⚡ Plus que ${available} place${available > 1 ? 's' : ''} disponible${available > 1 ? 's' : ''} !`
-                        : `${available} place${available > 1 ? 's' : ''} restante${available > 1 ? 's' : ''}`}
-                    </p>
+                    {(() => {
+                      const av = categoryAvailabilityLevel(available, cat.quantityTotal);
+                      return (
+                        <p className={`text-xs mb-3 font-semibold ${av.color}${av.pulse ? ' animate-pulse' : ''}`}>
+                          {av.label}
+                        </p>
+                      );
+                    })()}
 
                     {/* Qty + Add */}
                     {!isSoldOut && (

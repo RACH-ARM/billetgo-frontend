@@ -8,6 +8,7 @@ import { formatPrice } from '../../utils/formatPrice';
 import CountdownTimer from './CountdownTimer';
 import Badge from '../common/Badge';
 import { isEventComingSoon } from '../../utils/eventStatus';
+import { availabilityLevel } from '../../utils/availability';
 
 interface HeroSectionProps {
   event: Event;
@@ -65,7 +66,6 @@ export default function HeroSection({ event }: HeroSectionProps) {
   const totalSold = event.ticketCategories.reduce((a, c) => a + c.quantitySold, 0);
   const totalTickets = event.ticketCategories.reduce((a, c) => a + c.quantityTotal, 0);
   const occupancy = totalTickets > 0 ? Math.round((totalSold / totalTickets) * 100) : 0;
-  const remaining = totalTickets - totalSold;
 
   return (
     <section className="relative h-[85vh] min-h-[560px] max-h-[800px] overflow-hidden">
@@ -153,11 +153,14 @@ export default function HeroSection({ event }: HeroSectionProps) {
               <MapPin className="w-4 h-4 text-violet-neon" />
               {event.venueName} — {event.venueCity}
             </span>
-            {remaining > 0 && remaining <= 50 && (
-              <span className="text-rose-neon font-semibold animate-pulse">
-                Plus que {remaining} billets !
-              </span>
-            )}
+            {occupancy >= 50 && occupancy < 100 && (() => {
+              const av = availabilityLevel(occupancy);
+              return (
+                <span className={`font-semibold ${av.color}${av.pulse ? ' animate-pulse' : ''}`}>
+                  {av.label}
+                </span>
+              );
+            })()}
           </motion.div>
 
           {/* Countdown + Price + CTA */}
@@ -229,9 +232,9 @@ export default function HeroSection({ event }: HeroSectionProps) {
                     }}
                   />
                 </div>
-                <span className={`text-xs ${occupancy >= 85 ? 'text-rose-neon font-semibold animate-pulse' : 'text-white/40'}`}>
-                  {occupancy}% vendus
-                </span>
+                {(() => { const av = availabilityLevel(occupancy); return (
+                  <span className={`text-xs font-semibold ${av.color}${av.pulse ? ' animate-pulse' : ''}`}>{av.label}</span>
+                ); })()}
               </div>
             )}
           </motion.div>

@@ -6,6 +6,7 @@ import { useQueryClient } from 'react-query';
 import type { Event } from '../../types/event';
 import { formatEventDate } from '../../utils/formatDate';
 import { formatPrice } from '../../utils/formatPrice';
+import { availabilityLevel } from '../../utils/availability';
 import { eventService } from '../../services/eventService';
 import Badge from '../common/Badge';
 import CertifiedBadge from '../common/CertifiedBadge';
@@ -170,27 +171,28 @@ export default function EventCard({ event }: { event: Event }) {
           {/* Lieu + barre de vente — masqués sur mobile */}
           <div className="hidden sm:block">
             <p className="text-xs text-white/40 mt-0.5 truncate">{event.venueName} — {event.venueCity}</p>
-            <div className="mt-3">
-              <div className="flex justify-between text-xs mb-1">
-                <span className={occupancy >= 85 ? 'text-rose-neon font-semibold' : 'text-white/40'}>
-                  {occupancy}% vendus
-                </span>
-                <span className="text-white/30">{totalSold}/{totalTickets}</span>
+            {!isTotallySoldOut && (
+              <div className="mt-3">
+                <div className="flex justify-between text-xs mb-1">
+                  {(() => { const av = availabilityLevel(occupancy); return (
+                    <span className={`font-semibold ${av.color}${av.pulse ? ' animate-pulse' : ''}`}>{av.label}</span>
+                  ); })()}
+                </div>
+                <div className="h-1.5 bg-bg-secondary rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{
+                      width: `${occupancy}%`,
+                      background: occupancy >= 90
+                        ? 'linear-gradient(90deg, #E040FB, #ff4466)'
+                        : occupancy >= 70
+                        ? 'linear-gradient(90deg, #f59e0b, #E040FB)'
+                        : 'linear-gradient(135deg, #7B2FBE, #E040FB)',
+                    }}
+                  />
+                </div>
               </div>
-              <div className="h-1.5 bg-bg-secondary rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${occupancy}%`,
-                    background: occupancy >= 90
-                      ? 'linear-gradient(90deg, #E040FB, #ff4466)'
-                      : occupancy >= 70
-                      ? 'linear-gradient(90deg, #f59e0b, #E040FB)'
-                      : 'linear-gradient(135deg, #7B2FBE, #E040FB)',
-                  }}
-                />
-              </div>
-            </div>
+            )}
             {event.organizer && (
               <div className="mt-3 flex items-center gap-1.5 min-w-0">
                 <span className="text-xs text-white/40 truncate">{event.organizer.companyName}</span>
