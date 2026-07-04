@@ -271,9 +271,9 @@ export default function EventCard({ event }: { event: Event }) {
           </div>
         </Link>
 
-        {/* Organizer row — outside Link, desktop only */}
+        {/* Organizer row — outside Link */}
         {event.organizer && (
-          <div className="hidden sm:flex items-center justify-between gap-2 px-3 sm:px-4 pb-3 -mt-1 min-w-0">
+          <div className="flex items-center justify-between gap-2 px-3 sm:px-4 pb-3 mt-2 sm:mt-0 min-w-0">
             {event.organizer.id ? (
               <Link
                 to={`/organisateurs/${event.organizer.id}`}
