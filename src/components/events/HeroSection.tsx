@@ -153,14 +153,6 @@ export default function HeroSection({ event }: HeroSectionProps) {
               <MapPin className="w-4 h-4 text-violet-neon" />
               {event.venueName} — {event.venueCity}
             </span>
-            {occupancy >= 50 && occupancy < 100 && (() => {
-              const av = availabilityLevel(occupancy);
-              return (
-                <span className={`font-semibold ${av.color}${av.pulse ? ' animate-pulse' : ''}`}>
-                  {av.label}
-                </span>
-              );
-            })()}
           </motion.div>
 
           {/* Countdown + Price + CTA */}
