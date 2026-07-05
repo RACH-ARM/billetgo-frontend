@@ -5,7 +5,7 @@ import { Html5Qrcode } from 'html5-qrcode';
 import {
   CheckCircle, XCircle, AlertTriangle, ScanLine, CameraOff,
   LogOut, Users, Clock, WifiOff, Wifi, Download, RefreshCw,
-  ChevronDown, ChevronUp, Calendar,
+  ChevronDown, ChevronUp, Calendar, BookOpen, X as XIcon,
 } from 'lucide-react';
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
@@ -165,6 +165,270 @@ function verifyQROffline(qrPayload: string, cache: OfflineCache): ScanResult {
   };
 }
 
+// ─── Guide contenu (markdown pour téléchargement) ─────────────────────────────
+
+const GUIDE_MD = `# Guide complet du Scanner BilletGab
+
+## 1. C'est quoi le scanner ?
+Le scanner BilletGab permet de vérifier les billets à l'entrée d'un événement en scannant les QR codes des participants. Il fonctionne avec ou sans connexion internet.
+Il est accessible uniquement aux comptes ayant le rôle SCANNER (attribué par l'administrateur BilletGab).
+
+## 2. Accéder au scanner
+Prérequis :
+- Un compte BilletGab avec le rôle SCANNER
+- Un smartphone ou tablette avec caméra
+- Un navigateur récent (Chrome recommandé)
+- Connexion HTTPS obligatoire pour la caméra
+
+Étapes :
+1. Ouvrez votre navigateur et allez sur le site BilletGab
+2. Connectez-vous avec votre compte scanner
+3. Vous êtes automatiquement redirigé vers l'interface scanner
+
+## 3. Présentation de l'interface
+- SCANNER : titre de la page, avec votre prénom en dessous
+- Indicateur réseau : badge vert "En ligne" ou rouge "Hors-ligne"
+- Total scans : nombre de QR codes scannés depuis l'ouverture
+- Entrées validées : nombre de billets acceptés avec succès
+- Panel "Mode hors-ligne" : gestion du cache pour scanner sans internet
+- Zone caméra + bouton SCANNER UN QR CODE
+
+## 4. Scanner un billet (mode en ligne)
+1. Appuyez sur SCANNER UN QR CODE → autorisez la caméra
+2. Pointez la caméra vers le QR code du participant
+3. La détection est automatique — lisez le résultat
+4. Appuyez sur SCANNER LE SUIVANT pour continuer
+
+## 5. Comprendre les résultats
+VERT — Billet valide : laissez entrer le participant.
+ORANGE — Dernier billet d'un groupe : entrée valide, c'est le dernier billet de la commande.
+ROUGE — Billet refusé : ne laissez pas entrer.
+  - "Billet déjà utilisé" : ce QR a déjà été scanné
+  - "QR invalide" : le QR n'appartient pas à cet événement
+  - "Billet épuisé — X/Y utilisés" : tous les billets du groupe sont déjà passés
+
+## 6. Billets de groupe
+Quand un acheteur a pris plusieurs billets, un seul QR représente toute la commande.
+- 1er scan → 1/8 utilisés (vert)
+- 2e scan du même QR → 2/8 utilisés (vert)
+- 8e scan → 8/8 utilisés (orange — groupe complet)
+- Scan suivant → Billet épuisé (rouge)
+En pratique : scannez le même QR autant de fois qu'il y a de personnes.
+
+## 7. Mode hors-ligne — Préparation AVANT l'événement
+IMPORTANT : cette étape doit être faite avant l'événement, quand vous avez du réseau.
+
+Comment télécharger le cache :
+1. Assurez-vous d'être connecté à internet
+2. Appuyez sur "Mode hors-ligne" pour ouvrir le panneau
+3. Appuyez sur "Télécharger" à côté de votre événement
+4. Attendez le message : "Cache téléchargé — X billets prêts hors-ligne"
+
+Conseil : téléchargez ou mettez à jour le cache dans les 30 minutes avant l'ouverture.
+
+## 8. Mode hors-ligne — Scanner sans internet
+Quand la connexion est coupée :
+- Le badge passe en rouge "Hors-ligne"
+- Une bannière jaune affiche le nombre de billets en cache
+- Le scanner continue de fonctionner exactement comme en ligne
+- Chaque scan est sauvegardé pour être envoyé au serveur dès que le réseau revient
+
+Message "Hors-ligne — aucun cache pour ce billet" : le QR n'est pas dans votre cache.
+→ Notez le nom du participant et traitez le cas après l'événement.
+
+## 9. Synchronisation automatique
+Dès que le réseau revient :
+- La sync démarre automatiquement
+- Tous les scans hors-ligne sont envoyés au serveur
+- Si deux scanners ont validé le même billet hors-ligne, le doublon est corrigé automatiquement
+
+## 10. Plusieurs scanners simultanés
+En ligne : le serveur gère les conflits en temps réel.
+Hors-ligne : chaque scanner a sa propre copie du cache. Les doublons sont corrigés à la synchronisation.
+
+## 11. Problèmes fréquents
+La caméra ne démarre pas → Autorisez la caméra dans les paramètres du navigateur.
+"QR invalide" → Le billet n'appartient pas à cet événement.
+"Aucun cache pour ce billet" → Cache non téléchargé avant l'événement.
+Le résultat ne s'affiche pas → Rallumez la caméra.
+Le compteur est revenu à zéro → La page a été rechargée ou vous vous êtes déconnecté.
+
+---
+Guide BilletGab — Scanner v1.0
+`;
+
+// ─── Guide modal ──────────────────────────────────────────────────────────────
+
+function GuideModal({ onClose }: { onClose: () => void }) {
+  const download = () => {
+    const blob = new Blob([GUIDE_MD], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'guide-scanner-billetgab.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  };
+
+  const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+    <div className="space-y-2">
+      <h2 className="font-bebas text-xl tracking-wider text-violet-neon border-b border-violet-neon/20 pb-1">{title}</h2>
+      <div className="text-white/70 text-sm leading-relaxed space-y-1.5">{children}</div>
+    </div>
+  );
+
+  const Badge = ({ color, label }: { color: string; label: string }) => (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold mr-1 ${color}`}>{label}</span>
+  );
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-bg overflow-y-auto">
+      {/* Header fixe */}
+      <div className="sticky top-0 z-10 bg-bg/95 backdrop-blur border-b border-white/10 flex items-center justify-between px-4 py-3">
+        <div className="flex items-center gap-2">
+          <BookOpen className="w-5 h-5 text-violet-neon" />
+          <h1 className="font-bebas text-2xl tracking-wider text-gradient">GUIDE DU SCANNER</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={download}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-neon/15 border border-violet-neon/30 text-violet-neon text-xs font-semibold hover:bg-violet-neon/25 transition-colors"
+          >
+            <Download className="w-3.5 h-3.5" />
+            Télécharger
+          </button>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl border border-white/10 text-white/40 hover:text-white hover:border-white/30 transition-colors"
+          >
+            <XIcon className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Contenu */}
+      <div className="max-w-2xl mx-auto px-4 py-6 space-y-7">
+
+        <Section title="1. C'est quoi le scanner ?">
+          <p>Le scanner BilletGab permet de vérifier les billets à l'entrée d'un événement en scannant les QR codes des participants. Il fonctionne <strong className="text-white">avec ou sans connexion internet</strong>.</p>
+          <p>Il est accessible uniquement aux comptes ayant le rôle <strong className="text-white">SCANNER</strong>, attribué par l'administrateur BilletGab.</p>
+        </Section>
+
+        <Section title="2. Accéder au scanner">
+          <p className="text-white/50 text-xs uppercase tracking-widest font-semibold">Prérequis</p>
+          <ul className="list-disc list-inside space-y-0.5 text-white/60">
+            <li>Un compte BilletGab avec le rôle SCANNER</li>
+            <li>Un smartphone ou tablette avec caméra</li>
+            <li>Navigateur récent — Chrome recommandé</li>
+            <li>Connexion HTTPS obligatoire pour la caméra</li>
+          </ul>
+          <p className="text-white/50 text-xs uppercase tracking-widest font-semibold mt-3">Étapes</p>
+          <ol className="list-decimal list-inside space-y-0.5 text-white/60">
+            <li>Ouvrez le site BilletGab dans votre navigateur</li>
+            <li>Connectez-vous avec votre compte scanner</li>
+            <li>Vous êtes automatiquement redirigé vers l'interface scanner</li>
+          </ol>
+        </Section>
+
+        <Section title="3. Scanner un billet">
+          <ol className="list-decimal list-inside space-y-1 text-white/60">
+            <li>Appuyez sur <strong className="text-white">SCANNER UN QR CODE</strong> → autorisez la caméra</li>
+            <li>Pointez la caméra vers le QR code du participant</li>
+            <li>La détection est automatique — lisez le résultat à l'écran</li>
+            <li>Appuyez sur <strong className="text-white">SCANNER LE SUIVANT</strong> pour continuer</li>
+          </ol>
+        </Section>
+
+        <Section title="4. Comprendre les résultats">
+          <div className="space-y-3">
+            <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/25">
+              <p><Badge color="bg-green-500/20 text-green-400" label="VERT" /> <strong className="text-white">Billet valide</strong> — Laissez entrer le participant.</p>
+            </div>
+            <div className="p-3 rounded-xl bg-yellow-400/10 border border-yellow-400/25">
+              <p><Badge color="bg-yellow-400/20 text-yellow-400" label="ORANGE" /> <strong className="text-white">Dernier billet d'un groupe</strong> — Entrée valide, c'est le dernier billet de la commande. Le groupe est maintenant complet.</p>
+            </div>
+            <div className="p-3 rounded-xl bg-rose-neon/10 border border-rose-neon/25">
+              <p className="mb-1.5"><Badge color="bg-rose-neon/20 text-rose-neon" label="ROUGE" /> <strong className="text-white">Billet refusé</strong> — Ne laissez pas entrer.</p>
+              <div className="space-y-1 text-white/50 text-xs pl-2 border-l border-white/10">
+                <p><strong className="text-white/70">Billet déjà utilisé</strong> — Ce QR a déjà été scanné</p>
+                <p><strong className="text-white/70">QR invalide</strong> — Le QR n'appartient pas à cet événement</p>
+                <p><strong className="text-white/70">Billet épuisé X/Y</strong> — Tous les billets du groupe ont déjà été utilisés</p>
+              </div>
+            </div>
+          </div>
+        </Section>
+
+        <Section title="5. Billets de groupe (plusieurs billets, 1 QR)">
+          <p>Quand un acheteur a acheté plusieurs billets en une seule commande, <strong className="text-white">un seul QR code représente toute la commande</strong>.</p>
+          <div className="bg-white/[0.04] rounded-xl p-3 space-y-1 text-xs font-mono mt-2">
+            <p><span className="text-green-400">1er scan</span> → 1/8 utilisés</p>
+            <p><span className="text-green-400">2e scan (même QR)</span> → 2/8 utilisés</p>
+            <p className="text-white/40">...</p>
+            <p><span className="text-yellow-400">8e scan</span> → 8/8 utilisés — groupe complet</p>
+            <p><span className="text-rose-neon">Scan suivant</span> → Billet épuisé ✗</p>
+          </div>
+          <p className="text-white/50 text-xs mt-1">En pratique : scannez le même QR autant de fois qu'il y a de personnes dans le groupe.</p>
+        </Section>
+
+        <Section title="6. Mode hors-ligne — Préparation AVANT l'événement">
+          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+            <p className="text-amber-200/80 text-xs"><strong className="text-amber-300">Important :</strong> cette étape doit être faite avant l'événement, quand vous avez du réseau. Sans ça, vous ne pouvez pas scanner si internet coupe.</p>
+          </div>
+          <p className="text-white/50 text-xs uppercase tracking-widest font-semibold mt-2">Comment télécharger le cache</p>
+          <ol className="list-decimal list-inside space-y-0.5 text-white/60">
+            <li>Assurez-vous d'être connecté à internet</li>
+            <li>Appuyez sur <strong className="text-white">Mode hors-ligne</strong> pour ouvrir le panneau</li>
+            <li>Appuyez sur <strong className="text-white">Télécharger</strong> à côté de votre événement</li>
+            <li>Attendez le message de confirmation</li>
+          </ol>
+          <p className="text-white/40 text-xs mt-1">💡 Conseil : téléchargez le cache dans les 30 minutes avant l'ouverture des portes.</p>
+        </Section>
+
+        <Section title="7. Mode hors-ligne — Scanner sans internet">
+          <p>Quand la connexion est coupée, le badge en haut passe en rouge "Hors-ligne" et le scanner continue de fonctionner normalement.</p>
+          <ul className="list-disc list-inside space-y-0.5 text-white/60">
+            <li>Vérification sur la liste locale (cache) au lieu du serveur</li>
+            <li>Chaque scan est sauvegardé pour être envoyé dès que le réseau revient</li>
+            <li>Les couleurs vert/orange/rouge fonctionnent pareil</li>
+          </ul>
+          <div className="p-3 rounded-xl bg-rose-neon/10 border border-rose-neon/20 mt-2">
+            <p className="text-xs"><strong className="text-white">"Hors-ligne — aucun cache pour ce billet"</strong> <span className="text-white/50">: le QR n'est pas dans votre cache. Notez le nom du participant et traitez le cas après l'événement.</span></p>
+          </div>
+        </Section>
+
+        <Section title="8. Synchronisation automatique">
+          <p>Dès que le réseau revient, la synchronisation démarre <strong className="text-white">automatiquement</strong> :</p>
+          <ul className="list-disc list-inside space-y-0.5 text-white/60">
+            <li>Tous les scans hors-ligne sont envoyés au serveur</li>
+            <li>Si deux scanners ont validé le même billet hors-ligne, le doublon est détecté et corrigé</li>
+          </ul>
+        </Section>
+
+        <Section title="9. Problèmes fréquents">
+          <div className="space-y-2">
+            {[
+              { q: 'La caméra ne démarre pas', a: 'Autorisez la caméra dans les paramètres du navigateur. Sur Chrome : cliquez sur l\'icône cadenas dans la barre d\'adresse → Caméra → Autoriser.' },
+              { q: '"QR invalide"', a: 'Le billet n\'appartient pas à cet événement, ou le QR est illisible.' },
+              { q: '"Aucun cache pour ce billet" hors-ligne', a: 'Le cache n\'a pas été téléchargé avant l\'événement. Notez le nom du participant.' },
+              { q: 'Le résultat ne s\'affiche pas', a: 'Attendez quelques secondes. Sinon, arrêtez et redémarrez la caméra.' },
+              { q: 'Le compteur est revenu à zéro', a: 'La page a été rechargée ou vous vous êtes déconnecté. Les stats repartent à zéro à chaque session.' },
+            ].map(({ q, a }) => (
+              <div key={q} className="bg-white/[0.04] rounded-xl p-3">
+                <p className="text-white text-xs font-semibold mb-0.5">{q}</p>
+                <p className="text-white/50 text-xs">{a}</p>
+              </div>
+            ))}
+          </div>
+        </Section>
+
+        <p className="text-white/20 text-xs text-center pt-4 border-t border-white/5">Guide BilletGab — Scanner v1.0</p>
+      </div>
+    </div>
+  );
+}
+
 // ─── Color styles ─────────────────────────────────────────────────────────────
 
 const COLOR_STYLES: Record<ScanColor, { border: string; text: string }> = {
@@ -210,6 +474,7 @@ export default function ScannerApp() {
   const [preloadingEventId, setPreloadingEventId] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [showOfflinePanel, setShowOfflinePanel] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
 
   // ── Init ────────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -482,6 +747,13 @@ export default function ScannerApp() {
             {isOnline ? 'En ligne' : 'Hors-ligne'}
           </div>
           <button
+            onClick={() => setShowGuide(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-white/10 text-white/40 hover:text-violet-neon hover:border-violet-neon/30 transition-colors"
+            title="Guide d'utilisation"
+          >
+            <BookOpen className="w-4 h-4" />
+          </button>
+          <button
             onClick={handleLogout}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-white/10 text-white/40 hover:text-rose-neon hover:border-rose-neon/30 transition-colors"
           >
@@ -697,6 +969,9 @@ export default function ScannerApp() {
         <ScanLine size={24} />
         {scanning && !isVerifying ? 'ARRÊTER LA CAMÉRA' : 'SCANNER UN QR CODE'}
       </button>
+
+      {/* ── Guide modal ── */}
+      {showGuide && <GuideModal onClose={() => setShowGuide(false)} />}
 
       {/* ── Overlay : vérification en cours ── */}
       <AnimatePresence>
