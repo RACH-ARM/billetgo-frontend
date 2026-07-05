@@ -387,6 +387,18 @@ export default function ScannerApp() {
         playScanSound(res.valid ? 'green' : (res.color ?? 'red'));
         setScanCount(n => n + 1);
         if (res.valid) setValidCount(n => n + 1);
+
+        // Sync le cache local si présent : un scan valide en ligne doit aussi
+        // marquer le billet comme USED localement pour que le fallback offline
+        // reflète l'état réel (évite le retour à 1/8 après 2/8 en ligne).
+        if (res.valid) {
+          const cache = findCacheForQR(qrPayload, offlineCachesRef.current);
+          if (cache) {
+            verifyQROffline(qrPayload, cache); // mute en place
+            saveCache(cache);
+            setOfflineCaches(prev => ({ ...prev, [cache.eventId]: { ...cache } }));
+          }
+        }
         return;
       } catch {
         // Réseau coupé malgré isOnline → basculer en offline
