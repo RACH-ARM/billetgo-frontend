@@ -56,7 +56,7 @@ interface NavState {
 }
 
 // ─── Config ───────────────────────────────────────────────────────────────────
-const MAX_WAIT_MS = 4 * 60 * 1000; // 4 minutes — USSD peut prendre 60-90s à apparaître + confirmation
+const MAX_WAIT_MS = 8 * 60 * 1000; // 8 minutes — USSD coupe les données mobiles le temps de la saisie du PIN
 const POLL_INTERVAL_MS = 5000;     // 5s — réduit la charge serveur sans dégradation UX
 const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL || 'billetgab01@gmail.com';
 
@@ -238,6 +238,11 @@ function OrderConfirmationInner({ initialState }: { initialState: NavState }) {
   const [confirmationState, setConfirmationState] = useState<ConfirmationState>('WAITING');
   const [failureType, setFailureType] = useState<FailureType>('other');
   const [currentPaymentId, setCurrentPaymentId] = useState<string | null>(state?.paymentId ?? null);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+  // Refs pour l'accès async (online handler)
+  const confirmationStateRef = useRef<ConfirmationState>('WAITING');
+  const currentPaymentIdRef = useRef<string | null>(state?.paymentId ?? null);
   const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [qrSaving, setQrSaving] = useState(false);
@@ -263,6 +268,37 @@ function OrderConfirmationInner({ initialState }: { initialState: NavState }) {
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Sync refs
+  useEffect(() => { confirmationStateRef.current = confirmationState; }, [confirmationState]);
+  useEffect(() => { currentPaymentIdRef.current = currentPaymentId; }, [currentPaymentId]);
+
+  // Détection online/offline — le USSD coupe les données mobiles pendant la saisie du PIN.
+  // Dès que la connexion revient, on poll immédiatement sans attendre le prochain tick.
+  useEffect(() => {
+    const handleOffline = () => setIsOffline(true);
+    const handleOnline = async () => {
+      setIsOffline(false);
+      const pid = currentPaymentIdRef.current;
+      if (!pid || confirmationStateRef.current !== 'WAITING') return;
+      try {
+        const result = await paymentService.getPaymentStatus(pid);
+        if (result.status === 'SUCCESS') {
+          clearInterval(pollRef.current!);
+          setQrImageUrl(result.qrImageUrl ?? null);
+          setConfirmationState('SUCCESS');
+          playPaymentSuccess();
+          queryClient.invalidateQueries('my-tickets');
+        }
+      } catch {}
+    };
+    window.addEventListener('offline', handleOffline);
+    window.addEventListener('online', handleOnline);
+    return () => {
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('online', handleOnline);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Polling loop
   useEffect(() => {
@@ -420,10 +456,17 @@ function OrderConfirmationInner({ initialState }: { initialState: NavState }) {
                 </div>
               )}
 
-              <div className="flex items-center justify-center gap-2 text-white/25 text-xs">
-                <Clock className="w-3.5 h-3.5 flex-shrink-0" />
-                <span>Ne fermez pas cette page — la confirmation peut prendre jusqu'à 2 minutes</span>
-              </div>
+              {isOffline ? (
+                <div className="flex items-center justify-center gap-2 text-amber-400/80 text-sm animate-pulse">
+                  <Smartphone className="w-4 h-4 flex-shrink-0" />
+                  <span>Saisissez votre code PIN sur votre téléphone…</span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2 text-white/25 text-xs">
+                  <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>Ne fermez pas cette page — la confirmation peut prendre jusqu'à 4 minutes</span>
+                </div>
+              )}
 
               {orderId && (
                 <p className="text-white/15 font-mono text-xs">Réf : {orderId}</p>
