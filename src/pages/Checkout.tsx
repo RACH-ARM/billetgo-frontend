@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   Check, ChevronLeft, Ticket, Smartphone, CreditCard,
-  ArrowRight, Trash2, CalendarDays, MapPin, X, Info, Clock, Lock, Mail,
+  ArrowRight, Trash2, CalendarDays, MapPin, X, Info, Clock, Lock, Mail, AlertTriangle,
 } from 'lucide-react';
 import { useCartStore } from '../stores/cartStore';
 import { useAuthStore } from '../stores/authStore';
@@ -68,6 +68,7 @@ export default function Checkout() {
   const [paymentPhone, setPaymentPhone] = useState('');
   const [isExpired, setIsExpired] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [initiateNetworkError, setInitiateNetworkError] = useState(false);
   const [paymentStep, setPaymentStep] = useState<'idle' | 'creating' | 'initiating'>('idle');
   const createOrder = useCreateOrder();
   const initiatePayment = useInitiatePayment();
@@ -183,12 +184,12 @@ export default function Checkout() {
   const freeTicketFee = items.reduce((acc, item) => {
     return acc + (item.category.price === 0 ? item.quantity * FREE_TICKET_FEE : 0);
   }, 0);
-  // Frais de service PayIn (2.5%) — couvre les frais Mobile Money à la charge de l'acheteur
-  // Base = prix billets après remise + frais billets gratuits
-  const PAYIN_RATE = 0.025;
+  // L'opérateur Mobile Money prélève ses propres frais sur le montant demandé.
+  // BilletGab n'ajoute pas de serviceFee — on affiche juste une estimation informative.
+  const PAYIN_RATE = provider === 'MOOV_MONEY' ? 0.025 : 0.025; // Airtel = Moov = 2.5%
   const payinBase = Math.max(0, rawTotal + freeTicketFee);
-  const serviceFee = payinBase > 0 ? Math.round(payinBase * PAYIN_RATE) : 0;
-  const totalToPay = payinBase + serviceFee;
+  const estimatedOperatorFee = provider !== null && payinBase > 0 ? Math.round(payinBase * PAYIN_RATE) : 0;
+  const totalToPay = payinBase; // pas de serviceFee ajouté — l'opérateur facture séparément
 
   // Validation stock en temps réel via les données fraîches de l'événement
   const soldOutItems = freshEvent
@@ -213,7 +214,9 @@ export default function Checkout() {
   const handlePayment = async () => {
     unlockAudio(); // débloque AudioContext pendant l'interaction utilisateur
     setPaymentError(null);
+    setInitiateNetworkError(false);
     setPaymentStep('creating');
+    let initiateStarted = false;
     try {
       const order = await createOrder.mutateAsync({
         eventId: event.id,
@@ -227,6 +230,7 @@ export default function Checkout() {
       });
 
       setPaymentStep('initiating');
+      initiateStarted = true;
       const result = await initiatePayment.mutateAsync({
         orderId: order.id,
         method: provider!,
@@ -266,7 +270,12 @@ export default function Checkout() {
       const status = axiosErr.response?.status;
       const isConnectionError = !axiosErr.response || axiosErr.code === 'ERR_NETWORK' || (status != null && status >= 500 && !axiosErr.response.data?.message);
       if (isConnectionError) {
-        setPaymentError('Connexion impossible. Vérifiez votre réseau et réessayez.');
+        if (initiateStarted) {
+          // L'ordre a déjà été envoyé à l'opérateur — le paiement a peut-être abouti.
+          setInitiateNetworkError(true);
+        } else {
+          setPaymentError('Connexion impossible. Vérifiez votre réseau et réessayez.');
+        }
         return;
       }
       const response = axiosErr.response!.data;
@@ -454,19 +463,18 @@ export default function Checkout() {
                           <span className="font-mono">{formatPrice(freeTicketFee)}</span>
                         </div>
                       )}
-                      {serviceFee > 0 && (
-                        <div className="flex justify-between items-center text-sm text-white/40">
-                          <span className="flex items-center gap-1.5">
-                            <Info className="w-3.5 h-3.5" />
-                            Frais de service Mobile Money (2.5%)
-                          </span>
-                          <span className="font-mono">{formatPrice(serviceFee)}</span>
-                        </div>
-                      )}
                       <div className="flex justify-between items-center pt-2 border-t border-white/10">
                         <span className="font-semibold text-white">Total à payer</span>
                         <span className="font-mono text-lg font-bold text-gradient">{formatPrice(totalToPay)}</span>
                       </div>
+                      {estimatedOperatorFee > 0 && (
+                        <div className="flex items-start gap-1.5 text-xs text-white/30 leading-relaxed">
+                          <Info className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                          <span>
+                            Frais {provider === 'MOOV_MONEY' ? 'Moov Money' : 'Airtel Money'} estimés ≈ {formatPrice(estimatedOperatorFee)} prélevés directement par l'opérateur en plus.
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -646,6 +654,27 @@ export default function Checkout() {
                     </div>
                   )}
 
+                  {initiateNetworkError && (
+                    <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/40 space-y-2">
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
+                        <p className="text-yellow-300 text-sm font-semibold">Connexion perdue après l'envoi</p>
+                      </div>
+                      <p className="text-white/60 text-sm leading-relaxed">
+                        Votre demande de paiement a été envoyée à l'opérateur. Si vous avez reçu
+                        un SMS ou une notification de confirmation, votre paiement est passé.
+                        <strong className="text-white"> Vérifiez vos billets avant de réessayer</strong> pour éviter un double débit.
+                      </p>
+                      <Link
+                        to="/mes-billets"
+                        className="inline-flex items-center gap-1.5 text-violet-neon text-sm font-semibold hover:underline"
+                      >
+                        <Ticket className="w-3.5 h-3.5" />
+                        Vérifier mes billets →
+                      </Link>
+                    </div>
+                  )}
+
                   {/* Confirmation email guest */}
                   {!user && guestInfo.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestInfo.email) && (
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-violet-neon/8 border border-violet-neon/25">
@@ -722,16 +751,15 @@ export default function Checkout() {
                     <span className="font-mono">{formatPrice(freeTicketFee)}</span>
                   </div>
                 )}
-                {serviceFee > 0 && (
-                  <div className="flex justify-between text-xs text-white/35">
-                    <span>Frais Mobile Money (2.5%)</span>
-                    <span className="font-mono">{formatPrice(serviceFee)}</span>
-                  </div>
-                )}
                 <div className="flex justify-between items-center pt-1.5 border-t border-white/5">
                   <span className="text-white font-semibold text-sm">Total</span>
                   <span className="font-mono font-bold text-cyan-neon">{formatPrice(totalToPay)}</span>
                 </div>
+                {estimatedOperatorFee > 0 && (
+                  <p className="text-[10px] text-white/25 leading-relaxed">
+                    + frais opérateur ≈ {formatPrice(estimatedOperatorFee)} (prélevés par Mobile Money)
+                  </p>
+                )}
               </div>
             </div>
           </div>

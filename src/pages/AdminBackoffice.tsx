@@ -7,7 +7,7 @@ import {
   ShieldAlert, LayoutDashboard, ListChecks, X, LogOut, Banknote,
   Star, Flame, Ban, Sparkles, ScanLine, Plus, Eye, EyeOff, Pencil, MessageSquare, FileSearch, RotateCcw, ScrollText, Settings,
   Square, CheckSquare, BadgeCheck, MapPin, QrCode, Download, ShoppingCart, UserCheck,
-  ChevronDown, ChevronLeft, ChevronRight, Search, AlertCircle,
+  ChevronDown, ChevronLeft, ChevronRight, Search, AlertCircle, Heart,
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -1240,11 +1240,15 @@ export default function AdminBackoffice() {
               {/* KPIs globaux (toujours all-time) */}
               <div>
                 <p className="text-[10px] text-white/25 uppercase tracking-widest mb-3">Totaux globaux</p>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                   <KpiCard title="Acheteurs" value={(dashboard?.buyerCount ?? 0).toLocaleString('fr-FR')} subtitle="Comptes enregistrés" Icon={UserCheck} color="green" />
                   <KpiCard title="Organisateurs" value={(dashboard?.totalOrganizers ?? 0).toLocaleString('fr-FR')} subtitle="Comptes actifs" Icon={ShieldAlert} color="cyan" />
                   <KpiCard title="Événements actifs" value={(dashboard?.totalEvents ?? 0).toLocaleString('fr-FR')} subtitle="Publiés en ce moment" Icon={CalendarDays} color="violet" />
                   <KpiCard title="En attente" value={(dashboard?.pendingEvents ?? 0).toLocaleString('fr-FR')} subtitle="Validation requise" Icon={Clock} color="rose" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <KpiCard title="Total likes" value={(dashboard?.totalLikes ?? 0).toLocaleString('fr-FR')} subtitle="Likes sur tous les événements" Icon={Heart} color="rose" />
+                  <KpiCard title="Abonnés organisateurs" value={(dashboard?.totalFollows ?? 0).toLocaleString('fr-FR')} subtitle="Follows sur la plateforme" Icon={Users} color="violet" />
                 </div>
               </div>
             </>

@@ -428,6 +428,17 @@ function OrderConfirmationInner({ initialState }: { initialState: NavState }) {
               {orderId && (
                 <p className="text-white/15 font-mono text-xs">Réf : {orderId}</p>
               )}
+
+              {/* Lien discret vers "Mes billets" pendant l'attente */}
+              <p className="text-white/20 text-xs">
+                Vous avez déjà un SMS de confirmation ?{' '}
+                <Link
+                  to={isAuthenticated ? '/mes-billets' : '/retrouver-mes-billets'}
+                  className="text-violet-neon/60 hover:text-violet-neon underline transition-colors"
+                >
+                  Vérifier mes billets
+                </Link>
+              </p>
             </motion.div>
           )}
 
@@ -684,14 +695,17 @@ function OrderConfirmationInner({ initialState }: { initialState: NavState }) {
                 </p>
               </div>
 
-              <div className="glass-card p-4 border border-violet-neon/15 text-sm text-white/50 leading-relaxed space-y-2">
+              <div className="glass-card p-4 border border-violet-neon/15 text-sm text-white/50 leading-relaxed space-y-3">
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+                  <AlertCircle className="w-4 h-4 text-yellow-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-yellow-200/80 text-sm">
+                    <span className="font-semibold text-yellow-300">Vous avez reçu un email BilletGab ou un SMS de votre opérateur ?</span>{' '}
+                    Votre paiement est passé — vos billets sont en route. <strong className="text-yellow-300">Ne rachetez pas.</strong>
+                  </p>
+                </div>
                 <p>
-                  <span className="text-white/80 font-semibold">Vous avez confirmé sur votre téléphone ?</span>{' '}
-                  Vos billets apparaîtront automatiquement dans « Mes billets » dès que le paiement sera enregistré. Vérifiez dans quelques minutes.
-                </p>
-                <p>
-                  <span className="text-white/80 font-semibold">Pas reçu la demande USSD ?</span>{' '}
-                  Votre compte n'a pas été débité. Retournez sur la page de l'événement pour recommencer l'achat.
+                  <span className="text-white/80 font-semibold">Aucun SMS reçu ?</span>{' '}
+                  Votre compte n'a pas été débité. Vous pouvez retourner sur la page de l'événement pour recommencer.
                 </p>
               </div>
 

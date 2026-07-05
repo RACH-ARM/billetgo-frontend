@@ -14,6 +14,7 @@ export interface OrganizerEventStat {
   totalSold: number;
   totalTickets: number;
   totalRevenue: number;
+  likeCount: number;
   occupancyRate: number;
 }
 
@@ -22,6 +23,8 @@ export interface OrganizerStats {
   globalRevenue: number;
   globalSold: number;
   eventsCount: number;
+  totalFollowers: number;
+  totalLikes: number;
 }
 
 export interface BuyerOrder {

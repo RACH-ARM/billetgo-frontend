@@ -4,7 +4,7 @@ import {
   CalendarDays, Ticket, Download, Search, QrCode,
   ChevronRight, ArrowLeft, Phone, Mail, CreditCard,
   Plus, Trash2, AlertTriangle, Check,
-  Pencil, Clock, Ban, X, Banknote, Images, ImagePlus, MapPin,
+  Pencil, Clock, Ban, X, Banknote, Images, ImagePlus, MapPin, Heart,
 } from 'lucide-react';
 import { useOrganizerStats, useEventBuyers, useCreateEvent, useUpdateEvent, useProposeChanges, useResubmitEvent, useCancelEvent, useOrganizerProfile, useEventDetails, useEventWaitlist, useUploadEventGallery, useDeleteEventGalleryPhoto } from '../hooks/useOrganizer';
 import { organizerService, type OrganizerEventStat, type CreateEventTicketCategory } from '../services/organizerService';
@@ -1428,6 +1428,12 @@ export default function MesEvenements() {
                         <span className="text-white/25 text-xs">/ {event.totalTickets} billets</span>
                       </div>
                       <span className="font-mono font-bold text-green-400 text-sm">{formatPrice(event.totalRevenue)}</span>
+                      {(event.likeCount ?? 0) > 0 && (
+                        <span className="flex items-center gap-1 text-xs text-rose-neon/80">
+                          <Heart className="w-3 h-3 fill-rose-neon text-rose-neon" />
+                          {event.likeCount}
+                        </span>
+                      )}
                       <div className="flex items-center gap-2 min-w-[90px]">
                         <div className="flex-1 h-1 bg-bg-secondary rounded-full overflow-hidden min-w-[60px]">
                           <div className="h-full bg-neon-gradient rounded-full transition-all" style={{ width: `${event.occupancyRate}%` }} />

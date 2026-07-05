@@ -8,7 +8,7 @@ import {
 import {
   CalendarDays, Ticket, TrendingUp, TrendingDown,
   LogOut, Check, Clock, Upload, FileCheck,
-  UserCircle, Minus, Banknote,
+  UserCircle, Minus, Banknote, Heart, Users,
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useOrganizerStats, useOrganizerProfile, useOrganizerAnalytics, useUploadKYC, useOrganizerPayouts } from '../hooks/useOrganizer';
@@ -437,8 +437,8 @@ export default function OrganizerDashboard() {
         </div>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      {/* KPIs — ventes */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         <KpiCard title="Événements" value={data?.eventsCount ?? 0} subtitle="Total créés" Icon={CalendarDays} color="violet" />
         <KpiCard title="Billets vendus" value={(data?.globalSold ?? 0).toLocaleString('fr-FR')} subtitle="vs 30j précédents" Icon={Ticket} color="cyan" trend={trendTickets} />
         <KpiCard title="Revenus nets" value={formatPrice(data?.globalRevenue ?? 0, 'FCFA', '0 FCFA')} subtitle="vs 30j précédents" Icon={TrendingUp} color="green" trend={trendRevenue} />
@@ -451,6 +451,24 @@ export default function OrganizerDashboard() {
             color="rose"
           />
         </Link>
+      </div>
+
+      {/* KPIs — engagement */}
+      <div className="grid grid-cols-2 gap-4 mb-8">
+        <KpiCard
+          title="Abonnés"
+          value={(data?.totalFollowers ?? 0).toLocaleString('fr-FR')}
+          subtitle="Followers de votre page"
+          Icon={Users}
+          color="violet"
+        />
+        <KpiCard
+          title="Total likes"
+          value={(data?.totalLikes ?? 0).toLocaleString('fr-FR')}
+          subtitle="Likes sur vos événements"
+          Icon={Heart}
+          color="rose"
+        />
       </div>
 
       {/* Chart */}
