@@ -209,26 +209,9 @@ export default function HeroSection({ event }: HeroSectionProps) {
             </Link>
 
             {/* Occupancy */}
-            {totalTickets > 0 && (
-              <div className="flex items-center gap-3">
-                <div className="w-28 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full"
-                    style={{
-                      width: `${occupancy}%`,
-                      background: occupancy >= 90
-                        ? 'linear-gradient(90deg, #E040FB, #ff4466)'
-                        : occupancy >= 70
-                        ? 'linear-gradient(90deg, #f59e0b, #E040FB)'
-                        : 'linear-gradient(135deg, #7B2FBE, #E040FB)',
-                    }}
-                  />
-                </div>
-                {(() => { const av = availabilityLevel(occupancy); return (
-                  <span className={`text-xs font-semibold ${av.color}${av.pulse ? ' animate-pulse' : ''}`}>{av.label}</span>
-                ); })()}
-              </div>
-            )}
+            {totalTickets > 0 && (() => { const av = availabilityLevel(occupancy); return (
+              <span className={`text-xs font-semibold ${av.color}${av.pulse ? ' animate-pulse' : ''}`}>{av.label}</span>
+            ); })()}
           </motion.div>
         </div>
       </div>
