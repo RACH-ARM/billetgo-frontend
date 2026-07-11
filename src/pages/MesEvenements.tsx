@@ -4,7 +4,7 @@ import {
   CalendarDays, Ticket, Download, Search, QrCode,
   ChevronRight, ArrowLeft, Phone, Mail, CreditCard,
   Plus, Trash2, AlertTriangle, Check,
-  Pencil, Clock, Ban, X, Banknote, Images, ImagePlus, MapPin, Heart,
+  Clock, Ban, X, Banknote, Images, ImagePlus, MapPin, Heart,
 } from 'lucide-react';
 import { useOrganizerStats, useEventBuyers, useCreateEvent, useUpdateEvent, useProposeChanges, useResubmitEvent, useCancelEvent, useOrganizerProfile, useEventDetails, useEventWaitlist, useUploadEventGallery, useDeleteEventGalleryPhoto } from '../hooks/useOrganizer';
 import { organizerService, type OrganizerEventStat, type CreateEventTicketCategory } from '../services/organizerService';
@@ -1370,7 +1370,6 @@ export default function MesEvenements() {
               const isRevision = event.status === 'NEEDS_REVISION';
               const hasPending = (event as any).pendingStatus === 'PENDING';
               const pendingRejected = (event as any).pendingStatus === 'REJECTED';
-              const isEditable = !['CANCELLED', 'COMPLETED', 'PENDING_REVIEW'].includes(event.status);
               return (
                 <div
                   key={event.eventId}
@@ -1448,25 +1447,11 @@ export default function MesEvenements() {
 
                     {/* Actions */}
                     <div className="flex items-center gap-1.5 mt-3 flex-wrap" onClick={(e) => e.stopPropagation()}>
-                      {hasPending ? (
+                      {hasPending && (
                         <span className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-violet-neon/10 text-violet-neon/60 border border-violet-neon/20">
                           <Clock className="w-3.5 h-3.5" /> En attente
                         </span>
-                      ) : isEditable ? (
-                        <button
-                          onClick={() => { setEditingEventId(event.eventId); setEditingEventNote(event.adminNote ?? null); setEditingEventStatus(event.status); }}
-                          className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors ${
-                            isRevision
-                              ? 'bg-yellow-400/10 text-yellow-400 hover:bg-yellow-400/20 border-yellow-400/30'
-                              : ['PUBLISHED', 'APPROVED'].includes(event.status)
-                              ? 'bg-violet-neon/10 text-violet-neon hover:bg-violet-neon/20 border-violet-neon/30'
-                              : 'bg-white/5 text-white/50 hover:bg-violet-neon/10 hover:text-violet-neon border-white/10 hover:border-violet-neon/30'
-                          }`}
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                          {['PUBLISHED', 'APPROVED'].includes(event.status) ? 'Proposer modif.' : 'Modifier'}
-                        </button>
-                      ) : null}
+                      )}
                       <button
                         onClick={() => setWaitlistEvent(event)}
                         className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-white/5 text-white/40 hover:bg-cyan-neon/10 hover:text-cyan-neon border border-white/5 hover:border-cyan-neon/20 transition-colors"
