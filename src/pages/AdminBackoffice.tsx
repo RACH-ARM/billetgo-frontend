@@ -806,12 +806,15 @@ export default function AdminBackoffice() {
   );
 
   const approveOrganizer = useMutation(
-    async ({ organizerId, isApproved }: { organizerId: string; isApproved: boolean }) => {
-      await api.patch(`/admin/organizers/${organizerId}/approve`, { isApproved });
+    async ({ organizerId, isApproved, skipKycCheck }: { organizerId: string; isApproved: boolean; skipKycCheck?: boolean }) => {
+      await api.patch(`/admin/organizers/${organizerId}/approve`, { isApproved, skipKycCheck });
     },
     {
       onSuccess: () => { qc.invalidateQueries(['admin-users', userRoleFilter]); qc.invalidateQueries('admin-payouts'); toast.success('Statut organisateur mis à jour'); },
-      onError: () => { toast.error('Erreur'); },
+      onError: (err: unknown) => {
+        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+        toast.error(msg || 'Erreur lors de la mise à jour');
+      },
     }
   );
 
@@ -1973,7 +1976,7 @@ export default function AdminBackoffice() {
                                     <Button
                                       variant={org.isApproved ? 'danger' : 'primary'}
                                       size="sm"
-                                      onClick={() => approveOrganizer.mutate({ organizerId: org.id as string, isApproved: !org.isApproved })}
+                                      onClick={() => approveOrganizer.mutate({ organizerId: org.id as string, isApproved: !org.isApproved, skipKycCheck: true })}
                                       isLoading={approveOrganizer.isLoading}
                                     >
                                       {org.isApproved ? 'Désapprouver' : 'Approuver'}
