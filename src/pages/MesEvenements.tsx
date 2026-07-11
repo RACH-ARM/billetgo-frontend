@@ -922,8 +922,12 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
       }
       onSuccess();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(msg || 'Erreur lors de la mise à jour');
+      const res = (err as { response?: { data?: { message?: string; errors?: { field: string; message: string }[] } } })?.response?.data;
+      if (res?.errors?.length) {
+        toast.error(`${res.message} — ${res.errors.map(e => `${e.field}: ${e.message}`).join(', ')}`);
+      } else {
+        toast.error(res?.message || 'Erreur lors de la mise à jour');
+      }
     }
   };
 
