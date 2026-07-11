@@ -1717,17 +1717,6 @@ export default function AdminBackoffice() {
                           <span>{(orgUser.firstName as string) ?? ''} {(orgUser.lastName as string) ?? ''}</span>
                           <span>{totalSold}/{totalQty} billets vendus</span>
                         </div>
-                        <div className="mt-2 pt-2 border-t border-white/5">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-cyan-neon border border-cyan-neon/20 hover:bg-cyan-neon/10"
-                            onClick={() => updateStatus.mutate({ id: event.id as string, status: 'PUBLISHED' })}
-                            isLoading={updateStatus.isLoading && updateStatus.variables?.id === event.id}
-                          >
-                            Republier
-                          </Button>
-                        </div>
                       </div>
                     </motion.div>
                   );
