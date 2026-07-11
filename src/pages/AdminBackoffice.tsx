@@ -1079,6 +1079,7 @@ export default function AdminBackoffice() {
         qc.invalidateQueries('admin-events-approved');
         qc.invalidateQueries('admin-events-completed');
         qc.invalidateQueries('admin-events');
+        qc.invalidateQueries('admin-vitrine');
         setEditingCommission(null);
         toast.success('Taux de commission mis à jour');
       },
@@ -1796,6 +1797,30 @@ export default function AdminBackoffice() {
                     )}
                   </div>
                   <p className="text-white/40 text-xs">{org?.companyName as string} · {formatEventDate(ev.eventDate as string)}</p>
+                  {editingCommission?.id === ev.id ? (
+                    <span className="flex items-center gap-1 mt-1.5" onClick={(e) => e.stopPropagation()}>
+                      <span className="text-white/50 text-xs">Commission :</span>
+                      <input
+                        type="number" min="0" max="50" step="0.5"
+                        value={editingCommission!.value}
+                        onChange={(e) => setEditingCommission({ id: ev.id as string, value: e.target.value })}
+                        className="w-16 text-xs px-1.5 py-0.5 rounded bg-white/10 border border-violet-neon/40 text-white text-center focus:outline-none focus:border-violet-neon"
+                        autoFocus
+                      />
+                      <span className="text-white/40 text-xs">%</span>
+                      <button onClick={() => updateCommissionMutation.mutate({ id: ev.id as string, commissionRate: Number(editingCommission!.value) / 100 })} disabled={updateCommissionMutation.isLoading} className="text-xs px-2 py-0.5 rounded bg-violet-neon/20 text-violet-neon hover:bg-violet-neon/30 transition-colors disabled:opacity-40">OK</button>
+                      <button onClick={() => setEditingCommission(null)} className="text-xs px-2 py-0.5 rounded bg-white/5 text-white/40 hover:text-white hover:bg-white/10 transition-colors">✕</button>
+                    </span>
+                  ) : (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setEditingCommission({ id: ev.id as string, value: String(Math.round(Number(ev.commissionRate) * 100)) }); }}
+                      className="flex items-center gap-1 text-white/40 text-xs font-mono hover:text-white transition-colors group mt-1"
+                      title="Modifier le taux de commission"
+                    >
+                      ({Math.round(Number(ev.commissionRate) * 100)}% commission)
+                      <Pencil className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-violet-neon" />
+                    </button>
+                  )}
                 </div>
 
                 {/* Actions */}
