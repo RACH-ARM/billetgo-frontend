@@ -692,6 +692,7 @@ export default function AdminBackoffice() {
   const [showScannerConfirmPassword, setShowScannerConfirmPassword] = useState(false);
   const [createdScannerCreds, setCreatedScannerCreds] = useState<{ phone: string; password: string } | null>(null);
   const [editingScanner, setEditingScanner] = useState<ScannerRow | null>(null);
+  const [editingCommission, setEditingCommission] = useState<{ id: string; value: string } | null>(null);
   const qc = useQueryClient();
 
   const { data: dashboard, isLoading: dashLoading } = useQuery(
@@ -1066,6 +1067,22 @@ export default function AdminBackoffice() {
     }
   );
 
+  const updateCommissionMutation = useMutation(
+    async ({ id, commissionRate }: { id: string; commissionRate: number }) => {
+      await api.patch(`/admin/events/${id}/commission`, { commissionRate });
+    },
+    {
+      onSuccess: () => {
+        qc.invalidateQueries('admin-events-approved');
+        qc.invalidateQueries('admin-events-completed');
+        qc.invalidateQueries('admin-events');
+        setEditingCommission(null);
+        toast.success('Taux de commission mis à jour');
+      },
+      onError: () => { toast.error('Erreur lors de la mise à jour du taux'); },
+    }
+  );
+
   const { data: adminCounts } = useQuery(
     'admin-counts',
     () => api.get('/admin/counts').then((r) => r.data.data as { pendingEvents: number; pendingChanges: number; pendingPayouts: number; pendingRefunds: number }),
@@ -1299,6 +1316,30 @@ export default function AdminBackoffice() {
                             Publication le {new Date(event.scheduledPublishAt as string).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                           </span>
                         )}
+                        {editingCommission?.id === event.id ? (
+                          <span className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                            <span className="text-white/50">Commission :</span>
+                            <input
+                              type="number" min="0" max="50" step="0.5"
+                              value={editingCommission!.value}
+                              onChange={(e) => setEditingCommission({ id: event.id as string, value: e.target.value })}
+                              className="w-16 text-xs px-1.5 py-0.5 rounded bg-white/10 border border-violet-neon/40 text-white text-center focus:outline-none focus:border-violet-neon"
+                              autoFocus
+                            />
+                            <span className="text-white/40">%</span>
+                            <button onClick={() => updateCommissionMutation.mutate({ id: event.id as string, commissionRate: Number(editingCommission!.value) / 100 })} disabled={updateCommissionMutation.isLoading} className="text-xs px-2 py-0.5 rounded bg-violet-neon/20 text-violet-neon hover:bg-violet-neon/30 transition-colors disabled:opacity-40">OK</button>
+                            <button onClick={() => setEditingCommission(null)} className="text-xs px-2 py-0.5 rounded bg-white/5 text-white/40 hover:text-white hover:bg-white/10 transition-colors">✕</button>
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => setEditingCommission({ id: event.id as string, value: String(Math.round(Number(event.commissionRate) * 100)) })}
+                            className="flex items-center gap-1 hover:text-white transition-colors group"
+                            title="Modifier le taux de commission"
+                          >
+                            <span className="font-mono">{Math.round(Number(event.commissionRate) * 100)}% commission</span>
+                            <Pencil className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-violet-neon" />
+                          </button>
+                        )}
                       </div>
                     </div>
                     <div className="flex gap-2 flex-shrink-0">
@@ -1387,14 +1428,48 @@ export default function AdminBackoffice() {
                     <span>Par : <span className="text-white/60">{orgUser.firstName as string} {orgUser.lastName as string}</span></span>
                     <span className="text-violet-neon">{orgUser.email as string}</span>
                     {Boolean(event.offer) && (
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1 flex-wrap">
                         Forfait :
                         <span className={`font-semibold ${event.offer === 'PREMIUM' ? 'text-rose-neon' : event.offer === 'INTERMEDIAIRE' ? 'text-yellow-400' : 'text-cyan-neon'}`}>
                           {event.offer as string}
                         </span>
-                        <span className="text-white/60 font-mono">
-                          ({Math.round(Number(event.commissionRate) * 100)}% commission)
-                        </span>
+                        {editingCommission?.id === event.id ? (
+                          <span className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="number"
+                              min="0"
+                              max="50"
+                              step="0.5"
+                              value={editingCommission!.value}
+                              onChange={(e) => setEditingCommission({ id: event.id as string, value: e.target.value })}
+                              className="w-16 text-xs px-1.5 py-0.5 rounded bg-white/10 border border-violet-neon/40 text-white text-center focus:outline-none focus:border-violet-neon"
+                              autoFocus
+                            />
+                            <span className="text-white/40 text-xs">%</span>
+                            <button
+                              onClick={() => updateCommissionMutation.mutate({ id: event.id as string, commissionRate: Number(editingCommission!.value) / 100 })}
+                              disabled={updateCommissionMutation.isLoading}
+                              className="text-xs px-2 py-0.5 rounded bg-violet-neon/20 text-violet-neon hover:bg-violet-neon/30 transition-colors disabled:opacity-40"
+                            >
+                              OK
+                            </button>
+                            <button
+                              onClick={() => setEditingCommission(null)}
+                              className="text-xs px-2 py-0.5 rounded bg-white/5 text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+                            >
+                              ✕
+                            </button>
+                          </span>
+                        ) : (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setEditingCommission({ id: event.id as string, value: String(Math.round(Number(event.commissionRate) * 100)) }); }}
+                            className="flex items-center gap-1 text-white/60 font-mono hover:text-white transition-colors group"
+                            title="Modifier le taux de commission"
+                          >
+                            ({Math.round(Number(event.commissionRate) * 100)}% commission)
+                            <Pencil className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-violet-neon" />
+                          </button>
+                        )}
                       </span>
                     )}
                   </div>
