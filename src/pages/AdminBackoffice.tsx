@@ -693,6 +693,7 @@ export default function AdminBackoffice() {
   const [createdScannerCreds, setCreatedScannerCreds] = useState<{ phone: string; password: string } | null>(null);
   const [editingScanner, setEditingScanner] = useState<ScannerRow | null>(null);
   const [editingCommission, setEditingCommission] = useState<{ id: string; value: string } | null>(null);
+  const [reportEventId, setReportEventId] = useState<string | null>(null);
   const qc = useQueryClient();
 
   const { data: dashboard, isLoading: dashLoading } = useQuery(
@@ -1759,14 +1760,24 @@ export default function AdminBackoffice() {
             const isFeatured = ev.isFeatured as boolean;
             const isHot = ev.isHot as boolean;
             const isEventCertified = ev.isCertified as boolean;
+            const cats = (ev.ticketCategories as Array<{ name: string; price: number; quantityTotal: number; quantitySold: number }>) ?? [];
+            const totalSold = cats.reduce((s, c) => s + c.quantitySold, 0);
+            const totalCap = cats.reduce((s, c) => s + c.quantityTotal, 0);
+            const grossRevenue = cats.reduce((s, c) => s + Number(c.price) * c.quantitySold, 0);
+            const netRevenue = Math.floor(grossRevenue / 1.025);
+            const commRate = Number(ev.commissionRate ?? 0.07);
+            const platformCommission = Math.round(netRevenue * commRate);
+            const organizerAmt = netRevenue - platformCommission;
+            const soldPct = totalCap > 0 ? Math.round((totalSold / totalCap) * 100) : 0;
             return (
 
               <motion.div
                 key={ev.id as string}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="glass-card p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center"
+                className="glass-card p-4 flex flex-col gap-3"
               >
+                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
                 {/* Cover */}
                 <div className="w-full sm:w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden">
                   {(ev.coverImageUrl as string) ? (
@@ -1796,7 +1807,17 @@ export default function AdminBackoffice() {
                       </span>
                     )}
                   </div>
+                  <div className="flex items-center gap-3">
                   <p className="text-white/40 text-xs">{org?.companyName as string} · {formatEventDate(ev.eventDate as string)}</p>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setReportEventId(reportEventId === (ev.id as string) ? null : (ev.id as string)); }}
+                    className="flex items-center gap-1 text-xs text-white/30 hover:text-violet-neon transition-colors flex-shrink-0"
+                  >
+                    <TrendingUp className="w-3 h-3" />
+                    Rapport
+                    <ChevronDown className={`w-3 h-3 transition-transform ${reportEventId === ev.id ? 'rotate-180' : ''}`} />
+                  </button>
+                  </div>
                   {editingCommission?.id === ev.id ? (
                     <span className="flex items-center gap-1 mt-1.5" onClick={(e) => e.stopPropagation()}>
                       <span className="text-white/50 text-xs">Commission :</span>
@@ -1862,6 +1883,58 @@ export default function AdminBackoffice() {
                     Retirer
                   </Button>
                 </div>
+                </div>
+
+                {/* ── Panneau Rapport ── */}
+                {reportEventId === (ev.id as string) && (
+                  <div className="pt-3 border-t border-white/10 space-y-3">
+                    {/* Progression globale */}
+                    <div>
+                      <div className="flex justify-between text-xs text-white/50 mb-1.5">
+                        <span>Billets vendus</span>
+                        <span><span className="text-white font-semibold">{totalSold}</span> / {totalCap} places — <span className="text-violet-neon font-semibold">{soldPct}%</span></span>
+                      </div>
+                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div className="h-full bg-violet-neon rounded-full transition-all" style={{ width: `${soldPct}%` }} />
+                      </div>
+                    </div>
+                    {/* KPIs revenus */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-white/5 rounded-xl p-2.5 text-center">
+                        <p className="text-white/40 text-xs mb-1">Revenus bruts</p>
+                        <p className="text-white text-sm font-bold">{formatPrice(grossRevenue)}</p>
+                      </div>
+                      <div className="bg-rose-neon/5 rounded-xl p-2.5 text-center border border-rose-neon/10">
+                        <p className="text-white/40 text-xs mb-1">Commission ({Math.round(commRate * 100)}%)</p>
+                        <p className="text-rose-neon text-sm font-bold">{formatPrice(platformCommission)}</p>
+                      </div>
+                      <div className="bg-cyan-neon/5 rounded-xl p-2.5 text-center border border-cyan-neon/10">
+                        <p className="text-white/40 text-xs mb-1">Organisateur</p>
+                        <p className="text-cyan-neon text-sm font-bold">{formatPrice(organizerAmt)}</p>
+                      </div>
+                    </div>
+                    {/* Détail par catégorie */}
+                    {cats.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-white/30 text-xs uppercase tracking-widest font-semibold">Par catégorie</p>
+                        {cats.map((cat, i) => {
+                          const catPct = cat.quantityTotal > 0 ? Math.round((cat.quantitySold / cat.quantityTotal) * 100) : 0;
+                          return (
+                            <div key={i} className="flex items-center gap-2 text-xs">
+                              <span className="text-white/70 flex-1 truncate">{cat.name}</span>
+                              <span className="text-white/40 whitespace-nowrap">{cat.quantitySold} / {cat.quantityTotal}</span>
+                              <div className="w-20 h-1.5 bg-white/10 rounded-full overflow-hidden flex-shrink-0">
+                                <div className="h-full bg-violet-neon/60 rounded-full" style={{ width: `${catPct}%` }} />
+                              </div>
+                              <span className="text-white/60 w-20 text-right flex-shrink-0">{formatPrice(Number(cat.price) * cat.quantitySold)}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <p className="text-white/20 text-xs">* Estimations calculées sur montant net après frais opérateur (2,5%)</p>
+                  </div>
+                )}
               </motion.div>
             );
           })}
