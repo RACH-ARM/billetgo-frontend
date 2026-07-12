@@ -694,6 +694,7 @@ export default function AdminBackoffice() {
   const [editingScanner, setEditingScanner] = useState<ScannerRow | null>(null);
   const [editingCommission, setEditingCommission] = useState<{ id: string; value: string } | null>(null);
   const [reportEventId, setReportEventId] = useState<string | null>(null);
+  const [deleteEventTarget, setDeleteEventTarget] = useState<{ id: string; title: string } | null>(null);
   const qc = useQueryClient();
 
   const { data: dashboard, isLoading: dashLoading } = useQuery(
@@ -1085,6 +1086,19 @@ export default function AdminBackoffice() {
         toast.success('Taux de commission mis à jour');
       },
       onError: () => { toast.error('Erreur lors de la mise à jour du taux'); },
+    }
+  );
+
+  const deleteEventMutation = useMutation(
+    async (id: string) => { await api.delete(`/admin/events/${id}`); },
+    {
+      onSuccess: () => {
+        qc.invalidateQueries('admin-events-completed');
+        qc.invalidateQueries('admin-events');
+        setDeleteEventTarget(null);
+        toast.success('Événement supprimé');
+      },
+      onError: () => { toast.error('Erreur lors de la suppression'); },
     }
   );
 
@@ -1724,6 +1738,12 @@ export default function AdminBackoffice() {
                           <span>{totalSold}/{totalQty} billets vendus</span>
                         </div>
                       </div>
+                      <button
+                        onClick={() => setDeleteEventTarget({ id: event.id as string, title: event.title as string })}
+                        className="flex-shrink-0 text-xs px-2 py-1 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors border border-red-500/20"
+                      >
+                        Supprimer
+                      </button>
                     </motion.div>
                   );
                 })}
@@ -3339,6 +3359,50 @@ export default function AdminBackoffice() {
             onSave={(id, payload) => updateScannerMutation.mutate({ id, payload })}
             isLoading={updateScannerMutation.isLoading}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Delete event confirmation modal */}
+      <AnimatePresence>
+        {deleteEventTarget && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setDeleteEventTarget(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="glass-card p-6 max-w-sm w-full border border-red-500/30"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="font-bebas text-xl tracking-wider text-white mb-2">Supprimer l'événement ?</h3>
+              <p className="text-sm text-white/60 mb-1">
+                <span className="text-white font-medium">"{deleteEventTarget.title}"</span>
+              </p>
+              <p className="text-xs text-white/40 mb-6">
+                Cette action est irréversible. Toutes les commandes, billets et paiements liés seront supprimés.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setDeleteEventTarget(null)}
+                  className="flex-1 text-sm py-2 rounded-lg border border-white/10 text-white/50 hover:text-white/80 transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={() => deleteEventMutation.mutate(deleteEventTarget.id)}
+                  disabled={deleteEventMutation.isLoading}
+                  className="flex-1 text-sm py-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/30 transition-colors disabled:opacity-40"
+                >
+                  {deleteEventMutation.isLoading ? 'Suppression…' : 'Supprimer'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
 
