@@ -75,8 +75,8 @@ export default function Checkout() {
   const { data: freshEvent } = useEvent(event?.id ?? '');
   const isPaying = useRef(false);
 
-  // Timer 15 min — persiste via sessionStorage pour survivre aux refreshs
-  const CART_TTL = 5 * 60; // secondes
+  // Timer 10 min — persiste via sessionStorage pour survivre aux refreshs
+  const CART_TTL = 10 * 60; // secondes
   const CART_EXPIRY_KEY = 'checkout_expiry';
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -144,7 +144,7 @@ export default function Checkout() {
           <div>
             <h2 className="font-bebas text-3xl tracking-wider text-white mb-2">Session expirée</h2>
             <p className="text-white/50 text-sm leading-relaxed">
-              Votre panier est réservé pendant 5 minutes. Ce délai est écoulé et les billets ont été libérés.
+              Votre panier est réservé pendant 10 minutes. Ce délai est écoulé et les billets ont été libérés.
             </p>
           </div>
           <div className="w-full p-4 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">
