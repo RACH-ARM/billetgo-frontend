@@ -4,8 +4,8 @@ import { Helmet } from 'react-helmet-async';
 import { FileText, Download, AlertTriangle, ShieldCheck, Banknote, Calendar, RefreshCw, Scale, Lock, Loader2 } from 'lucide-react';
 import api from '../services/api';
 
-export const CONTRACT_VERSION = '2.0';
-export const CONTRACT_DATE    = '18 avril 2026';
+export const CONTRACT_VERSION = '2.1';
+export const CONTRACT_DATE    = '13 juillet 2026';
 
 // ─── Section helper ───────────────────────────────────────────────────────────
 
@@ -167,11 +167,12 @@ export default function ContratOrganisateur() {
         <Section num="4" title="Commission et frais de service" icon={Banknote}>
           <P>En contrepartie des services rendus, BilletGab prélève :</P>
           <ul className="space-y-1">
-            <Li><span className="text-white font-semibold">10 % du prix HT</span> sur chaque billet payant vendu (taux standard, modifiable par accord particulier) ;</Li>
+            <Li><span className="text-white font-semibold">7 % du montant net</span> sur chaque billet payant vendu (taux standard, modifiable par accord particulier entre BilletGab et l'Organisateur) ;</Li>
             <Li><span className="text-white font-semibold">500 FCFA de frais fixes</span> par billet gratuit émis, à la charge de l'Organisateur ;</Li>
-            <Li>Les <span className="text-white font-semibold">frais de traitement Mobile Money (PVit)</span> appliqués lors des reversements, à la charge exclusive de l'Organisateur : environ 1 % via Airtel Money, environ 1 % via Moov Money (taux susceptibles d'évoluer selon les tarifs opérateurs).</Li>
+            <Li>Les <span className="text-white font-semibold">frais opérateur Mobile Money (2,5 %)</span> prélevés par les opérateurs Airtel et Moov lors de la collecte des paiements acheteurs, déduits du montant reversé à l'Organisateur ;</Li>
+            <Li>Les <span className="text-white font-semibold">frais de traitement PVit</span> appliqués lors des reversements à l'Organisateur (environ 1 % par virement), à la charge exclusive de l'Organisateur.</Li>
           </ul>
-          <P>Ces frais sont prélevés directement sur les montants reversés à l'Organisateur. Aucun frais n'est facturé séparément. L'Organisateur reçoit le montant net après déduction.</P>
+          <P>La commission BilletGab est calculée sur le <span className="text-white font-semibold">montant net encaissé</span>, c'est-à-dire après déduction des frais opérateur Mobile Money. Tous les frais sont prélevés directement sur les montants dus à l'Organisateur. Aucun frais n'est facturé séparément. L'Organisateur reçoit le montant net après déduction de l'ensemble des frais.</P>
           <P>BilletGab se réserve le droit de modifier ses taux de commission avec un préavis de 30 jours notifié par email. Les taux en vigueur au moment de la création d'un événement s'appliquent jusqu'à sa clôture.</P>
         </Section>
 
@@ -323,47 +324,17 @@ export default function ContratOrganisateur() {
         </Section>
 
         {/* Art. 13 */}
-        <Section num="13" title="Conditions de progression de niveau" icon={ShieldCheck}>
-          <P>Le niveau de l'Organisateur reflète son historique et sa fiabilité sur la plateforme, et peut déterminer l'accès à certaines fonctionnalités avancées. La progression suit les critères cumulatifs suivants :</P>
-          <P><span className="text-white/70 font-semibold">NOUVEAU</span> — Statut attribué automatiquement à l'inscription. Aucun événement complété requis.</P>
-          <P><span className="text-cyan-neon/80 font-semibold">APPROUVÉ</span> — Accessible après :</P>
-          <ul className="space-y-1">
-            <Li>Au minimum 1 événement complété avec succès (sans annulation ni dette) ;</Li>
-            <Li>Aucun litige actif ou dette impayée envers BilletGab ;</Li>
-            <Li>Soumission des documents KYC de base acceptée ;</Li>
-            <Li>Compte actif depuis au moins 30 jours.</Li>
-          </ul>
-          <P><span className="text-violet-neon/80 font-semibold">CERTIFIÉ</span> — Accessible après :</P>
-          <ul className="space-y-1">
-            <Li>Au minimum 3 événements complétés sans incident ;</Li>
-            <Li>Aucun avertissement ni infraction aux présentes CGO ;</Li>
-            <Li>Vérification KYC complète (pièce d'identité + structure vérifiée par BilletGab) ;</Li>
-            <Li>Compte actif depuis au moins 90 jours.</Li>
-          </ul>
-          <P><span className="text-yellow-400/80 font-semibold">PREMIUM</span> — Accessible après :</P>
-          <ul className="space-y-1">
-            <Li>Au minimum 10 événements complétés avec un historique irréprochable ;</Li>
-            <Li>Activité continue sur la plateforme depuis au moins 12 mois ;</Li>
-            <Li>Aucun incident de paiement, annulation frauduleuse ou signalement ;</Li>
-            <Li>Évaluation et validation manuelle par l'équipe BilletGab.</Li>
-          </ul>
-          <Important>
-            La progression de niveau est accordée discrétionnairement par BilletGab et ne peut être revendiquée comme un droit acquis. Tout comportement contraire aux présentes CGO peut entraîner une rétrogradation immédiate, sans préavis ni indemnité.
-          </Important>
-        </Section>
-
-        {/* Art. 14 */}
-        <Section num="14" title="Détection et traitement des fraudes" icon={AlertTriangle}>
+        <Section num="13" title="Détection et traitement des fraudes" icon={AlertTriangle}>
           <P>BilletGab dispose de systèmes automatisés et de procédures manuelles de détection des comportements frauduleux.</P>
-          <P><span className="text-white font-semibold">14.1 Fraude organisateur</span><br />
+          <P><span className="text-white font-semibold">13.1 Fraude organisateur</span><br />
           Sont notamment constitutifs de fraude organisateur :</P>
           <ul className="space-y-1">
             <Li>La création d'événements fictifs dans le but de collecter des fonds sans intention d'organiser ;</Li>
-            <Li>L'annulation délibérée après encaissement de tranches, avec refus de remboursement ;</Li>
+            <Li>L'annulation délibérée après encaissement, avec refus de remboursement ;</Li>
             <Li>L'usage de fausses identités, de structures inexistantes ou de documents falsifiés ;</Li>
             <Li>La modification frauduleuse des informations d'un événement après la vente de billets.</Li>
           </ul>
-          <P><span className="text-white font-semibold">14.2 Fraude acheteur</span><br />
+          <P><span className="text-white font-semibold">13.2 Fraude acheteur</span><br />
           Sont notamment constitutifs de fraude acheteur :</P>
           <ul className="space-y-1">
             <Li>Les demandes de remboursement abusives ou infondées ;</Li>
@@ -371,7 +342,7 @@ export default function ContratOrganisateur() {
             <Li>La tentative de duplication, falsification ou revente non autorisée de billets ;</Li>
             <Li>L'abus des procédures de contestation de paiement (chargeback).</Li>
           </ul>
-          <P><span className="text-white font-semibold">14.3 Mesures automatiques</span><br />
+          <P><span className="text-white font-semibold">13.3 Mesures automatiques</span><br />
           En cas de détection d'une activité suspecte, BilletGab peut, sans préavis :</P>
           <ul className="space-y-1">
             <Li>Déclencher une suspension préventive du compte et des versements ;</Li>
@@ -381,10 +352,10 @@ export default function ContratOrganisateur() {
           </ul>
         </Section>
 
-        {/* Art. 15 */}
-        <Section num="15" title="Suspension et bannissement de compte" icon={Lock}>
+        {/* Art. 14 */}
+        <Section num="14" title="Suspension et bannissement de compte" icon={Lock}>
           <P>BilletGab distingue deux niveaux de sanction :</P>
-          <P><span className="text-white font-semibold">15.1 Suspension temporaire</span><br />
+          <P><span className="text-white font-semibold">14.1 Suspension temporaire</span><br />
           Le compte organisateur peut être suspendu temporairement en cas de :</P>
           <ul className="space-y-1">
             <Li>Non-respect des délais KYC ou refus de fournir un document demandé ;</Li>
@@ -393,7 +364,7 @@ export default function ContratOrganisateur() {
             <Li>Première infraction mineure aux présentes CGO.</Li>
           </ul>
           <P>La suspension temporaire est levée dès résolution de la situation, sur décision exclusive de BilletGab.</P>
-          <P><span className="text-white font-semibold">15.2 Bannissement définitif</span><br />
+          <P><span className="text-white font-semibold">14.2 Bannissement définitif</span><br />
           Le compte peut être définitivement banni en cas de :</P>
           <ul className="space-y-1">
             <Li>Fraude avérée ou tentative de fraude caractérisée ;</Li>
@@ -414,11 +385,11 @@ export default function ContratOrganisateur() {
             <p className="text-xs font-semibold text-violet-neon uppercase tracking-widest">Signature électronique</p>
           </div>
           <p className="text-sm text-white/60 leading-relaxed">
-            En cochant la case d'acceptation lors de votre inscription, vous déclarez avoir lu, compris et accepté l'intégralité des présentes Conditions Générales Organisateur (articles 1 à 15) dans leur version {CONTRACT_VERSION} du {CONTRACT_DATE}.
+            En cochant la case d'acceptation lors de votre inscription, vous déclarez avoir lu, compris et accepté l'intégralité des présentes Conditions Générales Organisateur (articles 1 à 14) dans leur version {CONTRACT_VERSION} du {CONTRACT_DATE}.
             Cette acceptation vaut <span className="text-white">signature électronique</span> au sens de la loi gabonaise et est enregistrée avec horodatage serveur sur les serveurs de BilletGab.
           </p>
           <p className="text-xs text-white/30">
-            Document généré automatiquement — BilletGab SAS — billetgab.com — billetgab01@gmail.com
+            Document généré automatiquement — BilletGab — billetgab.com — billetgab01@gmail.com
           </p>
         </div>
 
