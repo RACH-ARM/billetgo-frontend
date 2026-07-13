@@ -204,7 +204,7 @@ export default function ContratOrganisateur() {
           <Important>
             Cet article constitue l'engagement le plus important du présent contrat. Son non-respect engage la responsabilité civile et pénale de l'Organisateur.
           </Important>
-          <P>Les fonds issus de la vente de billets étant reversés à l'Organisateur au fur et à mesure des achats, l'Organisateur est <span className="text-white font-semibold">seul responsable du remboursement des acheteurs</span> en cas d'annulation de l'événement. BilletGab agit exclusivement en qualité d'intermédiaire technique et n'est pas responsable de la relation financière entre l'Organisateur et les acheteurs.</P>
+          <P>Les fonds issus de la vente de billets étant reversés à l'Organisateur au fur et à mesure des achats, l'Organisateur est <span className="text-white font-semibold">seul responsable du remboursement des acheteurs</span> en cas d'annulation de l'événement. BilletGab agit en qualité de prestataire technique et financier intermédiaire : son rôle se limite à la collecte et au transfert des fonds. BilletGab n'est pas co-responsable des obligations de remboursement de l'Organisateur envers les acheteurs et ne saurait être tenu de se substituer à lui.</P>
 
           <P><span className="text-white font-semibold">6.1 Obligation de remboursement</span><br />
           En cas d'annulation de l'événement, l'Organisateur s'engage formellement à :</P>
