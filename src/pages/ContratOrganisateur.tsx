@@ -170,7 +170,7 @@ export default function ContratOrganisateur() {
             <Li><span className="text-white font-semibold">7 % du montant net</span> sur chaque billet payant vendu (taux standard, modifiable par accord particulier entre BilletGab et l'Organisateur) ;</Li>
             <Li><span className="text-white font-semibold">500 FCFA de frais fixes</span> par billet gratuit émis, à la charge de l'Organisateur ;</Li>
             <Li>Les <span className="text-white font-semibold">frais opérateur Mobile Money (2,5 %)</span> prélevés par les opérateurs Airtel et Moov lors de la collecte des paiements acheteurs, déduits du montant reversé à l'Organisateur ;</Li>
-            <Li>Les <span className="text-white font-semibold">frais de traitement PVit</span> appliqués lors des reversements à l'Organisateur (environ 1 % par virement), à la charge exclusive de l'Organisateur.</Li>
+            <Li>Les <span className="text-white font-semibold">frais de traitement PVit</span> appliqués lors des reversements à l'Organisateur (environ 1 % par virement), pris en charge par BilletGab.</Li>
           </ul>
           <P>La commission BilletGab est calculée sur le <span className="text-white font-semibold">montant net encaissé</span>, c'est-à-dire après déduction des frais opérateur Mobile Money. Tous les frais sont prélevés directement sur les montants dus à l'Organisateur. Aucun frais n'est facturé séparément. L'Organisateur reçoit le montant net après déduction de l'ensemble des frais.</P>
           <P>BilletGab se réserve le droit de modifier ses taux de commission avec un préavis de 30 jours notifié par email. Les taux en vigueur au moment de la création d'un événement s'appliquent jusqu'à sa clôture.</P>
