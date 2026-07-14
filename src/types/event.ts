@@ -49,6 +49,7 @@ export interface Event {
   isCertified: boolean;
   offer: OfferType;
   commissionRate: number;
+  operatorFeeMode: 'ABSORB' | 'TRANSPARENT';
   maxTicketsPerOrder: number;
   organizer: Organizer;
   ticketCategories: TicketCategory[];

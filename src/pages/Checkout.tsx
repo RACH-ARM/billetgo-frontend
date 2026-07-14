@@ -184,12 +184,18 @@ export default function Checkout() {
   const freeTicketFee = items.reduce((acc, item) => {
     return acc + (item.category.price === 0 ? item.quantity * FREE_TICKET_FEE : 0);
   }, 0);
-  // L'opérateur Mobile Money prélève ses propres frais sur le montant demandé.
-  // BilletGab n'ajoute pas de serviceFee — on affiche juste une estimation informative.
-  const PAYIN_RATE = provider === 'MOOV_MONEY' ? 0.025 : 0.025; // Airtel = Moov = 2.5%
+  const PAYIN_RATE = 0.025; // 2,5% Airtel et Moov
   const payinBase = Math.max(0, rawTotal + freeTicketFee);
-  const estimatedOperatorFee = provider !== null && payinBase > 0 ? Math.round(payinBase * PAYIN_RATE) : 0;
-  const totalToPay = payinBase; // pas de serviceFee ajouté — l'opérateur facture séparément
+  const operatorFeeMode = event?.operatorFeeMode ?? 'ABSORB';
+  // TRANSPARENT : l'acheteur paye les frais opérateur par-dessus le prix affiché
+  // ABSORB : frais absorbés par l'organisateur, l'acheteur paye exactement le prix
+  const operatorFeeCharged = operatorFeeMode === 'TRANSPARENT' && payinBase > 0
+    ? Math.round(payinBase * PAYIN_RATE)
+    : 0;
+  const estimatedOperatorFee = operatorFeeMode === 'ABSORB' && provider !== null && payinBase > 0
+    ? Math.round(payinBase * PAYIN_RATE)
+    : 0;
+  const totalToPay = payinBase + operatorFeeCharged;
 
   // Validation stock en temps réel via les données fraîches de l'événement
   const soldOutItems = freshEvent
@@ -749,6 +755,12 @@ export default function Checkout() {
                   <div className="flex justify-between text-xs text-white/35">
                     <span>Frais traitement billets gratuits</span>
                     <span className="font-mono">{formatPrice(freeTicketFee)}</span>
+                  </div>
+                )}
+                {operatorFeeCharged > 0 && (
+                  <div className="flex justify-between items-center text-xs text-white/50">
+                    <span>Frais opérateur Mobile Money (2,5%)</span>
+                    <span className="font-mono">{formatPrice(operatorFeeCharged)}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-center pt-1.5 border-t border-white/5">

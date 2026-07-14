@@ -357,6 +357,7 @@ type CreateEventFormState = {
   venueName: string; venueAddress: string; venueCity: string;
   venueLatitude: string | number; venueLongitude: string | number;
   maxTicketsPerOrder: number;
+  operatorFeeMode: 'ABSORB' | 'TRANSPARENT';
 };
 
 const isoToLocal = (iso: string) => {
@@ -385,6 +386,7 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
     venueName: '', venueAddress: '', venueCity: 'Libreville',
     venueLatitude: '', venueLongitude: '',
     maxTicketsPerOrder: 20,
+    operatorFeeMode: 'ABSORB' as const,
   });
   const [mapsUrl, setMapsUrl] = useState(draft?.mapsUrl ?? '');
   const [mapsLoading, setMapsLoading] = useState(false);
@@ -586,13 +588,37 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
           </div>
         </div>
 
-        {/* Commission */}
-        <div className="glass-card p-4 flex items-center gap-3">
-          <Banknote className="w-5 h-5 text-violet-neon flex-shrink-0" />
+        {/* Commission + frais opérateur */}
+        <div className="glass-card p-5 space-y-4">
+          <div className="flex items-center gap-2 border-b border-white/5 pb-3">
+            <Banknote className="w-5 h-5 text-violet-neon" />
+            <h3 className="font-bebas text-lg tracking-wider text-white leading-none">Frais & commission</h3>
+          </div>
           <p className="text-sm text-white/60">
-            <span className="text-white font-semibold">7% de commission</span> prélevée sur chaque billet vendu.
+            <span className="text-white font-semibold">7% de commission</span> prélevée sur chaque billet payant vendu.
             Les billets gratuits sont soumis à des frais fixes de <span className="text-white font-semibold">500 FCFA</span>.
           </p>
+          <div>
+            <label className={labelCls}>Frais opérateur Mobile Money (2,5 %)</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+              <button
+                type="button"
+                onClick={() => setField('operatorFeeMode', 'ABSORB')}
+                className={`flex flex-col gap-1 p-3 rounded-xl border text-left transition-all ${form.operatorFeeMode === 'ABSORB' ? 'border-violet-neon bg-violet-neon/10 text-white' : 'border-white/10 bg-white/5 text-white/50 hover:border-white/20'}`}
+              >
+                <span className="font-semibold text-sm">Absorbés par moi</span>
+                <span className="text-xs opacity-70">L'acheteur paye exactement le prix affiché. Les 2,5% sont déduits de votre reversement.</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setField('operatorFeeMode', 'TRANSPARENT')}
+                className={`flex flex-col gap-1 p-3 rounded-xl border text-left transition-all ${form.operatorFeeMode === 'TRANSPARENT' ? 'border-violet-neon bg-violet-neon/10 text-white' : 'border-white/10 bg-white/5 text-white/50 hover:border-white/20'}`}
+              >
+                <span className="font-semibold text-sm">Répercutés à l'acheteur</span>
+                <span className="text-xs opacity-70">L'acheteur paye le prix + 2,5%. Vous recevez le montant plein sans déduction.</span>
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Dates */}
@@ -797,6 +823,7 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
     venueName: '', venueAddress: '', venueCity: 'Libreville',
     venueLatitude: '', venueLongitude: '',
     maxTicketsPerOrder: 20,
+    operatorFeeMode: 'ABSORB',
   });
   const [mapsUrl, setMapsUrl] = useState('');
   const [mapsLoading, setMapsLoading] = useState(false);
@@ -847,6 +874,7 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
         venueLatitude: (ed.venueLatitude as number | null) ?? '',
         venueLongitude: (ed.venueLongitude as number | null) ?? '',
         maxTicketsPerOrder: (ed.maxTicketsPerOrder as number) ?? 10,
+        operatorFeeMode: ((ed.operatorFeeMode as string) === 'TRANSPARENT' ? 'TRANSPARENT' : 'ABSORB'),
       });
       const cats = ed.ticketCategories as Array<{ id?: string; name: string; description?: string; price: number; quantityTotal: number; maxPerOrder?: number }>;
       if (Array.isArray(cats) && cats.length > 0) {
