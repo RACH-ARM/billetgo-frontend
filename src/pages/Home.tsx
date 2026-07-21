@@ -151,15 +151,7 @@ export default function Home() {
 
   const trendingEvents = useMemo(() => {
     if (!allData?.events) return [];
-    const hot = allData.events.filter((e) => e.isHot);
-    if (hot.length > 0) return hot.slice(0, 4);
-    return [...allData.events]
-      .sort((a, b) => {
-        const soldA = a.ticketCategories.reduce((s, c) => s + c.quantitySold, 0);
-        const soldB = b.ticketCategories.reduce((s, c) => s + c.quantitySold, 0);
-        return soldB - soldA;
-      })
-      .slice(0, 4);
+    return allData.events.filter((e) => e.isHot).slice(0, 4);
   }, [allData]);
 
   const activeDateLabel = DATE_FILTERS.find((d) => d.value === dateFilter)?.label;
