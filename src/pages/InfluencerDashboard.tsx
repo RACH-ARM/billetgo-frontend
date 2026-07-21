@@ -30,6 +30,8 @@ export default function InfluencerDashboard() {
   const [operator, setOperator] = useState<'AIRTEL_MONEY' | 'MOOV_MONEY'>('AIRTEL_MONEY');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [payoutSuccess, setPayoutSuccess] = useState(false);
+  const [payoutErrorMsg, setPayoutErrorMsg] = useState<string | null>(null);
 
   const copyLink = (eventId: string, code: string) => {
     const url = `https://billetgab.com/events/${eventId}?promo=${code}`;
@@ -51,6 +53,14 @@ export default function InfluencerDashboard() {
         queryClient.invalidateQueries('influencer-dashboard');
         setShowPayoutForm(false);
         setPhone('');
+        setPayoutErrorMsg(null);
+        setPayoutSuccess(true);
+        setTimeout(() => setPayoutSuccess(false), 5000);
+      },
+      onError: (err: unknown) => {
+        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+          ?? 'Le virement a échoué. Vérifiez votre numéro et réessayez.';
+        setPayoutErrorMsg(msg);
       },
     }
   );
@@ -103,7 +113,17 @@ export default function InfluencerDashboard() {
           </div>
         )}
 
-        {/* Demande versement */}
+        {/* Succès virement */}
+        {payoutSuccess && (
+          <div className="glass-card p-4 border border-emerald-500/30 bg-emerald-500/5">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+              <p className="text-emerald-400 text-sm font-semibold">Virement effectué ! L'argent arrive sur votre Mobile Money dans quelques instants.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Retrait */}
         {summary.availableBalance >= 1500 && (
           <div className="glass-card p-5">
             <div className="flex items-center justify-between mb-4">
@@ -112,14 +132,15 @@ export default function InfluencerDashboard() {
                 <p className="text-2xl font-bebas tracking-wider text-gradient mt-1">{formatPrice(summary.availableBalance)}</p>
               </div>
               <button
-                onClick={() => setShowPayoutForm(!showPayoutForm)}
+                onClick={() => { setShowPayoutForm(!showPayoutForm); setPayoutErrorMsg(null); }}
                 className="neon-button px-5 py-2.5 text-sm font-semibold rounded-xl"
               >
-                Demander un versement
+                Retirer mes gains
               </button>
             </div>
             {showPayoutForm && (
               <div className="border-t border-white/10 pt-4 space-y-4">
+                <p className="text-white/40 text-xs">Le virement est instantané — l'argent arrive directement sur votre numéro Mobile Money.</p>
                 <div>
                   <label className="text-xs text-white/50 uppercase tracking-widest block mb-2">Opérateur</label>
                   <div className="flex gap-3">
@@ -148,10 +169,10 @@ export default function InfluencerDashboard() {
                   disabled={!phone.trim() || payoutMutation.isLoading}
                   className="neon-button w-full py-3 text-sm font-semibold rounded-xl disabled:opacity-40"
                 >
-                  {payoutMutation.isLoading ? 'Envoi...' : `Demander ${formatPrice(summary.availableBalance)}`}
+                  {payoutMutation.isLoading ? 'Virement en cours...' : `Recevoir ${formatPrice(summary.availableBalance)}`}
                 </button>
-                {payoutMutation.isError && (
-                  <p className="text-rose-neon text-sm text-center">Erreur lors de la demande. Réessayez.</p>
+                {payoutErrorMsg && (
+                  <p className="text-rose-neon text-sm text-center">{payoutErrorMsg}</p>
                 )}
               </div>
             )}
