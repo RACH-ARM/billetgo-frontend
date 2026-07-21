@@ -51,4 +51,9 @@ export const promoService = {
   requestPayout: async (phoneNumber: string, operator: 'AIRTEL_MONEY' | 'MOOV_MONEY'): Promise<void> => {
     await api.post('/influencer/payouts', { phoneNumber, operator });
   },
+
+  // Tracker un clic sur lien influenceur (silencieux)
+  trackClick: async (eventId: string, code: string): Promise<void> => {
+    await api.post('/promo/track-click', { eventId, code }).catch(() => {});
+  },
 };

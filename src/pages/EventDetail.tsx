@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, X, ArrowRight, Minus, Plus, MapPin, Share2, Copy, Check as CheckIcon, Star, MessageSquare, Bell, BellOff, Heart, UserCheck, UserPlus } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
@@ -20,6 +20,7 @@ import Button from '../components/common/Button';
 import LoginWallModal from '../components/common/LoginWallModal';
 import type { TicketCategory } from '../types/event';
 import api from '../services/api';
+import { promoService } from '../services/promoService';
 import { availabilityLevel, categoryAvailabilityLevel } from '../utils/availability';
 import toast from 'react-hot-toast';
 
@@ -32,6 +33,8 @@ export default function EventDetail() {
   const { isAuthenticated, user } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const promoCode = searchParams.get('promo')?.toUpperCase() ?? null;
   const queryClient = useQueryClient();
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [activeGallery, setActiveGallery] = useState<string | null>(null);
@@ -81,6 +84,15 @@ export default function EventDetail() {
     setFollowerCount(event.organizer?.followerCount ?? 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [event?.id]);
+
+  // Tracker le clic influenceur — une seule fois par session par couple event+code
+  useEffect(() => {
+    if (!promoCode || !event?.id) return;
+    const key = `promo_tracked_${event.id}_${promoCode}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, '1');
+    promoService.trackClick(event.id, promoCode);
+  }, [event?.id, promoCode]);
 
   const toggleLikeMutation = useMutation(
     () => likeService.toggleLike(id!),
@@ -266,7 +278,8 @@ export default function EventDetail() {
   };
 
   const handleBuy = () => {
-    navigate('/checkout');
+    const dest = promoCode ? `/checkout?promo=${encodeURIComponent(promoCode)}` : '/checkout';
+    navigate(dest);
   };
 
   const allImages = [

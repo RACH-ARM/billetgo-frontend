@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { TrendingUp, Ticket, MousePointerClick, Wallet, Clock, CheckCircle, XCircle, ChevronDown, ChevronUp, LogOut } from 'lucide-react';
+import { TrendingUp, Ticket, MousePointerClick, Wallet, Clock, CheckCircle, XCircle, ChevronDown, ChevronUp, LogOut, Copy, Check } from 'lucide-react';
 import { promoService } from '../services/promoService';
 import { formatPrice } from '../utils/formatPrice';
 import { formatEventDate } from '../utils/formatDate';
@@ -29,6 +29,15 @@ export default function InfluencerDashboard() {
   const [phone, setPhone] = useState('');
   const [operator, setOperator] = useState<'AIRTEL_MONEY' | 'MOOV_MONEY'>('AIRTEL_MONEY');
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+  const copyLink = (eventId: string, code: string) => {
+    const url = `https://billetgab.com/events/${eventId}?promo=${code}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedCode(code);
+      setTimeout(() => setCopiedCode(null), 2000);
+    });
+  };
 
   const { data, isLoading } = useQuery(
     'influencer-dashboard',
@@ -187,24 +196,39 @@ export default function InfluencerDashboard() {
                 </button>
 
                 {expanded === c.promoCodeId && (
-                  <div className="px-5 pb-5 border-t border-white/5 pt-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <div>
-                      <p className="text-white/40 text-xs mb-1">Clics sur votre lien</p>
-                      <p className="text-white font-semibold">{c.clickCount.toLocaleString('fr-FR')}</p>
+                  <div className="px-5 pb-5 border-t border-white/5 pt-4 space-y-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      <div>
+                        <p className="text-white/40 text-xs mb-1">Clics sur votre lien</p>
+                        <p className="text-white font-semibold">{c.clickCount.toLocaleString('fr-FR')}</p>
+                      </div>
+                      <div>
+                        <p className="text-white/40 text-xs mb-1">Utilisations</p>
+                        <p className="text-white font-semibold">{c.stats.usageCount}</p>
+                      </div>
+                      <div>
+                        <p className="text-white/40 text-xs mb-1">En attente</p>
+                        <p className="text-amber-400 font-semibold font-mono">{formatPrice(c.stats.commissionPending)}</p>
+                      </div>
+                      <div>
+                        <p className="text-white/40 text-xs mb-1">Réduction offerte</p>
+                        <p className="text-white font-semibold">
+                          {c.discountType === 'PERCENTAGE' ? `${c.discountValue}%` : c.discountType === 'FIXED' ? formatPrice(Number(c.discountValue)) : 'Aucune'}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-white/40 text-xs mb-1">Utilisations</p>
-                      <p className="text-white font-semibold">{c.stats.usageCount}</p>
-                    </div>
-                    <div>
-                      <p className="text-white/40 text-xs mb-1">En attente</p>
-                      <p className="text-amber-400 font-semibold font-mono">{formatPrice(c.stats.commissionPending)}</p>
-                    </div>
-                    <div>
-                      <p className="text-white/40 text-xs mb-1">Réduction offerte</p>
-                      <p className="text-white font-semibold">
-                        {c.discountType === 'PERCENTAGE' ? `${c.discountValue}%` : c.discountType === 'FIXED' ? formatPrice(Number(c.discountValue)) : 'Aucune'}
+                    {/* Lien à partager */}
+                    <div className="flex items-center gap-3 bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3">
+                      <p className="flex-1 font-mono text-xs text-white/40 truncate">
+                        billetgab.com/events/{c.event.id}?promo={c.code}
                       </p>
+                      <button
+                        onClick={() => copyLink(c.event.id, c.code)}
+                        className="flex items-center gap-1.5 text-xs font-semibold text-violet-neon hover:text-white transition-colors flex-shrink-0"
+                      >
+                        {copiedCode === c.code ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        {copiedCode === c.code ? 'Copié !' : 'Copier'}
+                      </button>
                     </div>
                   </div>
                 )}
