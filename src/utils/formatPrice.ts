@@ -1,5 +1,5 @@
 export const formatPrice = (amount: number | string, currency = 'FCFA', zeroLabel = 'GRATUIT'): string => {
-  const n = Number(amount);
+  const n = Math.round(Number(amount));
   if (n === 0) return zeroLabel;
   return `${n.toLocaleString('fr-FR')} ${currency}`;
 };

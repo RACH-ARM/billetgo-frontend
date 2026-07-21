@@ -215,7 +215,7 @@ export default function Checkout() {
 
   const rawTotal = getTotalAmount();
   const discountAmount = promoValidation?.discountAmount ?? 0;
-  const effectiveTotal = Math.max(0, rawTotal - discountAmount);
+  const effectiveTotal = Math.max(0, Math.round(rawTotal - discountAmount));
 
   // Frais de traitement pour billets gratuits uniquement (500 FCFA/billet)
   const FREE_TICKET_FEE = 500;
