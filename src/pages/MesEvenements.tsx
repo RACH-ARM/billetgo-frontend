@@ -338,13 +338,12 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
 
       {!event.promoEnabled && (
         <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-sm">
-          Les codes promo ne sont pas activés pour cet événement. Demandez à l'admin BilletGab de les activer dans l'onglet Vitrine.
+          Les codes promo ne sont pas activés pour cet événement. Contactez l'admin BilletGab pour les activer.
         </div>
       )}
 
       {showForm && (
         <div className="glass-card p-5 space-y-4">
-          <h3 className="text-white font-semibold text-sm">Nouveau code promo</h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <input value={form.influencerFirstName} onChange={(e) => setForm((f) => ({ ...f, influencerFirstName: e.target.value }))} placeholder="Prénom influenceur" className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors" />
             <input value={form.influencerLastName} onChange={(e) => setForm((f) => ({ ...f, influencerLastName: e.target.value }))} placeholder="Nom influenceur" className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors" />
