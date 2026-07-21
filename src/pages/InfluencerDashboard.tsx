@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { TrendingUp, Ticket, MousePointerClick, Wallet, Clock, CheckCircle, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { TrendingUp, Ticket, MousePointerClick, Wallet, Clock, CheckCircle, XCircle, ChevronDown, ChevronUp, LogOut } from 'lucide-react';
 import { promoService } from '../services/promoService';
 import { formatPrice } from '../utils/formatPrice';
 import { formatEventDate } from '../utils/formatDate';
+import { useAuthStore } from '../stores/authStore';
 import type { InfluencerCampaign, InfluencerPayout } from '../types/promo';
 
 function StatCard({ icon: Icon, label, value, sub }: { icon: React.ElementType; label: string; value: string; sub?: string }) {
@@ -23,6 +24,7 @@ function StatCard({ icon: Icon, label, value, sub }: { icon: React.ElementType; 
 
 export default function InfluencerDashboard() {
   const queryClient = useQueryClient();
+  const { logout } = useAuthStore();
   const [showPayoutForm, setShowPayoutForm] = useState(false);
   const [phone, setPhone] = useState('');
   const [operator, setOperator] = useState<'AIRTEL_MONEY' | 'MOOV_MONEY'>('AIRTEL_MONEY');
@@ -58,9 +60,17 @@ export default function InfluencerDashboard() {
     <div className="min-h-screen py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto space-y-8">
         {/* Header */}
-        <div>
-          <h1 className="font-bebas text-4xl tracking-wider text-gradient">MON ESPACE INFLUENCEUR</h1>
-          <p className="text-white/40 text-sm mt-1">Suivez vos campagnes et vos commissions en temps réel.</p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="font-bebas text-4xl tracking-wider text-gradient">MON ESPACE INFLUENCEUR</h1>
+            <p className="text-white/40 text-sm mt-1">Suivez vos campagnes et vos commissions en temps réel.</p>
+          </div>
+          <button
+            onClick={() => logout()}
+            className="flex items-center gap-2 text-white/40 hover:text-white text-sm transition-colors mt-1"
+          >
+            <LogOut className="w-4 h-4" /> Déconnexion
+          </button>
         </div>
 
         {/* Stats */}
