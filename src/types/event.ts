@@ -50,6 +50,7 @@ export interface Event {
   offer: OfferType;
   commissionRate: number;
   operatorFeeMode: 'ABSORB' | 'TRANSPARENT';
+  promoEnabled: boolean;
   maxTicketsPerOrder: number;
   organizer: Organizer;
   ticketCategories: TicketCategory[];

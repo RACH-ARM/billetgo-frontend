@@ -16,6 +16,7 @@ export interface OrganizerEventStat {
   totalRevenue: number;
   likeCount: number;
   occupancyRate: number;
+  promoEnabled: boolean;
 }
 
 export interface OrganizerStats {

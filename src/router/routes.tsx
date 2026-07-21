@@ -56,6 +56,8 @@ export const MonCompte = lazy(() => import('../pages/MonCompte'));
 export const ContratOrganisateur = lazy(() => import('../pages/ContratOrganisateur'));
 export const GoogleAuthCallback = lazy(() => import('../pages/GoogleAuthCallback'));
 export const GuestTicketLookup = lazyWithReload(() => import('../pages/GuestTicketLookup'));
+export const InfluencerDashboard = lazyWithReload(() => import('../pages/InfluencerDashboard'));
+export const AcceptInvite = lazyWithReload(() => import('../pages/AcceptInvite'));
 export const PublicLayout = lazy(() => import('../components/layout/PageLayout'));
 
 export const Spinner = () => <SplashLoader />;
@@ -65,6 +67,7 @@ const ROLE_HOME: Record<string, string> = {
   ORGANIZER: '/dashboard',
   ADMIN: '/admin',
   SCANNER: '/scanner',
+  INFLUENCER: '/influencer',
 };
 
 export const BuyerOrGuestRoute = () => {

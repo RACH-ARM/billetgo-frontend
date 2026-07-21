@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import {
   Check, ChevronLeft, Ticket, Smartphone, CreditCard,
   ArrowRight, Trash2, CalendarDays, MapPin, X, Info, Clock, Lock, Mail, AlertTriangle,
@@ -14,6 +14,8 @@ import { formatEventDate } from '../utils/formatDate';
 import { normalizeGabonPhone, isValidGabonPhone, isPhoneMatchingProvider } from '../utils/phone';
 import { unlockAudio } from '../utils/sounds';
 import Button from '../components/common/Button';
+import { promoService } from '../services/promoService';
+import type { PromoValidation } from '../types/promo';
 
 type Step = 1 | 2;
 
@@ -70,8 +72,42 @@ export default function Checkout() {
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [initiateNetworkError, setInitiateNetworkError] = useState(false);
   const [paymentStep, setPaymentStep] = useState<'idle' | 'creating' | 'initiating'>('idle');
+
+  // Code promo
+  const [searchParams] = useSearchParams();
+  const [promoInput, setPromoInput] = useState('');
+  const [promoValidation, setPromoValidation] = useState<PromoValidation | null>(null);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [promoLoading, setPromoLoading] = useState(false);
   const createOrder = useCreateOrder();
   const initiatePayment = useInitiatePayment();
+
+  const applyPromoCode = async (code: string) => {
+    if (!event || !code.trim()) return;
+    setPromoLoading(true);
+    setPromoError(null);
+    try {
+      const result = await promoService.validate(code.trim(), event.id, rawTotal);
+      setPromoValidation(result);
+      setPromoInput(result.code);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setPromoError(msg || 'Code promo invalide');
+      setPromoValidation(null);
+    } finally {
+      setPromoLoading(false);
+    }
+  };
+
+  // Auto-apply depuis ?promo= dans l'URL
+  useEffect(() => {
+    const urlPromo = searchParams.get('promo');
+    if (urlPromo && event) {
+      setPromoInput(urlPromo.toUpperCase());
+      applyPromoCode(urlPromo);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [event?.id]);
   const { data: freshEvent } = useEvent(event?.id ?? '');
   const isPaying = useRef(false);
 
@@ -178,6 +214,8 @@ export default function Checkout() {
   }
 
   const rawTotal = getTotalAmount();
+  const discountAmount = promoValidation?.discountAmount ?? 0;
+  const effectiveTotal = Math.max(0, rawTotal - discountAmount);
 
   // Frais de traitement pour billets gratuits uniquement (500 FCFA/billet)
   const FREE_TICKET_FEE = 500;
@@ -185,7 +223,7 @@ export default function Checkout() {
     return acc + (item.category.price === 0 ? item.quantity * FREE_TICKET_FEE : 0);
   }, 0);
   const PAYIN_RATE = 0.025; // 2,5% Airtel et Moov
-  const payinBase = Math.max(0, rawTotal + freeTicketFee);
+  const payinBase = Math.max(0, effectiveTotal + freeTicketFee);
   const operatorFeeMode = event?.operatorFeeMode ?? 'ABSORB';
   // TRANSPARENT : l'acheteur paye les frais opérateur par-dessus le prix affiché
   // ABSORB : frais absorbés par l'organisateur, l'acheteur paye exactement le prix
@@ -233,6 +271,7 @@ export default function Checkout() {
         ),
         cgvAcceptedAt: new Date().toISOString(),
         provider: provider ?? undefined,
+        ...(promoValidation ? { promoCode: promoValidation.code } : {}),
       });
 
       setPaymentStep('initiating');
@@ -454,12 +493,62 @@ export default function Checkout() {
                       })}
                     </div>
 
+                    {/* Code promo */}
+                    {event.promoEnabled && (
+                      <div className="mt-4 pt-4 border-t border-white/5">
+                        {promoValidation ? (
+                          <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+                            <div>
+                              <p className="text-emerald-400 text-sm font-semibold">Code <span className="font-mono">{promoValidation.code}</span> appliqué</p>
+                              <p className="text-white/50 text-xs mt-0.5">
+                                {promoValidation.label ? `${promoValidation.label} · ` : ''}
+                                -{formatPrice(promoValidation.discountAmount)}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => { setPromoValidation(null); setPromoInput(''); setPromoError(null); }}
+                              className="text-white/30 hover:text-rose-neon transition-colors"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <label className="text-xs text-white/40 uppercase tracking-widest">Code promo</label>
+                            <div className="flex gap-2">
+                              <input
+                                value={promoInput}
+                                onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPromoError(null); }}
+                                onKeyDown={(e) => e.key === 'Enter' && applyPromoCode(promoInput)}
+                                placeholder="ex. INSTA20"
+                                className="flex-1 bg-bg-secondary border border-violet-neon/20 rounded-xl px-4 py-2.5 text-white font-mono placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors text-sm"
+                              />
+                              <button
+                                onClick={() => applyPromoCode(promoInput)}
+                                disabled={!promoInput.trim() || promoLoading}
+                                className="px-4 py-2.5 rounded-xl bg-violet-neon/20 border border-violet-neon/30 text-violet-neon text-sm font-semibold hover:bg-violet-neon/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                              >
+                                {promoLoading ? '...' : 'Appliquer'}
+                              </button>
+                            </div>
+                            {promoError && <p className="text-rose-neon text-xs">{promoError}</p>}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* Récapitulatif financier détaillé */}
                     <div className="mt-3 pt-3 border-t border-white/10 space-y-2">
                       <div className="flex justify-between text-sm text-white/60">
                         <span>Sous-total</span>
                         <span className="font-mono">{formatPrice(rawTotal)}</span>
                       </div>
+                      {discountAmount > 0 && (
+                        <div className="flex justify-between items-center text-sm text-emerald-400">
+                          <span className="flex items-center gap-1.5">Code promo ({promoValidation?.code})</span>
+                          <span className="font-mono">-{formatPrice(discountAmount)}</span>
+                        </div>
+                      )}
                       {freeTicketFee > 0 && (
                         <div className="flex justify-between items-center text-sm text-white/40">
                           <span className="flex items-center gap-1.5">

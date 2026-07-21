@@ -9,6 +9,7 @@ import {
   ResetPassword, VerifyEmail, OrganizerPublicPage, Notifications,
   OrganizerLayout, Versements, MesEvenements, MonCompte,
   ContratOrganisateur, GoogleAuthCallback, GuestTicketLookup,
+  InfluencerDashboard, AcceptInvite,
 } from './routes';
 
 // Intercepte les erreurs de chunk Vite au niveau React Router
@@ -131,6 +132,14 @@ export const router = createBrowserRouter(
         {
           element: <ProtectedRoute roles={['SCANNER']} />,
           children: [{ path: 'scanner', element: <ScannerApp /> }],
+        },
+        {
+          element: <ProtectedRoute roles={['INFLUENCER']} />,
+          children: [{ path: 'influencer', element: <InfluencerDashboard /> }],
+        },
+        {
+          element: <OpenRoute />,
+          children: [{ path: 'influencer/accept-invite', element: <AcceptInvite /> }],
         },
         { path: '*', element: <Navigate to="/" replace /> },
       ],

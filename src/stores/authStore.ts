@@ -18,6 +18,7 @@ interface AuthState {
   logout: () => Promise<void>;
   forceLogout: () => void;
   setTokens: (accessToken: string, refreshToken: string) => void;
+  loginWithTokens: (user: User, accessToken: string, refreshToken: string) => void;
   markEmailVerified: () => void;
   updateUser: (partial: Partial<User>) => void;
 }
@@ -91,6 +92,14 @@ export const useAuthStore = create<AuthState>()(
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
         set({ accessToken, refreshToken });
+      },
+
+      loginWithTokens: (user, accessToken, refreshToken) => {
+        queryClient.clear();
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+        set({ user, accessToken, refreshToken, isAuthenticated: true });
+        Sentry.setUser({ id: user.id, email: user.email ?? '', username: `${user.firstName} ${user.lastName}` });
       },
 
       markEmailVerified: () => {

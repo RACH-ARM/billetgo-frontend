@@ -6,8 +6,11 @@ import {
   Plus, Trash2, AlertTriangle, Check,
   Clock, Ban, X, Banknote, Images, ImagePlus, MapPin, Heart,
 } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useOrganizerStats, useEventBuyers, useCreateEvent, useUpdateEvent, useProposeChanges, useResubmitEvent, useCancelEvent, useOrganizerProfile, useEventDetails, useEventWaitlist, useUploadEventGallery, useDeleteEventGalleryPhoto } from '../hooks/useOrganizer';
 import { organizerService, type OrganizerEventStat, type CreateEventTicketCategory } from '../services/organizerService';
+import { promoService } from '../services/promoService';
+import type { PromoCode } from '../types/promo';
 import { formatPrice } from '../utils/formatPrice';
 import { formatEventDate } from '../utils/formatDate';
 import Spinner from '../components/common/Spinner';
@@ -252,6 +255,187 @@ function BuyersPanel({ event, onBack }: { event: OrganizerEventStat; onBack: () 
         </div>
       )}
     </motion.div>
+  );
+}
+
+// ── Promo codes panel ──────────────────────────────────────────
+function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack: () => void }) {
+  const queryClient = useQueryClient();
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({
+    influencerEmail: '', influencerFirstName: '', influencerLastName: '',
+    code: '', label: '',
+    discountType: 'PERCENTAGE' as 'PERCENTAGE' | 'FIXED' | 'NONE',
+    discountValue: '',
+    commissionType: 'PERCENTAGE' as 'PERCENTAGE' | 'FIXED',
+    commissionValue: '',
+  });
+
+  const { data: codes = [], isLoading } = useQuery(
+    ['promo-codes', event.eventId],
+    () => promoService.getCodes(event.eventId),
+  );
+
+  const createMutation = useMutation(
+    () => promoService.createCode(event.eventId, {
+      influencerEmail: form.influencerEmail,
+      influencerFirstName: form.influencerFirstName,
+      influencerLastName: form.influencerLastName,
+      code: form.code,
+      label: form.label || undefined,
+      discountType: form.discountType,
+      discountValue: Number(form.discountValue) || 0,
+      commissionType: form.commissionType,
+      commissionValue: Number(form.commissionValue) || 0,
+    }),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['promo-codes', event.eventId]);
+        setShowForm(false);
+        setForm({ influencerEmail: '', influencerFirstName: '', influencerLastName: '', code: '', label: '', discountType: 'PERCENTAGE', discountValue: '', commissionType: 'PERCENTAGE', commissionValue: '' });
+        toast.success('Code créé — invitation envoyée à l\'influenceur');
+      },
+      onError: (err: unknown) => {
+        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+        toast.error(msg || 'Erreur lors de la création');
+      },
+    }
+  );
+
+  const toggleMutation = useMutation(
+    (codeId: string) => promoService.toggleCode(event.eventId, codeId),
+    { onSuccess: () => queryClient.invalidateQueries(['promo-codes', event.eventId]) }
+  );
+
+  const deleteMutation = useMutation(
+    (codeId: string) => promoService.deleteCode(event.eventId, codeId),
+    {
+      onSuccess: () => queryClient.invalidateQueries(['promo-codes', event.eventId]),
+      onError: (err: unknown) => {
+        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+        toast.error(msg || 'Impossible de supprimer');
+      },
+    }
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <button onClick={onBack} className="text-white/40 hover:text-white transition-colors">
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <div>
+          <h2 className="font-bebas text-2xl tracking-wider text-white">CODES PROMO</h2>
+          <p className="text-white/40 text-xs">{event.title}</p>
+        </div>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="ml-auto neon-button px-4 py-2 text-sm font-semibold rounded-xl flex items-center gap-2"
+        >
+          <Plus className="w-4 h-4" /> Nouveau code
+        </button>
+      </div>
+
+      {!event.promoEnabled && (
+        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-sm">
+          Les codes promo ne sont pas activés pour cet événement. Demandez à l'admin BilletGab de les activer dans l'onglet Vitrine.
+        </div>
+      )}
+
+      {showForm && (
+        <div className="glass-card p-5 space-y-4">
+          <h3 className="text-white font-semibold text-sm">Nouveau code promo</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <input value={form.influencerFirstName} onChange={(e) => setForm((f) => ({ ...f, influencerFirstName: e.target.value }))} placeholder="Prénom influenceur" className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors" />
+            <input value={form.influencerLastName} onChange={(e) => setForm((f) => ({ ...f, influencerLastName: e.target.value }))} placeholder="Nom influenceur" className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors" />
+            <input value={form.influencerEmail} onChange={(e) => setForm((f) => ({ ...f, influencerEmail: e.target.value }))} placeholder="Email influenceur *" type="email" className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <input value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))} placeholder="Code (ex. INSTA20) *" className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white font-mono placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors" />
+            <input value={form.label} onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))} placeholder="Libellé (ex. Campagne Instagram)" className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <p className="text-xs text-white/40">Réduction acheteur</p>
+              <div className="flex gap-2">
+                <select value={form.discountType} onChange={(e) => setForm((f) => ({ ...f, discountType: e.target.value as 'PERCENTAGE' | 'FIXED' | 'NONE' }))} className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-2 py-2 text-white text-xs focus:outline-none focus:border-violet-neon">
+                  <option value="NONE">Aucune</option>
+                  <option value="PERCENTAGE">%</option>
+                  <option value="FIXED">FCFA fixe</option>
+                </select>
+                {form.discountType !== 'NONE' && (
+                  <input type="number" value={form.discountValue} onChange={(e) => setForm((f) => ({ ...f, discountValue: e.target.value }))} placeholder={form.discountType === 'PERCENTAGE' ? '20' : '1000'} className="flex-1 bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon" />
+                )}
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <p className="text-xs text-white/40">Commission influenceur</p>
+              <div className="flex gap-2">
+                <select value={form.commissionType} onChange={(e) => setForm((f) => ({ ...f, commissionType: e.target.value as 'PERCENTAGE' | 'FIXED' }))} className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-2 py-2 text-white text-xs focus:outline-none focus:border-violet-neon">
+                  <option value="PERCENTAGE">%</option>
+                  <option value="FIXED">FCFA/billet</option>
+                </select>
+                <input type="number" value={form.commissionValue} onChange={(e) => setForm((f) => ({ ...f, commissionValue: e.target.value }))} placeholder={form.commissionType === 'PERCENTAGE' ? '5' : '500'} className="flex-1 bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon" />
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <button onClick={() => setShowForm(false)} className="flex-1 py-2.5 rounded-xl border border-white/10 text-white/40 text-sm hover:border-white/20 transition-colors">Annuler</button>
+            <button
+              onClick={() => createMutation.mutate()}
+              disabled={!form.influencerEmail || !form.code || createMutation.isLoading}
+              className="flex-1 neon-button py-2.5 text-sm font-semibold rounded-xl disabled:opacity-40"
+            >
+              {createMutation.isLoading ? 'Création...' : 'Créer et inviter'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isLoading ? (
+        <Spinner />
+      ) : codes.length === 0 ? (
+        <div className="glass-card p-10 text-center text-white/30">
+          <Ticket className="w-8 h-8 mx-auto mb-3 opacity-30" />
+          <p className="text-sm">Aucun code promo pour cet événement.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {codes.map((c: PromoCode) => (
+            <div key={c.id} className="glass-card p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-mono text-violet-neon font-bold">{c.code}</span>
+                    {c.label && <span className="text-white/40 text-xs">{c.label}</span>}
+                    <span className={`text-xs px-1.5 py-0.5 rounded-md ${c.isActive ? 'bg-emerald-500/10 text-emerald-400' : 'bg-white/5 text-white/30'}`}>
+                      {c.isActive ? 'Actif' : 'Inactif'}
+                    </span>
+                  </div>
+                  <p className="text-white/40 text-xs mt-1">
+                    {c.influencer.firstName} {c.influencer.lastName} · {c.influencer.email}
+                  </p>
+                  <div className="flex items-center gap-4 mt-2 text-xs text-white/50">
+                    <span>Réduction : {c.discountType === 'NONE' ? 'Aucune' : c.discountType === 'PERCENTAGE' ? `${c.discountValue}%` : formatPrice(Number(c.discountValue))}</span>
+                    <span>Commission : {c.commissionType === 'PERCENTAGE' ? `${c.commissionValue}%` : `${formatPrice(Number(c.commissionValue))}/billet`}</span>
+                    <span>{c.clickCount} clic{c.clickCount !== 1 ? 's' : ''}</span>
+                    <span className="text-cyan-neon">{c.stats.ticketsSold} billet{c.stats.ticketsSold !== 1 ? 's' : ''} · {formatPrice(c.stats.totalCommission)} commission</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button onClick={() => toggleMutation.mutate(c.id)} className={`text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${c.isActive ? 'border-amber-400/30 text-amber-400 hover:bg-amber-400/10' : 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'}`}>
+                    {c.isActive ? 'Désactiver' : 'Activer'}
+                  </button>
+                  <button onClick={() => deleteMutation.mutate(c.id)} className="text-white/20 hover:text-rose-neon transition-colors" title="Supprimer">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -1275,6 +1459,7 @@ export default function MesEvenements() {
   const [cancelTarget, setCancelTarget] = useState<{ id: string; title: string } | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const [waitlistEvent, setWaitlistEvent] = useState<OrganizerEventStat | null>(null);
+  const [promoEvent, setPromoEvent] = useState<OrganizerEventStat | null>(null);
   const [qrDownloading, setQrDownloading] = useState<string | null>(null);
   const cancelEvent = useCancelEvent();
 
@@ -1344,6 +1529,14 @@ export default function MesEvenements() {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <WaitlistPanel event={waitlistEvent} onBack={() => setWaitlistEvent(null)} />
+      </div>
+    );
+  }
+
+  if (promoEvent) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <PromoCodesPanel event={promoEvent} onBack={() => setPromoEvent(null)} />
       </div>
     );
   }
@@ -1485,6 +1678,12 @@ export default function MesEvenements() {
                         className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-white/5 text-white/40 hover:bg-cyan-neon/10 hover:text-cyan-neon border border-white/5 hover:border-cyan-neon/20 transition-colors"
                       >
                         <Clock className="w-3 h-3" /> Waitlist
+                      </button>
+                      <button
+                        onClick={() => setPromoEvent(event)}
+                        className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-white/5 text-white/40 hover:bg-violet-neon/10 hover:text-violet-neon border border-white/5 hover:border-violet-neon/20 transition-colors"
+                      >
+                        <Ticket className="w-3 h-3" /> Codes promo
                       </button>
                       {['PUBLISHED', 'APPROVED', 'COMPLETED'].includes(event.status) && (
                         <button

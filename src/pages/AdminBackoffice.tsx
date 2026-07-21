@@ -7,7 +7,7 @@ import {
   ShieldAlert, LayoutDashboard, ListChecks, X, LogOut, Banknote,
   Star, Flame, Ban, Sparkles, ScanLine, Plus, Eye, EyeOff, Pencil, MessageSquare, FileSearch, RotateCcw, ScrollText, Settings,
   Square, CheckSquare, BadgeCheck, MapPin, QrCode, Download, ShoppingCart, UserCheck,
-  ChevronDown, ChevronLeft, ChevronRight, Search, AlertCircle, Heart,
+  ChevronDown, ChevronLeft, ChevronRight, Search, AlertCircle, Heart, Ticket, Link2,
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -20,7 +20,7 @@ import { formatPrice } from '../utils/formatPrice';
 import { formatEventDate } from '../utils/formatDate';
 import toast from 'react-hot-toast';
 
-type TabType = 'dashboard' | 'events' | 'vitrine' | 'users' | 'retraits' | 'scanners' | 'refunds' | 'audit' | 'settings';
+type TabType = 'dashboard' | 'events' | 'vitrine' | 'users' | 'retraits' | 'scanners' | 'refunds' | 'audit' | 'settings' | 'influenceurs';
 
 // ── Types ─────────────────────────────────────────────────────
 interface AuditLogEntry {
@@ -846,8 +846,8 @@ export default function AdminBackoffice() {
   }, { enabled: tab === 'vitrine' });
 
   const updateFlags = useMutation(
-    async ({ id, isFeatured, isHot }: { id: string; isFeatured?: boolean; isHot?: boolean }) => {
-      await api.patch(`/admin/events/${id}/flags`, { isFeatured, isHot });
+    async ({ id, isFeatured, isHot, promoEnabled }: { id: string; isFeatured?: boolean; isHot?: boolean; promoEnabled?: boolean }) => {
+      await api.patch(`/admin/events/${id}/flags`, { isFeatured, isHot, promoEnabled });
     },
     {
       onSuccess: () => { qc.invalidateQueries('admin-vitrine'); toast.success('Mise en avant mise à jour'); },
@@ -1102,6 +1102,33 @@ export default function AdminBackoffice() {
     }
   );
 
+  const { data: influencerPayoutsData, isLoading: influencerPayoutsLoading } = useQuery(
+    'admin-influencer-payouts',
+    () => api.get('/influencer/admin/payouts').then((r) => r.data.data as Array<{
+      id: string;
+      amount: string;
+      operator: string;
+      phoneNumber: string;
+      status: string;
+      adminNote: string | null;
+      createdAt: string;
+      influencer: { id: string; firstName: string; lastName: string; email: string };
+    }>),
+    { enabled: tab === 'influenceurs', staleTime: 0 }
+  );
+
+  const updateInfluencerPayoutMutation = useMutation(
+    ({ payoutId, status, adminNote }: { payoutId: string; status: 'PAID' | 'REJECTED'; adminNote?: string }) =>
+      api.patch(`/influencer/admin/payouts/${payoutId}`, { status, adminNote }).then((r) => r.data),
+    {
+      onSuccess: (_d, vars) => {
+        toast.success(vars.status === 'PAID' ? 'Versement marqué comme payé' : 'Demande rejetée');
+        qc.invalidateQueries('admin-influencer-payouts');
+      },
+      onError: () => { toast.error('Erreur lors du traitement'); },
+    }
+  );
+
   const { data: adminCounts } = useQuery(
     'admin-counts',
     () => api.get('/admin/counts').then((r) => r.data.data as { pendingEvents: number; pendingChanges: number; pendingPayouts: number; pendingRefunds: number }),
@@ -1116,6 +1143,7 @@ export default function AdminBackoffice() {
     { key: 'users' as TabType, label: 'Utilisateurs', Icon: Users },
     { key: 'retraits' as TabType, label: 'Retraits', Icon: Banknote, badge: adminCounts?.pendingPayouts || undefined },
     { key: 'refunds' as TabType, label: 'Remboursements', Icon: RotateCcw, badge: adminCounts?.pendingRefunds || undefined },
+    { key: 'influenceurs' as TabType, label: 'Influenceurs', Icon: Ticket },
     { key: 'audit' as TabType, label: 'Audit', Icon: ScrollText },
     { key: 'settings' as TabType, label: 'Paramètres', Icon: Settings },
   ];
@@ -1892,6 +1920,15 @@ export default function AdminBackoffice() {
                   >
                     <BadgeCheck className="w-3.5 h-3.5" />
                     {isEventCertified ? 'Retirer certif.' : 'Certifier'}
+                  </Button>
+                  <Button
+                    variant={(ev.promoEnabled as boolean) ? 'primary' : 'secondary'}
+                    size="sm"
+                    onClick={() => updateFlags.mutate({ id: ev.id as string, promoEnabled: !(ev.promoEnabled as boolean) })}
+                    isLoading={updateFlags.isLoading}
+                  >
+                    <Link2 className="w-3.5 h-3.5" />
+                    {(ev.promoEnabled as boolean) ? 'Promo ON' : 'Promo OFF'}
                   </Button>
                   <Button
                     variant="danger"
@@ -3297,6 +3334,76 @@ export default function AdminBackoffice() {
             </div>
           </div>
 
+        </div>
+      )}
+
+      {/* ── Influenceurs tab ── */}
+      {tab === 'influenceurs' && (
+        <div className="space-y-4">
+          <div>
+            <h2 className="font-bebas text-2xl tracking-wider text-white">VERSEMENTS INFLUENCEURS</h2>
+            <p className="text-white/40 text-xs mt-1">Demandes de versement de commission faites par les influenceurs.</p>
+          </div>
+
+          {influencerPayoutsLoading ? (
+            <SkeletonTable rows={4} />
+          ) : !influencerPayoutsData?.length ? (
+            <div className="glass-card p-16 text-center">
+              <Ticket className="w-12 h-12 text-violet-neon/20 mx-auto mb-3" />
+              <p className="text-white/40">Aucune demande de versement</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {influencerPayoutsData.map((p) => (
+                <div key={p.id} className={`glass-card p-4 flex flex-col sm:flex-row sm:items-center gap-4 ${p.status === 'PENDING' ? 'border border-amber-400/20' : ''}`}>
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${
+                        p.status === 'PENDING' ? 'bg-amber-400/20 text-amber-400' :
+                        p.status === 'PAID' ? 'bg-emerald-400/20 text-emerald-400' :
+                        'bg-rose-neon/20 text-rose-neon'
+                      }`}>
+                        {p.status === 'PENDING' ? 'En attente' : p.status === 'PAID' ? 'Versé' : 'Rejeté'}
+                      </span>
+                      <span className="text-white font-semibold font-mono">{formatPrice(Number(p.amount))}</span>
+                      <span className="text-white/40 text-xs">{p.operator === 'AIRTEL_MONEY' ? 'Airtel Money' : 'Moov Money'} · {p.phoneNumber}</span>
+                    </div>
+                    <p className="text-sm text-white/70">
+                      {p.influencer.firstName} {p.influencer.lastName}
+                      <span className="text-white/40 text-xs ml-2">{p.influencer.email}</span>
+                    </p>
+                    <p className="text-xs text-white/30">{new Date(p.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                    {p.adminNote && <p className="text-xs text-white/40 italic">{p.adminNote}</p>}
+                  </div>
+                  {p.status === 'PENDING' && (
+                    <div className="flex gap-2 flex-shrink-0">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => updateInfluencerPayoutMutation.mutate({ payoutId: p.id, status: 'PAID' })}
+                        isLoading={updateInfluencerPayoutMutation.isLoading}
+                      >
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        Marquer payé
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const note = window.prompt('Motif du refus (optionnel) :') ?? undefined;
+                          updateInfluencerPayoutMutation.mutate({ payoutId: p.id, status: 'REJECTED', adminNote: note });
+                        }}
+                        isLoading={updateInfluencerPayoutMutation.isLoading}
+                      >
+                        <XCircle className="w-3.5 h-3.5" />
+                        Rejeter
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
