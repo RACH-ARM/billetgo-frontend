@@ -81,8 +81,15 @@ export default function InfluencerDashboard() {
           <StatCard icon={Wallet} label="Solde disponible" value={formatPrice(summary.availableBalance)} sub={summary.totalPaid > 0 ? `${formatPrice(summary.totalPaid)} déjà versé` : undefined} />
         </div>
 
+        {/* Solde insuffisant */}
+        {summary.availableBalance > 0 && summary.availableBalance < 1500 && (
+          <div className="glass-card p-4 border border-amber-500/20 bg-amber-500/5">
+            <p className="text-amber-400 text-sm">Solde disponible : <span className="font-mono font-semibold">{formatPrice(summary.availableBalance)}</span> — le versement minimum est de <span className="font-semibold">1 500 FCFA</span>.</p>
+          </div>
+        )}
+
         {/* Demande versement */}
-        {summary.availableBalance > 0 && (
+        {summary.availableBalance >= 1500 && (
           <div className="glass-card p-5">
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -117,7 +124,7 @@ export default function InfluencerDashboard() {
                   <input
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="07 XX XX XX"
+                    placeholder={operator === 'AIRTEL_MONEY' ? '07 XX XX XX' : '06 XX XX XX'}
                     className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors"
                   />
                 </div>

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CalendarDays, Ticket, Download, Search, QrCode,
-  ChevronRight, ArrowLeft, Phone, Mail, CreditCard,
+  ChevronRight, ChevronDown, ChevronUp, ArrowLeft, Phone, Mail, CreditCard,
   Plus, Trash2, AlertTriangle, Check,
   Clock, Ban, X, Banknote, Images, ImagePlus, MapPin, Heart,
 } from 'lucide-react';
@@ -262,6 +262,7 @@ function BuyersPanel({ event, onBack }: { event: OrganizerEventStat; onBack: () 
 function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack: () => void }) {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const [expanded, setExpanded] = useState<string | null>(null);
   const [form, setForm] = useState({
     influencerEmail: '', influencerFirstName: '', influencerLastName: '',
     code: '', label: '',
@@ -401,8 +402,12 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
       ) : (
         <div className="space-y-2">
           {codes.map((c: PromoCode) => (
-            <div key={c.id} className="glass-card p-4">
-              <div className="flex items-start justify-between gap-3">
+            <div key={c.id} className="glass-card overflow-hidden">
+              {/* Header cliquable */}
+              <button
+                onClick={() => setExpanded(expanded === c.id ? null : c.id)}
+                className="w-full p-4 flex items-center justify-between text-left hover:bg-white/[0.02] transition-colors"
+              >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-mono text-violet-neon font-bold">{c.code}</span>
@@ -414,22 +419,63 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
                   <p className="text-white/40 text-xs mt-1">
                     {c.influencer.firstName} {c.influencer.lastName} · {c.influencer.email}
                   </p>
-                  <div className="flex items-center gap-4 mt-2 text-xs text-white/50">
-                    <span>Réduction : {c.discountType === 'NONE' ? 'Aucune' : c.discountType === 'PERCENTAGE' ? `${c.discountValue}%` : formatPrice(Number(c.discountValue))}</span>
-                    <span>Commission : {c.commissionType === 'PERCENTAGE' ? `${c.commissionValue}%` : `${formatPrice(Number(c.commissionValue))}/billet`}</span>
-                    <span>{c.clickCount} clic{c.clickCount !== 1 ? 's' : ''}</span>
-                    <span className="text-cyan-neon">{c.stats.ticketsSold} billet{c.stats.ticketsSold !== 1 ? 's' : ''} · {formatPrice(c.stats.totalCommission)} commission</span>
+                </div>
+                <div className="flex items-center gap-4 flex-shrink-0 ml-4">
+                  <div className="text-right hidden sm:block">
+                    <p className="text-white/40 text-xs">Billets</p>
+                    <p className="text-white font-semibold text-sm">{c.stats.ticketsSold}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-white/40 text-xs">Commission</p>
+                    <p className="text-cyan-neon font-semibold font-mono text-sm">{formatPrice(c.stats.totalCommission)}</p>
+                  </div>
+                  {expanded === c.id ? <ChevronUp className="w-4 h-4 text-white/30" /> : <ChevronDown className="w-4 h-4 text-white/30" />}
+                </div>
+              </button>
+
+              {/* Détails expandables */}
+              {expanded === c.id && (
+                <div className="border-t border-white/5 px-4 pb-4 pt-4 space-y-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div>
+                      <p className="text-white/40 text-xs mb-1">Clics sur le lien</p>
+                      <p className="text-white font-semibold">{c.clickCount.toLocaleString('fr-FR')}</p>
+                    </div>
+                    <div>
+                      <p className="text-white/40 text-xs mb-1">Utilisations</p>
+                      <p className="text-white font-semibold">{c.stats.usageCount}</p>
+                    </div>
+                    <div>
+                      <p className="text-white/40 text-xs mb-1">Commission en attente</p>
+                      <p className="text-amber-400 font-semibold font-mono">{formatPrice(c.stats.pendingCommission)}</p>
+                    </div>
+                    <div>
+                      <p className="text-white/40 text-xs mb-1">Réduction acheteur</p>
+                      <p className="text-white font-semibold text-sm">
+                        {c.discountType === 'NONE' ? 'Aucune' : c.discountType === 'PERCENTAGE' ? `${c.discountValue}%` : formatPrice(Number(c.discountValue))}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 pt-1 border-t border-white/5">
+                    <span className="text-white/30 text-xs flex-1">
+                      Commission : {c.commissionType === 'PERCENTAGE' ? `${c.commissionValue}% par billet` : `${formatPrice(Number(c.commissionValue))} par billet`}
+                    </span>
+                    <button
+                      onClick={() => toggleMutation.mutate(c.id)}
+                      className={`text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${c.isActive ? 'border-amber-400/30 text-amber-400 hover:bg-amber-400/10' : 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'}`}
+                    >
+                      {c.isActive ? 'Désactiver' : 'Activer'}
+                    </button>
+                    <button
+                      onClick={() => deleteMutation.mutate(c.id)}
+                      className="text-white/20 hover:text-rose-neon transition-colors"
+                      title="Supprimer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <button onClick={() => toggleMutation.mutate(c.id)} className={`text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${c.isActive ? 'border-amber-400/30 text-amber-400 hover:bg-amber-400/10' : 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'}`}>
-                    {c.isActive ? 'Désactiver' : 'Activer'}
-                  </button>
-                  <button onClick={() => deleteMutation.mutate(c.id)} className="text-white/20 hover:text-rose-neon transition-colors" title="Supprimer">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
+              )}
             </div>
           ))}
         </div>
