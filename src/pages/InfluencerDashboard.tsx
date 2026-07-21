@@ -63,7 +63,7 @@ export default function InfluencerDashboard() {
     );
   }
 
-  const { summary, campaigns, payouts } = data ?? { summary: { totalClicks: 0, totalTickets: 0, totalConfirmed: 0, totalPending: 0, totalPaid: 0, availableBalance: 0 }, campaigns: [], payouts: [] };
+  const { summary, campaigns, payouts } = data ?? { summary: { totalClicks: 0, totalTickets: 0, totalConfirmed: 0, totalPending: 0, totalPaid: 0, pendingPayouts: 0, availableBalance: 0 }, campaigns: [], payouts: [] };
 
   return (
     <div className="min-h-screen py-10 px-4 sm:px-6 lg:px-8">
@@ -87,7 +87,13 @@ export default function InfluencerDashboard() {
           <StatCard icon={MousePointerClick} label="Clics totaux" value={summary.totalClicks.toLocaleString('fr-FR')} />
           <StatCard icon={Ticket} label="Billets vendus" value={summary.totalTickets.toLocaleString('fr-FR')} />
           <StatCard icon={TrendingUp} label="Commissions confirmées" value={formatPrice(summary.totalConfirmed)} sub={summary.totalPending > 0 ? `+ ${formatPrice(summary.totalPending)} en attente` : undefined} />
-          <StatCard icon={Wallet} label="Solde disponible" value={formatPrice(summary.availableBalance)} sub={summary.totalPaid > 0 ? `${formatPrice(summary.totalPaid)} déjà versé` : undefined} />
+          <StatCard icon={Wallet} label="Solde disponible" value={formatPrice(summary.availableBalance)} sub={
+            summary.pendingPayouts > 0
+              ? `${formatPrice(summary.pendingPayouts)} en demande en cours`
+              : summary.totalPaid > 0
+                ? `${formatPrice(summary.totalPaid)} déjà versé`
+                : undefined
+          } />
         </div>
 
         {/* Solde insuffisant */}

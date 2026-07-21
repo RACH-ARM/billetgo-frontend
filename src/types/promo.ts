@@ -81,6 +81,7 @@ export interface InfluencerDashboardData {
     totalConfirmed: number;
     totalPending: number;
     totalPaid: number;
+    pendingPayouts: number;
     availableBalance: number;
   };
   campaigns: InfluencerCampaign[];
