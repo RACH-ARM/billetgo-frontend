@@ -615,7 +615,7 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
     venueName: '', venueAddress: '', venueCity: 'Libreville',
     venueLatitude: '', venueLongitude: '',
     maxTicketsPerOrder: 20,
-    operatorFeeMode: 'ABSORB' as const,
+    operatorFeeMode: 'TRANSPARENT' as const,
   });
   const [mapsUrl, setMapsUrl] = useState(draft?.mapsUrl ?? '');
   const [mapsLoading, setMapsLoading] = useState(false);
@@ -832,19 +832,22 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
               <button
                 type="button"
+                onClick={() => setField('operatorFeeMode', 'TRANSPARENT')}
+                className={`flex flex-col gap-1 p-3 rounded-xl border text-left transition-all ${form.operatorFeeMode === 'TRANSPARENT' ? 'border-violet-neon bg-violet-neon/10 text-white' : 'border-white/10 bg-white/5 text-white/50 hover:border-white/20'}`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-sm">Répercutés à l'acheteur</span>
+                  <span className="text-[10px] bg-violet-neon/20 text-violet-neon px-1.5 py-0.5 rounded font-semibold">Recommandé</span>
+                </div>
+                <span className="text-xs opacity-70">L'acheteur paye le prix + 2,5%. Vous recevez le montant plein sans déduction.</span>
+              </button>
+              <button
+                type="button"
                 onClick={() => setField('operatorFeeMode', 'ABSORB')}
                 className={`flex flex-col gap-1 p-3 rounded-xl border text-left transition-all ${form.operatorFeeMode === 'ABSORB' ? 'border-violet-neon bg-violet-neon/10 text-white' : 'border-white/10 bg-white/5 text-white/50 hover:border-white/20'}`}
               >
                 <span className="font-semibold text-sm">Absorbés par moi</span>
                 <span className="text-xs opacity-70">L'acheteur paye exactement le prix affiché. Les 2,5% sont déduits de votre reversement.</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setField('operatorFeeMode', 'TRANSPARENT')}
-                className={`flex flex-col gap-1 p-3 rounded-xl border text-left transition-all ${form.operatorFeeMode === 'TRANSPARENT' ? 'border-violet-neon bg-violet-neon/10 text-white' : 'border-white/10 bg-white/5 text-white/50 hover:border-white/20'}`}
-              >
-                <span className="font-semibold text-sm">Répercutés à l'acheteur</span>
-                <span className="text-xs opacity-70">L'acheteur paye le prix + 2,5%. Vous recevez le montant plein sans déduction.</span>
               </button>
             </div>
           </div>
@@ -1052,7 +1055,7 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
     venueName: '', venueAddress: '', venueCity: 'Libreville',
     venueLatitude: '', venueLongitude: '',
     maxTicketsPerOrder: 20,
-    operatorFeeMode: 'ABSORB',
+    operatorFeeMode: 'TRANSPARENT',
   });
   const [mapsUrl, setMapsUrl] = useState('');
   const [mapsLoading, setMapsLoading] = useState(false);

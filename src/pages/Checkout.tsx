@@ -224,7 +224,7 @@ export default function Checkout() {
   }, 0);
   const PAYIN_RATE = 0.025; // 2,5% Airtel et Moov
   const payinBase = Math.max(0, effectiveTotal + freeTicketFee);
-  const operatorFeeMode = event?.operatorFeeMode ?? 'ABSORB';
+  const operatorFeeMode = event?.operatorFeeMode ?? 'TRANSPARENT';
   // TRANSPARENT : l'acheteur paye les frais opérateur par-dessus le prix affiché
   // ABSORB : frais absorbés par l'organisateur, l'acheteur paye exactement le prix
   const operatorFeeCharged = operatorFeeMode === 'TRANSPARENT' && payinBase > 0
