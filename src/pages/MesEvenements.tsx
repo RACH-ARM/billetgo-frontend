@@ -263,14 +263,20 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [form, setForm] = useState({
+  const emptyForm = {
     influencerEmail: '', influencerFirstName: '', influencerLastName: '',
     code: '', label: '',
     discountType: 'PERCENTAGE' as 'PERCENTAGE' | 'FIXED' | 'NONE',
     discountValue: '',
     commissionType: 'PERCENTAGE' as 'PERCENTAGE' | 'FIXED',
     commissionValue: '',
-  });
+    maxUses: '',
+    unlimited: true,
+    validFrom: '',
+    validUntil: '',
+    minPurchaseAmount: '',
+  };
+  const [form, setForm] = useState(emptyForm);
 
   const { data: codes = [], isLoading } = useQuery(
     ['promo-codes', event.eventId],
@@ -288,12 +294,16 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
       discountValue: Number(form.discountValue) || 0,
       commissionType: form.commissionType,
       commissionValue: Number(form.commissionValue) || 0,
+      maxUses: form.unlimited ? null : (Number(form.maxUses) || null),
+      validFrom: form.validFrom || null,
+      validUntil: form.validUntil || null,
+      minPurchaseAmount: form.minPurchaseAmount ? Number(form.minPurchaseAmount) : null,
     }),
     {
       onSuccess: () => {
         queryClient.invalidateQueries(['promo-codes', event.eventId]);
         setShowForm(false);
-        setForm({ influencerEmail: '', influencerFirstName: '', influencerLastName: '', code: '', label: '', discountType: 'PERCENTAGE', discountValue: '', commissionType: 'PERCENTAGE', commissionValue: '' });
+        setForm(emptyForm);
         toast.success('Code créé — invitation envoyée à l\'influenceur');
       },
       onError: (err: unknown) => {
@@ -379,6 +389,66 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
               </div>
             </div>
           </div>
+          {/* Limite d'utilisations */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-white/40">Limite d'utilisations</p>
+              <button
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, unlimited: !f.unlimited, maxUses: '' }))}
+                className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${form.unlimited ? 'border-violet-neon/40 text-violet-neon bg-violet-neon/10' : 'border-white/10 text-white/30'}`}
+              >
+                Illimité
+              </button>
+            </div>
+            {!form.unlimited && (
+              <input
+                type="number" min="1"
+                value={form.maxUses}
+                onChange={(e) => setForm((f) => ({ ...f, maxUses: e.target.value }))}
+                placeholder="ex. 50"
+                className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors"
+              />
+            )}
+          </div>
+
+          {/* Période de validité */}
+          <div className="space-y-2">
+            <p className="text-xs text-white/40">Période de validité <span className="text-white/20">(optionnel)</span></p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs text-white/30 mb-1">Du</p>
+                <input
+                  type="date"
+                  value={form.validFrom}
+                  onChange={(e) => setForm((f) => ({ ...f, validFrom: e.target.value }))}
+                  className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-violet-neon transition-colors"
+                />
+              </div>
+              <div>
+                <p className="text-xs text-white/30 mb-1">Au</p>
+                <input
+                  type="date"
+                  value={form.validUntil}
+                  onChange={(e) => setForm((f) => ({ ...f, validUntil: e.target.value }))}
+                  className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-violet-neon transition-colors"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Montant minimum */}
+          <div className="space-y-2">
+            <p className="text-xs text-white/40">Montant minimum d'achat <span className="text-white/20">(optionnel)</span></p>
+            <input
+              type="number" min="0"
+              value={form.minPurchaseAmount}
+              onChange={(e) => setForm((f) => ({ ...f, minPurchaseAmount: e.target.value }))}
+              placeholder="ex. 60000 FCFA"
+              className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors"
+            />
+          </div>
+
           <div className="flex gap-3">
             <button onClick={() => setShowForm(false)} className="flex-1 py-2.5 rounded-xl border border-white/10 text-white/40 text-sm hover:border-white/20 transition-colors">Annuler</button>
             <button
@@ -456,6 +526,27 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
                       </p>
                     </div>
                   </div>
+                  {/* Contraintes */}
+                  {(c.maxUses !== null || c.validFrom || c.validUntil || c.minPurchaseAmount !== null) && (
+                    <div className="flex flex-wrap gap-2">
+                      {c.maxUses !== null && (
+                        <span className="text-xs bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-white/50">
+                          Max {c.maxUses} utilisations ({c.stats.usageCount}/{c.maxUses})
+                        </span>
+                      )}
+                      {(c.validFrom || c.validUntil) && (
+                        <span className="text-xs bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-white/50">
+                          {c.validFrom ? new Date(c.validFrom).toLocaleDateString('fr-FR') : '∞'} → {c.validUntil ? new Date(c.validUntil).toLocaleDateString('fr-FR') : '∞'}
+                        </span>
+                      )}
+                      {c.minPurchaseAmount !== null && (
+                        <span className="text-xs bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-white/50">
+                          Min {formatPrice(Number(c.minPurchaseAmount))}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-2 pt-1 border-t border-white/5">
                     <span className="text-white/30 text-xs flex-1">
                       Commission : {c.commissionType === 'PERCENTAGE' ? `${c.commissionValue}% par billet` : `${formatPrice(Number(c.commissionValue))} par billet`}

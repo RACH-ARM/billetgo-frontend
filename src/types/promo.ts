@@ -14,6 +14,10 @@ export interface PromoCode {
   commissionValue: number;
   isActive: boolean;
   clickCount: number;
+  maxUses: number | null;
+  validFrom: string | null;
+  validUntil: string | null;
+  minPurchaseAmount: number | null;
   influencer: {
     id: string;
     firstName: string;
