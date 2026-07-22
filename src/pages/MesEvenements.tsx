@@ -263,6 +263,8 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const { data: eventDetails } = useEventDetails(event.eventId);
+  const eventCategories: { id: string; name: string }[] = eventDetails?.ticketCategories ?? [];
   const emptyForm = {
     influencerEmail: '', influencerFirstName: '', influencerLastName: '',
     code: '', label: '',
@@ -275,6 +277,8 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
     validFrom: '',
     validUntil: '',
     minPurchaseAmount: '',
+    allCategories: true,
+    categoryIds: [] as string[],
   };
   const [form, setForm] = useState(emptyForm);
 
@@ -298,6 +302,7 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
       validFrom: form.validFrom || null,
       validUntil: form.validUntil || null,
       minPurchaseAmount: form.minPurchaseAmount ? Number(form.minPurchaseAmount) : null,
+      categoryIds: form.allCategories ? [] : form.categoryIds,
     }),
     {
       onSuccess: () => {
@@ -452,6 +457,44 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
             />
           </div>
 
+          {/* Catégories ciblées */}
+          {eventCategories.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-white/40">Catégories ciblées</p>
+                <button
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, allCategories: !f.allCategories, categoryIds: [] }))}
+                  className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${form.allCategories ? 'border-violet-neon/40 text-violet-neon bg-violet-neon/10' : 'border-white/10 text-white/30'}`}
+                >
+                  Toutes
+                </button>
+              </div>
+              {!form.allCategories && (
+                <div className="flex flex-wrap gap-2">
+                  {eventCategories.map((cat) => {
+                    const selected = form.categoryIds.includes(cat.id);
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => setForm((f) => ({
+                          ...f,
+                          categoryIds: selected
+                            ? f.categoryIds.filter((id) => id !== cat.id)
+                            : [...f.categoryIds, cat.id],
+                        }))}
+                        className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${selected ? 'border-violet-neon/50 text-violet-neon bg-violet-neon/10' : 'border-white/10 text-white/30 hover:border-white/20'}`}
+                      >
+                        {cat.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="flex gap-3">
             <button onClick={() => setShowForm(false)} className="flex-1 py-2.5 rounded-xl border border-white/10 text-white/40 text-sm hover:border-white/20 transition-colors">Annuler</button>
             <button
@@ -529,9 +572,14 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
                       </p>
                     </div>
                   </div>
-                  {/* Contraintes */}
-                  {(c.maxUses !== null || c.validFrom || c.validUntil || c.minPurchaseAmount !== null) && (
+                  {/* Contraintes + catégories */}
+                  {(c.maxUses !== null || c.validFrom || c.validUntil || c.minPurchaseAmount !== null || c.categories.length > 0) && (
                     <div className="flex flex-wrap gap-2">
+                      {c.categories.length > 0 && (
+                        <span className="text-xs bg-violet-neon/5 border border-violet-neon/20 rounded-lg px-2 py-1 text-violet-neon/70">
+                          {c.categories.map((cat) => cat.name).join(', ')}
+                        </span>
+                      )}
                       {c.maxUses !== null && (
                         <span className="text-xs bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-white/50">
                           Max {c.maxUses} utilisations ({c.stats.usageCount}/{c.maxUses})

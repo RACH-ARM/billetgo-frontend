@@ -18,6 +18,7 @@ export interface PromoCode {
   validFrom: string | null;
   validUntil: string | null;
   minPurchaseAmount: number | null;
+  categories: { id: string; name: string }[];
   influencer: {
     id: string;
     firstName: string;
@@ -40,6 +41,7 @@ export interface PromoValidation {
   discountValue: number;
   discountAmount: number;
   newTotal: number;
+  eligibleCategoryIds: string[];
 }
 
 export interface InfluencerCampaign {

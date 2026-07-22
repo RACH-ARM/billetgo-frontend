@@ -3,8 +3,13 @@ import type { PromoCode, PromoValidation, InfluencerDashboardData } from '../typ
 
 export const promoService = {
   // Valider un code promo avant de créer la commande
-  validate: async (code: string, eventId: string, rawTotal: number): Promise<PromoValidation> => {
-    const { data } = await api.post('/promo/validate', { code, eventId, rawTotal });
+  validate: async (
+    code: string,
+    eventId: string,
+    rawTotal: number,
+    items?: { categoryId: string; unitPrice: number; quantity: number }[],
+  ): Promise<PromoValidation> => {
+    const { data } = await api.post('/promo/validate', { code, eventId, rawTotal, items });
     return data.data;
   },
 
@@ -29,6 +34,7 @@ export const promoService = {
     validFrom?: string | null;
     validUntil?: string | null;
     minPurchaseAmount?: number | null;
+    categoryIds?: string[];
   }): Promise<PromoCode> => {
     const { data } = await api.post(`/promo/events/${eventId}/promo-codes`, payload);
     return data.data;

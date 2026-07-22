@@ -87,7 +87,12 @@ export default function Checkout() {
     setPromoLoading(true);
     setPromoError(null);
     try {
-      const result = await promoService.validate(code.trim(), event.id, rawTotal);
+      const result = await promoService.validate(
+        code.trim(),
+        event.id,
+        rawTotal,
+        items.map((i) => ({ categoryId: i.category.id, unitPrice: Number(i.category.price), quantity: i.quantity })),
+      );
       setPromoValidation(result);
       setPromoInput(result.code);
     } catch (err: unknown) {
@@ -504,6 +509,11 @@ export default function Checkout() {
                                 {promoValidation.label ? `${promoValidation.label} · ` : ''}
                                 -{formatPrice(promoValidation.discountAmount)}
                               </p>
+                              {promoValidation.eligibleCategoryIds.length > 0 && (
+                                <p className="text-white/30 text-xs mt-0.5">
+                                  Sur : {items.filter((i) => promoValidation.eligibleCategoryIds.includes(i.category.id)).map((i) => i.category.name).join(', ')}
+                                </p>
+                              )}
                             </div>
                             <button
                               onClick={() => { setPromoValidation(null); setPromoInput(''); setPromoError(null); }}
