@@ -177,8 +177,8 @@ function GuestInfoBlock() {
           },
           {
             n: '3',
-            title: "Vous avez perdu l'email ?",
-            body: "Rendez-vous sur billetgab.com/retrouver-mes-billets et saisissez votre adresse email pour recevoir un nouveau lien d'accès.",
+            title: 'Accès permanent à vos billets',
+            body: "Connectez-vous avec Google sur billetgab.com avec l'adresse email de votre achat — vos billets apparaissent automatiquement dans votre espace.",
           },
         ].map(({ n, title, body }) => (
           <div key={n} className="flex gap-3">

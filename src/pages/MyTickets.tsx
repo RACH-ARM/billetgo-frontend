@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { ChevronLeft, HelpCircle, ImageDown, Trash2, CheckCircle2, Clock, RotateCcw, X, ArrowRightLeft, ArrowDownToLine, ChevronDown, ChevronUp, MailWarning, CalendarCheck, Ticket, RefreshCw } from 'lucide-react';
+import { Link, useNavigate, useSearchParams, Navigate } from 'react-router-dom';
+import { ChevronLeft, HelpCircle, ImageDown, Trash2, CheckCircle2, Clock, RotateCcw, X, ArrowRightLeft, ArrowDownToLine, ChevronDown, ChevronUp, MailWarning, CalendarCheck, RefreshCw } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { useQueryClient } from 'react-query';
 import { useMyOrders, useReceivedTickets } from '../hooks/useTickets';
@@ -65,21 +65,12 @@ const getEffectiveStatus = (order: any): string => {
 
 export default function MyTickets() {
   const [searchParams] = useSearchParams();
-  const location = useLocation();
   const token = searchParams.get('token');
   const { isAuthenticated } = useAuthStore();
 
-  const prefetchedGuestData = (location.state as any)?.guestData as { email: string; tickets: any[] } | undefined;
-
-  // Si l'utilisateur actualise la page, location.state est perdu — on fallback sur
-  // l'email persisté en sessionStorage pour re-fetch automatiquement les billets.
-  const storedGuestEmail =
-    !isAuthenticated && !prefetchedGuestData && !token
-      ? (sessionStorage.getItem('billetgab_guest_email') ?? undefined)
-      : undefined;
-
-  if (!isAuthenticated && (token || prefetchedGuestData || storedGuestEmail)) {
-    return <GuestTicketsView token={token ?? undefined} prefetchedData={prefetchedGuestData} storedEmail={storedGuestEmail} />;
+  if (!isAuthenticated) {
+    if (token) return <GuestTicketsView token={token} />;
+    return <Navigate to="/retrouver-mes-billets" replace />;
   }
 
   return <AuthenticatedMyTickets />;
@@ -168,23 +159,14 @@ function GuestOrderGroups({ tickets }: { tickets: any[] }) {
   );
 }
 
-function GuestTicketsView({ token, prefetchedData, storedEmail }: { token?: string; prefetchedData?: { email: string; tickets: any[] }; storedEmail?: string }) {
-  const [guestData, setGuestData] = useState<{ email: string; tickets: any[] } | null>(prefetchedData ?? null);
-  const [loading, setLoading] = useState(!prefetchedData && (!!token || !!storedEmail));
+function GuestTicketsView({ token }: { token: string }) {
+  const [guestData, setGuestData] = useState<{ email: string; tickets: any[] } | null>(null);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [expired, setExpired] = useState(false);
-  const [error, setError] = useState(!prefetchedData && !token && !storedEmail);
+  const [error, setError] = useState(false);
 
-  // Persiste l'email dès qu'on a des données — survit à un rechargement de page
   useEffect(() => {
-    if (guestData?.email) {
-      sessionStorage.setItem('billetgab_guest_email', guestData.email);
-    }
-  }, [guestData?.email]);
-
-  // Accès via lien magique (token)
-  useEffect(() => {
-    if (prefetchedData || !token) return;
     api.get(`/tickets/by-token?token=${encodeURIComponent(token)}`)
       .then(({ data }) => setGuestData(data.data))
       .catch((err: any) => {
@@ -192,27 +174,16 @@ function GuestTicketsView({ token, prefetchedData, storedEmail }: { token?: stri
         else setError(true);
       })
       .finally(() => setLoading(false));
-  }, [token, prefetchedData]);
+  }, [token]);
 
-  // Rechargement de page — re-fetch depuis l'email persisté en sessionStorage
-  useEffect(() => {
-    if (prefetchedData || token || !storedEmail) return;
-    api.post('/tickets/by-email', { email: storedEmail })
-      .then(({ data }) => setGuestData(data.data))
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
-  }, [storedEmail, prefetchedData, token]);
-
-  // Rafraîchissement manuel — recharge les statuts depuis le serveur
   const handleRefresh = async () => {
-    const email = guestData?.email;
-    if (!email || refreshing) return;
+    if (refreshing) return;
     setRefreshing(true);
     try {
-      const { data } = await api.post('/tickets/by-email', { email });
+      const { data } = await api.get(`/tickets/by-token?token=${encodeURIComponent(token)}`);
       setGuestData(data.data);
     } catch {
-      // échec silencieux — les anciennes données restent affichées
+      // échec silencieux
     } finally {
       setRefreshing(false);
     }
@@ -240,7 +211,7 @@ function GuestTicketsView({ token, prefetchedData, storedEmail }: { token?: stri
           <div>
             <h2 className="font-bebas text-2xl tracking-wider text-white mb-2">Lien expiré</h2>
             <p className="text-white/50 text-sm leading-relaxed">
-              Ce lien d'accès n'est valable que 24 heures. Demandez-en un nouveau.
+              Ce lien d'accès n'est valable que 24 heures. Connectez-vous avec Google pour un accès permanent à vos billets.
             </p>
           </div>
           <Link
@@ -248,7 +219,7 @@ function GuestTicketsView({ token, prefetchedData, storedEmail }: { token?: stri
             className="neon-button inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm"
           >
             <RefreshCw className="w-4 h-4" />
-            Obtenir un nouveau lien
+            Retrouver mes billets
           </Link>
           <Link to="/" className="block text-white/30 hover:text-white text-sm transition-colors">
             Retour à l'accueil
@@ -264,7 +235,7 @@ function GuestTicketsView({ token, prefetchedData, storedEmail }: { token?: stri
         <div className="glass-card p-10 max-w-md w-full text-center space-y-4">
           <p className="text-white/60">Lien invalide ou inaccessible.</p>
           <Link to="/retrouver-mes-billets" className="text-violet-neon text-sm hover:underline">
-            Redemander un lien
+            Retrouver mes billets
           </Link>
         </div>
       </div>
@@ -307,13 +278,6 @@ function GuestTicketsView({ token, prefetchedData, storedEmail }: { token?: stri
       ) : (
         <GuestOrderGroups tickets={guestData.tickets} />
       )}
-
-      <div className="mt-4 text-center">
-        <Link to="/retrouver-mes-billets" className="text-xs text-white/30 hover:text-violet-neon transition-colors">
-          <Ticket className="w-3.5 h-3.5 inline mr-1" />
-          Rechercher avec une autre adresse email
-        </Link>
-      </div>
 
       {/* Google CTA */}
       <div className="mt-6 glass-card p-5 border border-violet-neon/20 space-y-3">
