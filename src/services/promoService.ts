@@ -25,6 +25,10 @@ export const promoService = {
     discountValue: number;
     commissionType: string;
     commissionValue: number;
+    maxUses?: number | null;
+    validFrom?: string | null;
+    validUntil?: string | null;
+    minPurchaseAmount?: number | null;
   }): Promise<PromoCode> => {
     const { data } = await api.post(`/promo/events/${eventId}/promo-codes`, payload);
     return data.data;
