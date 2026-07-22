@@ -511,7 +511,7 @@ export default function Checkout() {
                               </p>
                               {promoValidation.eligibleCategoryIds.length > 0 && (
                                 <p className="text-white/30 text-xs mt-0.5">
-                                  Sur : {items.filter((i) => promoValidation.eligibleCategoryIds.includes(i.category.id)).map((i) => i.category.name).join(', ')}
+                                  Valable sur : {(freshEvent?.ticketCategories ?? []).filter((c: { id: string }) => promoValidation.eligibleCategoryIds.includes(c.id)).map((c: { name: string }) => c.name).join(', ')}
                                 </p>
                               )}
                             </div>
