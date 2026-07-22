@@ -1,5 +1,5 @@
 export type DiscountType = 'PERCENTAGE' | 'FIXED' | 'NONE';
-export type CommissionType = 'PERCENTAGE' | 'FIXED';
+export type CommissionType = 'PERCENTAGE' | 'FIXED' | 'NONE';
 export type PromoUseStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED';
 export type InfluencerPayoutStatus = 'PENDING' | 'PAID' | 'REJECTED';
 

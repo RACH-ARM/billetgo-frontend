@@ -268,7 +268,7 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
     code: '', label: '',
     discountType: 'PERCENTAGE' as 'PERCENTAGE' | 'FIXED' | 'NONE',
     discountValue: '',
-    commissionType: 'PERCENTAGE' as 'PERCENTAGE' | 'FIXED',
+    commissionType: 'PERCENTAGE' as 'PERCENTAGE' | 'FIXED' | 'NONE',
     commissionValue: '',
     maxUses: '',
     unlimited: true,
@@ -381,11 +381,14 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
             <div className="space-y-1.5">
               <p className="text-xs text-white/40">Commission influenceur</p>
               <div className="flex gap-2">
-                <select value={form.commissionType} onChange={(e) => setForm((f) => ({ ...f, commissionType: e.target.value as 'PERCENTAGE' | 'FIXED' }))} className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-2 py-2 text-white text-xs focus:outline-none focus:border-violet-neon">
+                <select value={form.commissionType} onChange={(e) => setForm((f) => ({ ...f, commissionType: e.target.value as 'PERCENTAGE' | 'FIXED' | 'NONE', commissionValue: e.target.value === 'NONE' ? '0' : f.commissionValue }))} className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-2 py-2 text-white text-xs focus:outline-none focus:border-violet-neon">
+                  <option value="NONE">Aucune</option>
                   <option value="PERCENTAGE">%</option>
                   <option value="FIXED">FCFA/billet</option>
                 </select>
-                <input type="number" value={form.commissionValue} onChange={(e) => setForm((f) => ({ ...f, commissionValue: e.target.value }))} placeholder={form.commissionType === 'PERCENTAGE' ? '5' : '500'} className="flex-1 bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon" />
+                {form.commissionType !== 'NONE' && (
+                  <input type="number" value={form.commissionValue} onChange={(e) => setForm((f) => ({ ...f, commissionValue: e.target.value }))} placeholder={form.commissionType === 'PERCENTAGE' ? '5' : '500'} className="flex-1 bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon" />
+                )}
               </div>
             </div>
           </div>
@@ -549,7 +552,7 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
 
                   <div className="flex items-center gap-2 pt-1 border-t border-white/5">
                     <span className="text-white/30 text-xs flex-1">
-                      Commission : {c.commissionType === 'PERCENTAGE' ? `${c.commissionValue}% par billet` : `${formatPrice(Number(c.commissionValue))} par billet`}
+                      Commission : {c.commissionType === 'NONE' ? 'Aucune' : c.commissionType === 'PERCENTAGE' ? `${c.commissionValue}% par billet` : `${formatPrice(Number(c.commissionValue))} par billet`}
                     </span>
                     <button
                       onClick={() => toggleMutation.mutate(c.id)}
