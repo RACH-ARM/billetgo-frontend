@@ -281,6 +281,22 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
     categoryIds: [] as string[],
   };
   const [form, setForm] = useState(emptyForm);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const emptyEditForm = {
+    label: '',
+    discountType: 'PERCENTAGE' as 'PERCENTAGE' | 'FIXED' | 'NONE',
+    discountValue: '',
+    commissionType: 'PERCENTAGE' as 'PERCENTAGE' | 'FIXED' | 'NONE',
+    commissionValue: '',
+    unlimited: true,
+    maxUses: '',
+    validFrom: '',
+    validUntil: '',
+    minPurchaseAmount: '',
+    allCategories: true,
+    categoryIds: [] as string[],
+  };
+  const [editForm, setEditForm] = useState(emptyEditForm);
 
   const { data: codes = [], isLoading } = useQuery(
     ['promo-codes', event.eventId],
@@ -314,6 +330,32 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
       onError: (err: unknown) => {
         const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
         toast.error(msg || 'Erreur lors de la création');
+      },
+    }
+  );
+
+  const updateMutation = useMutation(
+    () => promoService.updateCode(event.eventId, editingId!, {
+      label: editForm.label || undefined,
+      discountType: editForm.discountType,
+      discountValue: Number(editForm.discountValue) || 0,
+      commissionType: editForm.commissionType,
+      commissionValue: Number(editForm.commissionValue) || 0,
+      maxUses: editForm.unlimited ? null : (Number(editForm.maxUses) || null),
+      validFrom: editForm.validFrom || null,
+      validUntil: editForm.validUntil || null,
+      minPurchaseAmount: editForm.minPurchaseAmount ? Number(editForm.minPurchaseAmount) : null,
+      categoryIds: editForm.allCategories ? [] : editForm.categoryIds,
+    }),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['promo-codes', event.eventId]);
+        setEditingId(null);
+        toast.success('Code mis à jour');
+      },
+      onError: (err: unknown) => {
+        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+        toast.error(msg || 'Erreur lors de la modification');
       },
     }
   );
@@ -603,6 +645,28 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
                       Commission : {c.commissionType === 'NONE' ? 'Aucune' : c.commissionType === 'PERCENTAGE' ? `${c.commissionValue}% par billet` : `${formatPrice(Number(c.commissionValue))} par billet`}
                     </span>
                     <button
+                      onClick={() => {
+                        setEditingId(c.id);
+                        setEditForm({
+                          label: c.label || '',
+                          discountType: c.discountType,
+                          discountValue: String(c.discountValue),
+                          commissionType: c.commissionType,
+                          commissionValue: String(c.commissionValue),
+                          unlimited: c.maxUses === null,
+                          maxUses: c.maxUses ? String(c.maxUses) : '',
+                          validFrom: c.validFrom ? c.validFrom.slice(0, 10) : '',
+                          validUntil: c.validUntil ? c.validUntil.slice(0, 10) : '',
+                          minPurchaseAmount: c.minPurchaseAmount ? String(c.minPurchaseAmount) : '',
+                          allCategories: c.categories.length === 0,
+                          categoryIds: c.categories.map((cat) => cat.id),
+                        });
+                      }}
+                      className="text-xs px-2.5 py-1.5 rounded-lg border border-white/10 text-white/40 hover:border-violet-neon/40 hover:text-violet-neon transition-colors"
+                    >
+                      Modifier
+                    </button>
+                    <button
                       onClick={() => toggleMutation.mutate(c.id)}
                       className={`text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${c.isActive ? 'border-amber-400/30 text-amber-400 hover:bg-amber-400/10' : 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'}`}
                     >
@@ -616,6 +680,80 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
+
+                  {/* Formulaire d'édition inline */}
+                  {editingId === c.id && (
+                    <div className="mt-3 pt-3 border-t border-violet-neon/20 space-y-3">
+                      <p className="text-xs text-violet-neon/60 font-semibold uppercase tracking-widest">Modifier le code</p>
+                      <input value={editForm.label} onChange={(e) => setEditForm((f) => ({ ...f, label: e.target.value }))} placeholder="Libellé (optionnel)" className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors" />
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <p className="text-xs text-white/40">Réduction acheteur</p>
+                          <div className="flex gap-2">
+                            <select value={editForm.discountType} onChange={(e) => setEditForm((f) => ({ ...f, discountType: e.target.value as 'PERCENTAGE' | 'FIXED' | 'NONE' }))} className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-2 py-2 text-white text-xs focus:outline-none focus:border-violet-neon">
+                              <option value="NONE">Aucune</option>
+                              <option value="PERCENTAGE">%</option>
+                              <option value="FIXED">FCFA fixe</option>
+                            </select>
+                            {editForm.discountType !== 'NONE' && <input type="number" value={editForm.discountValue} onChange={(e) => setEditForm((f) => ({ ...f, discountValue: e.target.value }))} className="flex-1 bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-neon" />}
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-white/40">Commission influenceur</p>
+                          <div className="flex gap-2">
+                            <select value={editForm.commissionType} onChange={(e) => setEditForm((f) => ({ ...f, commissionType: e.target.value as 'PERCENTAGE' | 'FIXED' | 'NONE', commissionValue: e.target.value === 'NONE' ? '0' : f.commissionValue }))} className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-2 py-2 text-white text-xs focus:outline-none focus:border-violet-neon">
+                              <option value="NONE">Aucune</option>
+                              <option value="PERCENTAGE">%</option>
+                              <option value="FIXED">FCFA/billet</option>
+                            </select>
+                            {editForm.commissionType !== 'NONE' && <input type="number" value={editForm.commissionValue} onChange={(e) => setEditForm((f) => ({ ...f, commissionValue: e.target.value }))} className="flex-1 bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-neon" />}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs text-white/40">Limite d'utilisations</p>
+                            <button type="button" onClick={() => setEditForm((f) => ({ ...f, unlimited: !f.unlimited, maxUses: '' }))} className={`text-xs px-2 py-0.5 rounded-lg border transition-colors ${editForm.unlimited ? 'border-violet-neon/40 text-violet-neon bg-violet-neon/10' : 'border-white/10 text-white/30'}`}>Illimité</button>
+                          </div>
+                          {!editForm.unlimited && <input type="number" min="1" value={editForm.maxUses} onChange={(e) => setEditForm((f) => ({ ...f, maxUses: e.target.value }))} placeholder="ex. 50" className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-neon" />}
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-white/40">Montant minimum</p>
+                          <input type="number" min="0" value={editForm.minPurchaseAmount} onChange={(e) => setEditForm((f) => ({ ...f, minPurchaseAmount: e.target.value }))} placeholder="ex. 60000" className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-neon" />
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs text-white/40">Période de validité</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div><p className="text-xs text-white/30 mb-1">Du</p><input type="date" value={editForm.validFrom} onChange={(e) => setEditForm((f) => ({ ...f, validFrom: e.target.value }))} className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-neon" /></div>
+                          <div><p className="text-xs text-white/30 mb-1">Au</p><input type="date" value={editForm.validUntil} onChange={(e) => setEditForm((f) => ({ ...f, validUntil: e.target.value }))} className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-neon" /></div>
+                        </div>
+                      </div>
+                      {eventCategories.length > 0 && (
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs text-white/40">Catégories ciblées</p>
+                            <button type="button" onClick={() => setEditForm((f) => ({ ...f, allCategories: !f.allCategories, categoryIds: [] }))} className={`text-xs px-2 py-0.5 rounded-lg border transition-colors ${editForm.allCategories ? 'border-violet-neon/40 text-violet-neon bg-violet-neon/10' : 'border-white/10 text-white/30'}`}>Toutes</button>
+                          </div>
+                          {!editForm.allCategories && (
+                            <div className="flex flex-wrap gap-2 mt-1">
+                              {eventCategories.map((cat) => {
+                                const selected = editForm.categoryIds.includes(cat.id);
+                                return (
+                                  <button key={cat.id} type="button" onClick={() => setEditForm((f) => ({ ...f, categoryIds: selected ? f.categoryIds.filter((id) => id !== cat.id) : [...f.categoryIds, cat.id] }))} className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${selected ? 'border-violet-neon/50 text-violet-neon bg-violet-neon/10' : 'border-white/10 text-white/30 hover:border-white/20'}`}>{cat.name}</button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <button onClick={() => setEditingId(null)} className="flex-1 py-2 rounded-xl border border-white/10 text-white/40 text-sm hover:border-white/20 transition-colors">Annuler</button>
+                        <button onClick={() => updateMutation.mutate()} disabled={updateMutation.isLoading} className="flex-1 neon-button py-2 text-sm font-semibold rounded-xl disabled:opacity-40">{updateMutation.isLoading ? 'Sauvegarde...' : 'Sauvegarder'}</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

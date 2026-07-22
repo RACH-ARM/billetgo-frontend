@@ -40,6 +40,23 @@ export const promoService = {
     return data.data;
   },
 
+  // Organizer — modifier un code
+  updateCode: async (eventId: string, codeId: string, payload: {
+    label?: string;
+    discountType?: string;
+    discountValue?: number;
+    commissionType?: string;
+    commissionValue?: number;
+    maxUses?: number | null;
+    validFrom?: string | null;
+    validUntil?: string | null;
+    minPurchaseAmount?: number | null;
+    categoryIds?: string[];
+  }): Promise<PromoCode> => {
+    const { data } = await api.put(`/promo/events/${eventId}/promo-codes/${codeId}`, payload);
+    return data.data;
+  },
+
   // Organizer — activer / désactiver
   toggleCode: async (eventId: string, codeId: string): Promise<PromoCode> => {
     const { data } = await api.patch(`/promo/events/${eventId}/promo-codes/${codeId}`);
