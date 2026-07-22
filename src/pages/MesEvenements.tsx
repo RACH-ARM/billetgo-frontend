@@ -354,17 +354,17 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
       )}
 
       {showForm && (
-        <div className="glass-card p-5 space-y-4">
+        <div className="glass-card p-4 sm:p-5 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <input value={form.influencerFirstName} onChange={(e) => setForm((f) => ({ ...f, influencerFirstName: e.target.value }))} placeholder="Prénom influenceur" className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors" />
             <input value={form.influencerLastName} onChange={(e) => setForm((f) => ({ ...f, influencerLastName: e.target.value }))} placeholder="Nom influenceur" className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors" />
             <input value={form.influencerEmail} onChange={(e) => setForm((f) => ({ ...f, influencerEmail: e.target.value }))} placeholder="Email influenceur *" type="email" className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors" />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <input value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))} placeholder="Code (ex. INSTA20) *" className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white font-mono placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors" />
             <input value={form.label} onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))} placeholder="Libellé (ex. Campagne Instagram)" className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors" />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <p className="text-xs text-white/40">Réduction acheteur</p>
               <div className="flex gap-2">
@@ -415,7 +415,7 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
           {/* Période de validité */}
           <div className="space-y-2">
             <p className="text-xs text-white/40">Période de validité <span className="text-white/20">(optionnel)</span></p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <p className="text-xs text-white/30 mb-1">Du</p>
                 <input
