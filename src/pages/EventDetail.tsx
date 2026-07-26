@@ -745,27 +745,6 @@ export default function EventDetail() {
               );
             })()}
 
-            {/* Sales progress — masqué pour les événements terminés */}
-            {!isCompleted && <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
-              className="glass-card p-5"
-            >
-              {(() => { const av = availabilityLevel(occupancy); return (
-                <div className="flex justify-between text-sm mb-3">
-                  <span className={`font-semibold ${av.color}${av.pulse ? ' animate-pulse' : ''}`}>{av.label}</span>
-                </div>
-              ); })()}
-              <div className="h-2 bg-bg-secondary rounded-full overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${occupancy}%` }}
-                  transition={{ duration: 1.2, ease: 'easeOut' }}
-                  className="h-full bg-neon-gradient rounded-full"
-                />
-              </div>
-            </motion.div>}
 
           </div>
 
