@@ -6,7 +6,6 @@ import { useQueryClient, useMutation, useQuery } from 'react-query';
 import type { Event } from '../../types/event';
 import { formatEventDate } from '../../utils/formatDate';
 import { formatPrice } from '../../utils/formatPrice';
-import { availabilityLevel } from '../../utils/availability';
 import { eventService } from '../../services/eventService';
 import { likeService } from '../../services/likeService';
 import { followService } from '../../services/followService';
@@ -136,9 +135,6 @@ export default function EventCard({ event }: { event: Event }) {
     ? Math.min(...event.ticketCategories.map((c) => c.price))
     : 0;
 
-  const totalSold = event.ticketCategories.reduce((a, c) => a + c.quantitySold, 0);
-  const totalTickets = event.ticketCategories.reduce((a, c) => a + c.quantityTotal, 0);
-  const occupancy = totalTickets > 0 ? Math.round((totalSold / totalTickets) * 100) : 0;
   const isTotallySoldOut = totalTickets > 0 && event.ticketCategories.every(
     (c) => c.quantityTotal - c.quantitySold - (c.quantityReserved ?? 0) <= 0
   );
@@ -245,28 +241,6 @@ export default function EventCard({ event }: { event: Event }) {
             {/* Availability bar — desktop only */}
             <div className="hidden sm:block">
               <p className="text-xs text-white/40 mt-0.5 truncate">{event.venueName} — {event.venueCity}</p>
-              {!isTotallySoldOut && (
-                <div className="mt-3">
-                  <div className="flex justify-between text-xs mb-1">
-                    {(() => { const av = availabilityLevel(occupancy); return (
-                      <span className={`font-semibold ${av.color}${av.pulse ? ' animate-pulse' : ''}`}>{av.label}</span>
-                    ); })()}
-                  </div>
-                  <div className="h-1.5 bg-bg-secondary rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: `${occupancy}%`,
-                        background: occupancy >= 90
-                          ? 'linear-gradient(90deg, #E040FB, #ff4466)'
-                          : occupancy >= 70
-                          ? 'linear-gradient(90deg, #f59e0b, #E040FB)'
-                          : 'linear-gradient(135deg, #7B2FBE, #E040FB)',
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </Link>
