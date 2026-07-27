@@ -259,8 +259,6 @@ export default function EventDetail() {
     );
   }
 
-  const totalSold = event.ticketCategories.reduce((a, c) => a + c.quantitySold, 0);
-  const totalTickets = event.ticketCategories.reduce((a, c) => a + c.quantityTotal, 0);
   const isCompleted = event.status === 'COMPLETED';
 
   const handleAddToCart = (category: TicketCategory) => {
