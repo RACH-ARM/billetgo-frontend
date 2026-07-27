@@ -21,7 +21,7 @@ import LoginWallModal from '../components/common/LoginWallModal';
 import type { TicketCategory } from '../types/event';
 import api from '../services/api';
 import { promoService } from '../services/promoService';
-import { availabilityLevel, categoryAvailabilityLevel } from '../utils/availability';
+import { categoryAvailabilityLevel } from '../utils/availability';
 import toast from 'react-hot-toast';
 
 const SITE_URL = 'https://billetgab.com';
@@ -261,7 +261,6 @@ export default function EventDetail() {
 
   const totalSold = event.ticketCategories.reduce((a, c) => a + c.quantitySold, 0);
   const totalTickets = event.ticketCategories.reduce((a, c) => a + c.quantityTotal, 0);
-  const occupancy = totalTickets > 0 ? Math.round((totalSold / totalTickets) * 100) : 0;
   const isCompleted = event.status === 'COMPLETED';
 
   const handleAddToCart = (category: TicketCategory) => {
