@@ -135,7 +135,7 @@ export default function EventCard({ event }: { event: Event }) {
     ? Math.min(...event.ticketCategories.map((c) => c.price))
     : 0;
 
-  const isTotallySoldOut = totalTickets > 0 && event.ticketCategories.every(
+  const isTotallySoldOut = event.ticketCategories.length > 0 && event.ticketCategories.every(
     (c) => c.quantityTotal - c.quantitySold - (c.quantityReserved ?? 0) <= 0
   );
 
