@@ -1,5 +1,14 @@
 import api from './api';
 
+export interface CategoryStat {
+  id: string;
+  name: string;
+  price: number;
+  quantityTotal: number;
+  quantitySold: number;
+  revenue: number;
+}
+
 export interface OrganizerEventStat {
   eventId: string;
   title: string;
@@ -17,6 +26,7 @@ export interface OrganizerEventStat {
   likeCount: number;
   occupancyRate: number;
   promoEnabled: boolean;
+  categoryStats: CategoryStat[];
 }
 
 export interface OrganizerStats {

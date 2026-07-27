@@ -706,6 +706,26 @@ export default function AdminBackoffice() {
     { enabled: tab === 'dashboard', staleTime: 60_000 }
   );
 
+  const [eventsStatsSearch, setEventsStatsSearch] = useState('');
+  const [eventsStatsStatus, setEventsStatsStatus] = useState('');
+  const [eventsStatsSortKey, setEventsStatsSortKey] = useState<'eventDate' | 'volume' | 'commission' | 'totalSold'>('eventDate');
+  const [eventsStatsSortDir, setEventsStatsSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const { data: eventsStatsData, isLoading: eventsStatsLoading } = useQuery(
+    ['admin-events-stats', eventsStatsStatus],
+    async () => {
+      const params = new URLSearchParams();
+      if (eventsStatsStatus) params.set('status', eventsStatsStatus);
+      const { data } = await api.get(`/admin/events/stats?${params}`);
+      return data.data as Array<{
+        id: string; title: string; eventDate: string; status: string;
+        organizerName: string; ordersCount: number; totalSold: number;
+        totalCapacity: number; volume: number; commission: number;
+      }>;
+    },
+    { enabled: tab === 'dashboard', staleTime: 60_000 }
+  );
+
   const { data: eventsData, isLoading: eventsLoading } = useQuery('admin-events', async () => {
     const { data } = await api.get('/admin/events?status=PENDING_REVIEW');
     return data.data;
@@ -1317,6 +1337,127 @@ export default function AdminBackoffice() {
               </div>
             </>
           )}
+
+          {/* ── Vue par événement ── */}
+          <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <h2 className="font-bebas text-xl tracking-wider text-white flex items-center gap-2">
+                <Ticket className="w-5 h-5 text-cyan-neon" />
+                Vue par événement
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
+                  <input
+                    type="text"
+                    placeholder="Rechercher…"
+                    value={eventsStatsSearch}
+                    onChange={(e) => setEventsStatsSearch(e.target.value)}
+                    className="pl-8 pr-3 py-1.5 text-xs bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/25 focus:outline-none focus:border-violet-neon/40 w-44"
+                  />
+                </div>
+                <select
+                  value={eventsStatsStatus}
+                  onChange={(e) => setEventsStatsStatus(e.target.value)}
+                  className="px-3 py-1.5 text-xs bg-white/5 border border-white/10 rounded-lg text-white/70 focus:outline-none focus:border-violet-neon/40"
+                >
+                  <option value="">Tous les statuts</option>
+                  <option value="PUBLISHED">Publiés</option>
+                  <option value="COMPLETED">Terminés</option>
+                  <option value="PENDING_REVIEW">En attente</option>
+                  <option value="CANCELLED">Annulés</option>
+                </select>
+              </div>
+            </div>
+
+            {eventsStatsLoading ? (
+              <SkeletonCard lines={5} />
+            ) : (() => {
+              const q = eventsStatsSearch.toLowerCase();
+              const filtered = (eventsStatsData ?? []).filter((ev) =>
+                !q || ev.title.toLowerCase().includes(q) || ev.organizerName.toLowerCase().includes(q)
+              );
+              const sorted = [...filtered].sort((a, b) => {
+                const dir = eventsStatsSortDir === 'asc' ? 1 : -1;
+                if (eventsStatsSortKey === 'eventDate') return dir * (new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime());
+                return dir * (a[eventsStatsSortKey] - b[eventsStatsSortKey]);
+              });
+              const SortBtn = ({ k, label }: { k: typeof eventsStatsSortKey; label: string }) => (
+                <button
+                  onClick={() => { if (eventsStatsSortKey === k) setEventsStatsSortDir((d) => d === 'asc' ? 'desc' : 'asc'); else { setEventsStatsSortKey(k); setEventsStatsSortDir('desc'); } }}
+                  className={`flex items-center gap-1 whitespace-nowrap ${eventsStatsSortKey === k ? 'text-violet-neon' : 'text-white/40 hover:text-white/70'}`}
+                >
+                  {label}
+                  {eventsStatsSortKey === k ? (eventsStatsSortDir === 'desc' ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3 rotate-[-90deg]" />) : null}
+                </button>
+              );
+              return sorted.length === 0 ? (
+                <div className="glass-card p-8 text-center border border-white/5">
+                  <p className="text-white/30 text-sm">Aucun événement trouvé</p>
+                </div>
+              ) : (
+                <div className="glass-card border border-white/[0.06] overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-white/[0.06]">
+                        <th className="text-left px-4 py-3 text-white/40 font-semibold uppercase tracking-wider">Événement</th>
+                        <th className="text-left px-4 py-3 text-white/40 font-semibold uppercase tracking-wider hidden md:table-cell">Organisateur</th>
+                        <th className="text-left px-4 py-3 font-semibold uppercase tracking-wider"><SortBtn k="eventDate" label="Date" /></th>
+                        <th className="text-right px-4 py-3 font-semibold uppercase tracking-wider"><SortBtn k="totalSold" label="Billets" /></th>
+                        <th className="text-right px-4 py-3 font-semibold uppercase tracking-wider hidden sm:table-cell"><SortBtn k="volume" label="Volume" /></th>
+                        <th className="text-right px-4 py-3 font-semibold uppercase tracking-wider"><SortBtn k="commission" label="Commission" /></th>
+                        <th className="text-right px-4 py-3 text-white/40 font-semibold uppercase tracking-wider hidden sm:table-cell">Statut</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sorted.map((ev, i) => {
+                        const fillPct = ev.totalCapacity > 0 ? Math.round((ev.totalSold / ev.totalCapacity) * 100) : 0;
+                        const statusColor: Record<string, string> = {
+                          PUBLISHED: 'text-cyan-neon', COMPLETED: 'text-white/40',
+                          PENDING_REVIEW: 'text-yellow-400', CANCELLED: 'text-rose-neon', APPROVED: 'text-violet-neon',
+                        };
+                        const statusLabel: Record<string, string> = {
+                          PUBLISHED: 'Publié', COMPLETED: 'Terminé', PENDING_REVIEW: 'En attente',
+                          CANCELLED: 'Annulé', APPROVED: 'Approuvé',
+                        };
+                        return (
+                          <tr key={ev.id} className={`border-b border-white/[0.04] hover:bg-white/[0.03] transition-colors ${i % 2 === 0 ? '' : 'bg-white/[0.015]'}`}>
+                            <td className="px-4 py-3">
+                              <p className="font-semibold text-white line-clamp-1">{ev.title}</p>
+                              <p className="text-white/30 mt-0.5">{ev.ordersCount} commande{ev.ordersCount !== 1 ? 's' : ''}</p>
+                            </td>
+                            <td className="px-4 py-3 text-white/50 hidden md:table-cell">{ev.organizerName}</td>
+                            <td className="px-4 py-3 text-white/50 whitespace-nowrap">{formatEventDate(ev.eventDate)}</td>
+                            <td className="px-4 py-3 text-right">
+                              <span className="text-white font-mono font-bold">{ev.totalSold}</span>
+                              <span className="text-white/30">/{ev.totalCapacity}</span>
+                              <div className="mt-1 h-1 bg-white/10 rounded-full w-16 ml-auto">
+                                <div className="h-1 rounded-full bg-cyan-neon/70" style={{ width: `${fillPct}%` }} />
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-right font-mono text-cyan-neon font-bold hidden sm:table-cell whitespace-nowrap">{formatPrice(ev.volume, 'FCFA', '0')}</td>
+                            <td className="px-4 py-3 text-right font-mono text-violet-neon font-bold whitespace-nowrap">{formatPrice(ev.commission, 'FCFA', '0')}</td>
+                            <td className="px-4 py-3 text-right hidden sm:table-cell">
+                              <span className={`font-semibold ${statusColor[ev.status] ?? 'text-white/40'}`}>{statusLabel[ev.status] ?? ev.status}</span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot className="border-t border-white/10">
+                      <tr>
+                        <td colSpan={3} className="px-4 py-3 text-white/40 text-xs">{sorted.length} événement{sorted.length !== 1 ? 's' : ''}</td>
+                        <td className="px-4 py-3 text-right font-mono font-bold text-white">{sorted.reduce((s, e) => s + e.totalSold, 0)}</td>
+                        <td className="px-4 py-3 text-right font-mono font-bold text-cyan-neon hidden sm:table-cell whitespace-nowrap">{formatPrice(sorted.reduce((s, e) => s + e.volume, 0), 'FCFA', '0')}</td>
+                        <td className="px-4 py-3 text-right font-mono font-bold text-violet-neon whitespace-nowrap">{formatPrice(sorted.reduce((s, e) => s + e.commission, 0), 'FCFA', '0')}</td>
+                        <td className="hidden sm:table-cell" />
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              );
+            })()}
+          </div>
         </div>
       )}
 

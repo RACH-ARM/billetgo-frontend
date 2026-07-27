@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useOrganizerStats, useOrganizerProfile, useOrganizerAnalytics, useUploadKYC, useOrganizerPayouts } from '../hooks/useOrganizer';
-import { type OrganizerEventStat } from '../services/organizerService';
+import { type OrganizerEventStat, type CategoryStat } from '../services/organizerService';
 import { formatPrice } from '../utils/formatPrice';
 import Spinner from '../components/common/Spinner';
 import { SkeletonKpiGrid, SkeletonCard, SkeletonTable } from '../components/common/Skeleton';
@@ -62,6 +62,112 @@ function KpiCard({
           )}
         </div>
       </div>
+    </motion.div>
+  );
+}
+
+// ── Category breakdown section ────────────────────────────────
+function CategoryBreakdown({ events }: { events: OrganizerEventStat[] }) {
+  const active = events.filter((e) => ['PUBLISHED', 'APPROVED', 'COMPLETED'].includes(e.status));
+  const [selectedId, setSelectedId] = useState<string>(active[0]?.eventId ?? '');
+  const event = active.find((e) => e.eventId === selectedId) ?? active[0];
+
+  if (!active.length) return null;
+
+  const cats: CategoryStat[] = event?.categoryStats ?? [];
+  const totalSold = cats.reduce((s, c) => s + c.quantitySold, 0);
+  const totalRevenue = cats.reduce((s, c) => s + c.revenue, 0);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.08 }}
+      className="glass-card overflow-hidden mb-8 border border-violet-neon/10"
+    >
+      {/* Header */}
+      <div className="px-5 py-4 border-b border-white/5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Ticket className="w-4 h-4 text-violet-neon" />
+          <h2 className="font-bebas text-xl tracking-wider text-white">Ventes par catégorie</h2>
+        </div>
+        {active.length > 1 && (
+          <select
+            value={selectedId}
+            onChange={(e) => setSelectedId(e.target.value)}
+            className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-1.5 text-white text-xs focus:outline-none focus:border-violet-neon transition-colors max-w-[220px] truncate"
+          >
+            {active.map((ev) => (
+              <option key={ev.eventId} value={ev.eventId}>{ev.title}</option>
+            ))}
+          </select>
+        )}
+      </div>
+
+      {/* Mini KPIs */}
+      <div className="grid grid-cols-3 divide-x divide-white/5 border-b border-white/5">
+        <div className="px-5 py-3 text-center">
+          <p className="text-xs text-white/30 uppercase tracking-widest mb-0.5">Catégories</p>
+          <p className="font-mono font-bold text-sm text-violet-neon">{cats.length}</p>
+        </div>
+        <div className="px-5 py-3 text-center">
+          <p className="text-xs text-white/30 uppercase tracking-widest mb-0.5">Billets vendus</p>
+          <p className="font-mono font-bold text-sm text-cyan-neon">{totalSold.toLocaleString('fr-FR')}</p>
+        </div>
+        <div className="px-5 py-3 text-center">
+          <p className="text-xs text-white/30 uppercase tracking-widest mb-0.5">Revenus nets</p>
+          <p className="font-mono font-bold text-sm text-green-400">{formatPrice(totalRevenue, 'FCFA', '0 FCFA')}</p>
+        </div>
+      </div>
+
+      {/* Tableau catégories */}
+      {cats.length === 0 ? (
+        <div className="px-5 py-10 text-center text-white/30 text-sm">Aucune catégorie de billet configurée</div>
+      ) : (
+        <div className="divide-y divide-white/[0.04]">
+          {cats.map((cat) => {
+            const fillPct = cat.quantityTotal > 0 ? (cat.quantitySold / cat.quantityTotal) * 100 : 0;
+            const barColor = fillPct >= 90 ? 'bg-rose-neon' : fillPct >= 60 ? 'bg-yellow-400' : 'bg-cyan-neon';
+            const remaining = cat.quantityTotal - cat.quantitySold;
+            return (
+              <div key={cat.id} className="px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                {/* Nom + prix */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="font-semibold text-white text-sm truncate">{cat.name}</span>
+                    <span className="text-xs font-mono text-violet-neon bg-violet-neon/10 px-2 py-0.5 rounded-full border border-violet-neon/20 flex-shrink-0">
+                      {formatPrice(cat.price, 'FCFA', '0')}
+                    </span>
+                  </div>
+                  {/* Barre de remplissage */}
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${Math.min(fillPct, 100)}%` }} />
+                    </div>
+                    <span className="text-[10px] text-white/30 flex-shrink-0">{Math.round(fillPct)}%</span>
+                  </div>
+                </div>
+
+                {/* Stats */}
+                <div className="flex items-center gap-6 sm:gap-8 flex-shrink-0 text-right">
+                  <div>
+                    <p className="text-[10px] text-white/30 uppercase tracking-widest">Vendus</p>
+                    <p className="font-mono font-bold text-cyan-neon">{cat.quantitySold}<span className="text-white/20 font-normal">/{cat.quantityTotal}</span></p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-white/30 uppercase tracking-widest">Restants</p>
+                    <p className={`font-mono font-bold ${remaining === 0 ? 'text-rose-neon' : 'text-white/60'}`}>{remaining}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-white/30 uppercase tracking-widest">Revenus</p>
+                    <p className="font-mono font-bold text-green-400">{formatPrice(cat.revenue, 'FCFA', '0')}</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </motion.div>
   );
 }
@@ -470,6 +576,9 @@ export default function OrganizerDashboard() {
           color="rose"
         />
       </div>
+
+      {/* Ventes par catégorie */}
+      <CategoryBreakdown events={data?.events ?? []} />
 
       {/* Chart */}
       {chartData.length > 0 && (
