@@ -67,14 +67,60 @@ function KpiCard({
 }
 
 // ── Category breakdown section ────────────────────────────────
+function CatRow({ cat, eventTitle }: { cat: CategoryStat; eventTitle?: string }) {
+  const fillPct = cat.quantityTotal > 0 ? (cat.quantitySold / cat.quantityTotal) * 100 : 0;
+  const barColor = fillPct >= 90 ? 'bg-rose-neon' : fillPct >= 60 ? 'bg-yellow-400' : 'bg-cyan-neon';
+  const remaining = cat.quantityTotal - cat.quantitySold;
+  return (
+    <div className="px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+          <span className="font-semibold text-white text-sm truncate">{cat.name}</span>
+          <span className="text-xs font-mono text-violet-neon bg-violet-neon/10 px-2 py-0.5 rounded-full border border-violet-neon/20 flex-shrink-0">
+            {formatPrice(cat.price, 'FCFA', '0')}
+          </span>
+          {eventTitle && (
+            <span className="text-[10px] text-white/30 truncate">{eventTitle}</span>
+          )}
+        </div>
+        <div className="flex items-center gap-2 mt-1">
+          <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+            <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${Math.min(fillPct, 100)}%` }} />
+          </div>
+          <span className="text-[10px] text-white/30 flex-shrink-0">{Math.round(fillPct)}%</span>
+        </div>
+      </div>
+      <div className="flex items-center gap-6 sm:gap-8 flex-shrink-0 text-right">
+        <div>
+          <p className="text-[10px] text-white/30 uppercase tracking-widest">Vendus</p>
+          <p className="font-mono font-bold text-cyan-neon">{cat.quantitySold}<span className="text-white/20 font-normal">/{cat.quantityTotal}</span></p>
+        </div>
+        <div>
+          <p className="text-[10px] text-white/30 uppercase tracking-widest">Restants</p>
+          <p className={`font-mono font-bold ${remaining === 0 ? 'text-rose-neon' : 'text-white/60'}`}>{remaining}</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-white/30 uppercase tracking-widest">Revenus</p>
+          <p className="font-mono font-bold text-green-400">{formatPrice(cat.revenue, 'FCFA', '0')}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CategoryBreakdown({ events }: { events: OrganizerEventStat[] }) {
   const active = events.filter((e) => ['PUBLISHED', 'APPROVED', 'COMPLETED'].includes(e.status));
-  const [selectedId, setSelectedId] = useState<string>(active[0]?.eventId ?? '');
-  const event = active.find((e) => e.eventId === selectedId) ?? active[0];
+  const [selectedId, setSelectedId] = useState<string>('all');
 
   if (!active.length) return null;
 
-  const cats: CategoryStat[] = event?.categoryStats ?? [];
+  const isAll = selectedId === 'all';
+  const selectedEvent = active.find((e) => e.eventId === selectedId);
+
+  const cats: CategoryStat[] = isAll
+    ? active.flatMap((e) => e.categoryStats ?? [])
+    : (selectedEvent?.categoryStats ?? []);
+
   const totalSold = cats.reduce((s, c) => s + c.quantitySold, 0);
   const totalRevenue = cats.reduce((s, c) => s + c.revenue, 0);
 
@@ -91,17 +137,16 @@ function CategoryBreakdown({ events }: { events: OrganizerEventStat[] }) {
           <Ticket className="w-4 h-4 text-violet-neon" />
           <h2 className="font-bebas text-xl tracking-wider text-white">Ventes par catégorie</h2>
         </div>
-        {active.length > 1 && (
-          <select
-            value={selectedId}
-            onChange={(e) => setSelectedId(e.target.value)}
-            className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-1.5 text-white text-xs focus:outline-none focus:border-violet-neon transition-colors max-w-[220px] truncate"
-          >
-            {active.map((ev) => (
-              <option key={ev.eventId} value={ev.eventId}>{ev.title}</option>
-            ))}
-          </select>
-        )}
+        <select
+          value={selectedId}
+          onChange={(e) => setSelectedId(e.target.value)}
+          className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-1.5 text-white text-xs focus:outline-none focus:border-violet-neon transition-colors max-w-[220px] truncate"
+        >
+          <option value="all">Tous les événements</option>
+          {active.map((ev) => (
+            <option key={ev.eventId} value={ev.eventId}>{ev.title}</option>
+          ))}
+        </select>
       </div>
 
       {/* Mini KPIs */}
@@ -125,47 +170,14 @@ function CategoryBreakdown({ events }: { events: OrganizerEventStat[] }) {
         <div className="px-5 py-10 text-center text-white/30 text-sm">Aucune catégorie de billet configurée</div>
       ) : (
         <div className="divide-y divide-white/[0.04]">
-          {cats.map((cat) => {
-            const fillPct = cat.quantityTotal > 0 ? (cat.quantitySold / cat.quantityTotal) * 100 : 0;
-            const barColor = fillPct >= 90 ? 'bg-rose-neon' : fillPct >= 60 ? 'bg-yellow-400' : 'bg-cyan-neon';
-            const remaining = cat.quantityTotal - cat.quantitySold;
-            return (
-              <div key={cat.id} className="px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3">
-                {/* Nom + prix */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="font-semibold text-white text-sm truncate">{cat.name}</span>
-                    <span className="text-xs font-mono text-violet-neon bg-violet-neon/10 px-2 py-0.5 rounded-full border border-violet-neon/20 flex-shrink-0">
-                      {formatPrice(cat.price, 'FCFA', '0')}
-                    </span>
-                  </div>
-                  {/* Barre de remplissage */}
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${Math.min(fillPct, 100)}%` }} />
-                    </div>
-                    <span className="text-[10px] text-white/30 flex-shrink-0">{Math.round(fillPct)}%</span>
-                  </div>
-                </div>
-
-                {/* Stats */}
-                <div className="flex items-center gap-6 sm:gap-8 flex-shrink-0 text-right">
-                  <div>
-                    <p className="text-[10px] text-white/30 uppercase tracking-widest">Vendus</p>
-                    <p className="font-mono font-bold text-cyan-neon">{cat.quantitySold}<span className="text-white/20 font-normal">/{cat.quantityTotal}</span></p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-white/30 uppercase tracking-widest">Restants</p>
-                    <p className={`font-mono font-bold ${remaining === 0 ? 'text-rose-neon' : 'text-white/60'}`}>{remaining}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-white/30 uppercase tracking-widest">Revenus</p>
-                    <p className="font-mono font-bold text-green-400">{formatPrice(cat.revenue, 'FCFA', '0')}</p>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          {isAll
+            ? active.map((ev) => (ev.categoryStats ?? []).map((cat) => (
+                <CatRow key={cat.id} cat={cat} eventTitle={ev.title} />
+              )))
+            : cats.map((cat) => (
+                <CatRow key={cat.id} cat={cat} />
+              ))
+          }
         </div>
       )}
     </motion.div>
