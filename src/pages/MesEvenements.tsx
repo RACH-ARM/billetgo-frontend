@@ -982,6 +982,7 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
     if (!form.endDate) { toast.error('La date de fin est obligatoire'); scrollTo('cf-endDate'); return; }
     if (new Date(form.endDate) <= new Date(form.eventDate)) { toast.error("L'heure de fin doit être après le début"); scrollTo('cf-endDate'); return; }
     if (form.doorsOpenAt && new Date(form.endDate) <= new Date(form.doorsOpenAt)) { toast.error("L'heure de fin doit être après l'ouverture des portes"); scrollTo('cf-endDate'); return; }
+    if (form.scheduledPublishAt && new Date(form.scheduledPublishAt) <= new Date()) { toast.error('La date de publication programmée doit être dans le futur'); scrollTo('cf-scheduledPublishAt'); return; }
     if (!form.venueName) { toast.error('Le nom du lieu est obligatoire'); scrollTo('cf-venueName'); return; }
     if (!form.venueAddress) { toast.error("L'adresse est obligatoire"); scrollTo('cf-venueAddress'); return; }
     if (categories.some((c) => !c.name || c.price < 0 || c.quantityTotal <= 0)) { toast.error('Vérifiez les catégories de billets'); scrollTo('cf-categories'); return; }
@@ -1152,7 +1153,7 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
               <input type="datetime-local" value={form.doorsOpenAt} onChange={(e) => setField('doorsOpenAt', e.target.value)} className={inputCls} />
               <p className="text-xs text-white/30 mt-1">Heure à partir de laquelle les acheteurs peuvent entrer. Affiché sur le billet.</p>
             </div>
-            <div>
+            <div id="cf-scheduledPublishAt">
               <label className={labelCls}>Publication programmée <span className="text-white/30 font-normal">(optionnel)</span></label>
               <input type="datetime-local" value={form.scheduledPublishAt} onChange={(e) => setField('scheduledPublishAt', e.target.value)} className={inputCls} />
               <p className="text-xs text-white/30 mt-1">L'événement sera mis en ligne à cette date/heure après approbation admin. Laissez vide pour une publication immédiate.</p>
@@ -1432,6 +1433,10 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
       toast.error("L'heure de fin doit être après l'ouverture des portes");
       return;
     }
+    if (form.scheduledPublishAt && new Date(form.scheduledPublishAt) <= new Date()) {
+      toast.error('La date de publication programmée doit être dans le futur');
+      return;
+    }
     if (categories.some((c) => !c.name || c.price < 0 || c.quantityTotal <= 0)) {
       toast.error('Vérifiez les catégories de billets');
       return;
@@ -1655,7 +1660,7 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
               <input type="datetime-local" value={form.doorsOpenAt} onChange={(e) => setField('doorsOpenAt', e.target.value)} className={inputCls} />
             </div>
             {!isPropose && (
-              <div>
+              <div id="cf-scheduledPublishAt">
                 <label className={labelCls}>Publication programmée <span className="text-white/30 font-normal">(optionnel)</span></label>
                 <input type="datetime-local" value={form.scheduledPublishAt} onChange={(e) => setField('scheduledPublishAt', e.target.value)} className={inputCls} />
                 <p className="text-xs text-white/30 mt-1">Laissez vide pour une publication immédiate après approbation.</p>

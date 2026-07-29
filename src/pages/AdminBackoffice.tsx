@@ -866,8 +866,8 @@ export default function AdminBackoffice() {
   }, { enabled: tab === 'vitrine' });
 
   const updateFlags = useMutation(
-    async ({ id, isFeatured, isHot, promoEnabled }: { id: string; isFeatured?: boolean; isHot?: boolean; promoEnabled?: boolean }) => {
-      await api.patch(`/admin/events/${id}/flags`, { isFeatured, isHot, promoEnabled });
+    async ({ id, isFeatured, isHot, promoEnabled, operatorFeeMode }: { id: string; isFeatured?: boolean; isHot?: boolean; promoEnabled?: boolean; operatorFeeMode?: 'ABSORB' | 'TRANSPARENT' }) => {
+      await api.patch(`/admin/events/${id}/flags`, { isFeatured, isHot, promoEnabled, operatorFeeMode });
     },
     {
       onSuccess: () => { qc.invalidateQueries('admin-vitrine'); toast.success('Mise en avant mise à jour'); },
@@ -2070,6 +2070,15 @@ export default function AdminBackoffice() {
                   >
                     <Link2 className="w-3.5 h-3.5" />
                     {(ev.promoEnabled as boolean) ? 'Promo ON' : 'Promo OFF'}
+                  </Button>
+                  <Button
+                    variant={(ev.operatorFeeMode as string) === 'TRANSPARENT' ? 'danger' : 'secondary'}
+                    size="sm"
+                    onClick={() => updateFlags.mutate({ id: ev.id as string, operatorFeeMode: (ev.operatorFeeMode as string) === 'TRANSPARENT' ? 'ABSORB' : 'TRANSPARENT' })}
+                    isLoading={updateFlags.isLoading}
+                    title={(ev.operatorFeeMode as string) === 'TRANSPARENT' ? 'Acheteur paie les frais — cliquer pour basculer en Absorbés' : 'Frais absorbés par l\'organisateur — cliquer pour basculer en Répercutés'}
+                  >
+                    {(ev.operatorFeeMode as string) === 'TRANSPARENT' ? '2,5% → Acheteur' : '2,5% → Organisateur'}
                   </Button>
                   <Button
                     variant="danger"
