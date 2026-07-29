@@ -272,6 +272,7 @@ export default function EventDetail() {
     const cartEvent = useCartStore.getState().event;
     if (!cartEvent || cartEvent.id !== event.id) setEvent(event);
     addItem(category, qty);
+    setQuantities((q) => ({ ...q, [category.id]: 0 }));
     toast.success(`${qty}× ${category.name} ajouté(s) au panier`);
   };
 
