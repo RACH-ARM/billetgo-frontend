@@ -262,7 +262,8 @@ export default function EventDetail() {
   const isCompleted = event.status === 'COMPLETED';
 
   const handleAddToCart = (category: TicketCategory) => {
-    const qty = quantities[category.id] || 1;
+    const qty = quantities[category.id] ?? 0;
+    if (qty <= 0) return;
     const available = category.quantityTotal - category.quantitySold - category.quantityReserved;
     if (qty > available) {
       toast.error(`Seulement ${available} place(s) disponible(s)`);
@@ -332,15 +333,15 @@ export default function EventDetail() {
       </Helmet>
 
       {/* Hero Banner */}
-      <div className="relative h-72 md:h-[480px] overflow-hidden">
+      <div className="relative h-72 md:h-[480px] overflow-hidden bg-bg">
         {event.coverImageUrl ? (
           <img
             src={event.coverImageUrl}
             alt={event.title}
-            className="w-full h-full object-cover object-top"
+            className="absolute inset-0 w-full h-full object-cover object-top"
           />
         ) : (
-          <div className="w-full h-full bg-neon-gradient opacity-25" />
+          <div className="absolute inset-0 bg-neon-gradient opacity-25" />
         )}
         {/* Overlays */}
         <div className="absolute inset-0 bg-gradient-to-t from-bg via-bg/55 to-transparent" />
@@ -772,7 +773,7 @@ export default function EventDetail() {
               .map((cat, i) => {
                 const available = cat.quantityTotal - cat.quantitySold - cat.quantityReserved;
                 const isSoldOut = available <= 0;
-                const qty = quantities[cat.id] || 1;
+                const qty = quantities[cat.id] ?? 0;
                 const maxQty = Math.min(cat.maxPerOrder, available);
                 const atMax = qty >= maxQty;
 
@@ -813,8 +814,8 @@ export default function EventDetail() {
                         <div className="flex items-center gap-2">
                           <div className="flex items-center border border-violet-neon/20 rounded-lg overflow-hidden">
                             <button
-                              onClick={() => setQuantities((q) => ({ ...q, [cat.id]: Math.max(1, qty - 1) }))}
-                              disabled={qty <= 1}
+                              onClick={() => setQuantities((q) => ({ ...q, [cat.id]: Math.max(0, qty - 1) }))}
+                              disabled={qty <= 0}
                               className="px-2.5 py-1.5 text-white/60 hover:text-white hover:bg-violet-neon/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                             >
                               <Minus className="w-3.5 h-3.5" />
@@ -835,6 +836,7 @@ export default function EventDetail() {
                             size="sm"
                             className="flex-1"
                             onClick={() => handleAddToCart(cat)}
+                            disabled={qty <= 0}
                           >
                             Ajouter
                           </Button>
