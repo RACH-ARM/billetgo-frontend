@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { useCartStore } from '../../stores/cartStore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingCart, Ticket, LayoutDashboard, ShieldCheck, ScanLine, LogOut, Menu, X, MailWarning, UserCircle } from 'lucide-react';
+import { ShoppingCart, Ticket, LayoutDashboard, ShieldCheck, ScanLine, LogOut, Menu, X, MailWarning, UserCircle, ShoppingBag } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import NotificationBell from './NotificationBell';
@@ -14,6 +14,7 @@ const ROLE_CONFIG = {
   ORGANIZER: { label: 'Mon dashboard', Icon: LayoutDashboard, path: '/dashboard' },
   ADMIN:     { label: 'Back-office',   Icon: ShieldCheck,     path: '/admin' },
   SCANNER:   { label: 'Scanner',       Icon: ScanLine,        path: '/scanner' },
+  AGENT:     { label: 'Caisse POS',    Icon: ShoppingBag,     path: '/pos' },
 };
 
 export default function Navbar() {
