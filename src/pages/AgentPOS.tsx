@@ -86,6 +86,7 @@ export default function AgentPOS() {
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollStartRef = useRef<number>(0);
 
   const handleLogout = async () => {
     await logout();
@@ -125,15 +126,26 @@ export default function AgentPOS() {
 
   // ── Polling Mobile Money ───────────────────────────────────────────────────
 
+  const POLL_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes
+
   useEffect(() => {
     if (!showWaiting || !pendingOrderId) return;
+    pollStartRef.current = Date.now();
+
     pollRef.current = setInterval(async () => {
+      // Timeout : si le client ne répond pas en 3 minutes → afficher échec
+      if (Date.now() - pollStartRef.current > POLL_TIMEOUT_MS) {
+        clearInterval(pollRef.current!);
+        setWaitingFailed(true);
+        return;
+      }
+
       try {
         const res = await api.get(`/agent/orders/${pendingOrderId}/status`);
         const { status, qrToken } = res.data.data as { orderId: string; status: string; qrToken: string | null };
+
         if (status === 'COMPLETED' && qrToken) {
           clearInterval(pollRef.current!);
-          // Si numéro WhatsApp différent du numéro de paiement → envoi explicite
           const waPhone = buyerPhone.trim();
           const mmPhone = payerPhone.trim();
           const waTarget = waPhone && waPhone !== mmPhone ? waPhone : mmPhone;
@@ -147,7 +159,7 @@ export default function AgentPOS() {
           resetForm();
           refetchEvents();
           refetchStats();
-        } else if (status === 'FAILED') {
+        } else if (status === 'FAILED' || status === 'CANCELLED') {
           clearInterval(pollRef.current!);
           setWaitingFailed(true);
         }
