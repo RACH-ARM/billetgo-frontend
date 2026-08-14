@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation } from 'react-query';
 import {
   ShoppingBag, Minus, Plus, User, Phone, Mail, CheckCircle,
   ChevronLeft, QrCode, LogOut, BarChart3, Ticket, RefreshCw,
+  Banknote, Smartphone, Loader2, XCircle,
 } from 'lucide-react';
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
@@ -80,20 +81,68 @@ export default function AgentPOS() {
   const { logout, user } = useAuthStore();
   const navigate = useNavigate();
 
-  const [view, setView] = useState<'events' | 'sale' | 'success' | 'stats'>('events');
+  type PaymentMethod = 'CASH' | 'MOOV_MONEY' | 'AIRTEL_MONEY';
+
+  const [view, setView] = useState<'events' | 'sale' | 'success' | 'stats' | 'waiting'>('events');
   const [selectedEvent, setSelectedEvent] = useState<AgentEvent | null>(null);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [buyerName, setBuyerName] = useState('');
   const [buyerEmail, setBuyerEmail] = useState('');
   const [buyerPhone, setBuyerPhone] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH');
+  const [payerPhone, setPayerPhone] = useState('');     // numéro Mobile Money
+  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
   const [saleResult, setSaleResult] = useState<SaleResult | null>(null);
   const [saleWhatsApp, setSaleWhatsApp] = useState('');
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const handleLogout = async () => {
     await logout();
     toast.success('Déconnexion réussie');
     navigate('/login');
   };
+
+  const resetForm = () => {
+    setQuantities({});
+    setBuyerName('');
+    setBuyerEmail('');
+    setBuyerPhone('');
+    setPayerPhone('');
+    setPaymentMethod('CASH');
+    setPendingOrderId(null);
+  };
+
+  // ── Polling statut paiement Mobile Money ───────────────────────────────────
+
+  useEffect(() => {
+    if (view !== 'waiting' || !pendingOrderId) return;
+
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await api.get(`/agent/orders/${pendingOrderId}/status`);
+        const { status, qrToken } = res.data.data as { orderId: string; status: string; qrToken: string | null };
+
+        if (status === 'COMPLETED' && qrToken) {
+          clearInterval(pollRef.current!);
+          setSaleResult({ orderId: pendingOrderId, qrToken, totalAmount: total, buyerName: buyerName.trim() });
+          setSaleWhatsApp(payerPhone.trim()); // le numéro Mobile Money reçoit le QR
+          setView('success');
+          resetForm();
+          refetchEvents();
+        } else if (status === 'FAILED') {
+          clearInterval(pollRef.current!);
+          toast.error('Paiement refusé ou expiré. Le client doit réessayer.');
+          setView('sale');
+          setPendingOrderId(null);
+        }
+      } catch {
+        // réseau — on continuera au prochain tick
+      }
+    }, 3000);
+
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, pendingOrderId]);
 
   // ── Données ────────────────────────────────────────────────────────────────
 
@@ -117,18 +166,16 @@ export default function AgentPOS() {
 
   // ── Vente ──────────────────────────────────────────────────────────────────
 
+  // Mutation espèces
   const saleMutation = useMutation(
     async () => {
       const items = Object.entries(quantities)
         .filter(([, qty]) => qty > 0)
         .map(([categoryId, quantity]) => ({ categoryId, quantity }));
-
       if (items.length === 0) throw new Error('Sélectionnez au moins un billet');
-      if (!buyerName.trim()) throw new Error('Le nom de l\'acheteur est requis');
-
+      if (!buyerName.trim()) throw new Error("Le nom de l'acheteur est requis");
       const res = await api.post('/agent/pos/sale', {
-        eventId: selectedEvent!.id,
-        items,
+        eventId: selectedEvent!.id, items,
         buyerName: buyerName.trim(),
         buyerEmail: buyerEmail.trim() || undefined,
         buyerPhone: buyerPhone.trim() || undefined,
@@ -140,10 +187,7 @@ export default function AgentPOS() {
         setSaleResult(data);
         setSaleWhatsApp(buyerPhone.trim());
         setView('success');
-        setQuantities({});
-        setBuyerName('');
-        setBuyerEmail('');
-        setBuyerPhone('');
+        resetForm();
         refetchEvents();
       },
       onError: (err: unknown) => {
@@ -152,6 +196,45 @@ export default function AgentPOS() {
       },
     }
   );
+
+  // Mutation Mobile Money
+  const mobileMoneyMutation = useMutation(
+    async () => {
+      const items = Object.entries(quantities)
+        .filter(([, qty]) => qty > 0)
+        .map(([categoryId, quantity]) => ({ categoryId, quantity }));
+      if (items.length === 0) throw new Error('Sélectionnez au moins un billet');
+      if (!buyerName.trim()) throw new Error("Le nom de l'acheteur est requis");
+      if (!payerPhone.trim()) throw new Error('Le numéro Mobile Money du client est requis');
+      const res = await api.post('/agent/pos/mobile-money', {
+        eventId: selectedEvent!.id, items,
+        buyerName: buyerName.trim(),
+        buyerEmail: buyerEmail.trim() || undefined,
+        buyerPhone: buyerPhone.trim() || undefined,
+        payerPhone: payerPhone.trim(),
+        operator: paymentMethod,
+      });
+      return res.data.data as { orderId: string };
+    },
+    {
+      onSuccess: (data) => {
+        setPendingOrderId(data.orderId);
+        setView('waiting');
+      },
+      onError: (err: unknown) => {
+        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Erreur lors de l\'initiation du paiement';
+        toast.error(msg);
+      },
+    }
+  );
+
+  const handleSubmit = () => {
+    if (paymentMethod === 'CASH') {
+      saleMutation.mutate();
+    } else {
+      mobileMoneyMutation.mutate();
+    }
+  };
 
   // ── Calcul du total ────────────────────────────────────────────────────────
 
@@ -359,6 +442,64 @@ export default function AgentPOS() {
     );
   }
 
+  // ── Vue : Attente paiement Mobile Money ───────────────────────────────────
+
+  if (view === 'waiting') {
+    const opLabel = paymentMethod === 'MOOV_MONEY' ? 'Moov Money' : 'Airtel Money';
+    return (
+      <div className="min-h-screen bg-bg text-white flex flex-col">
+        <div className="sticky top-0 z-50 bg-bg/95 backdrop-blur-md border-b border-violet-neon/20 px-4 py-3 flex items-center gap-3">
+          <p className="font-bebas text-xl tracking-wider text-violet-neon">EN ATTENTE DE PAIEMENT</p>
+        </div>
+
+        <div className="max-w-sm mx-auto px-4 py-12 flex flex-col items-center text-center gap-6">
+          {/* Spinner */}
+          <div className="w-20 h-20 rounded-full bg-violet-neon/10 border border-violet-neon/20 flex items-center justify-center">
+            <Loader2 className="w-10 h-10 text-violet-neon animate-spin" />
+          </div>
+
+          <div>
+            <p className="text-lg font-semibold mb-1">Demande envoyée via {opLabel}</p>
+            <p className="text-white/50 text-sm">
+              Le client doit valider sur son téléphone
+            </p>
+            <p className="text-white font-mono text-base mt-2">{payerPhone}</p>
+          </div>
+
+          <div className="glass-card p-4 w-full text-left">
+            <div className="flex items-center gap-2 mb-3 text-white/50">
+              <Smartphone className="w-4 h-4" />
+              <p className="text-xs font-semibold uppercase tracking-widest">Étapes pour le client</p>
+            </div>
+            <ol className="space-y-2 text-sm text-white/70">
+              <li className="flex gap-2"><span className="text-violet-neon font-semibold">1.</span> Ouvrir l'app {opLabel} ou composer *150#</li>
+              <li className="flex gap-2"><span className="text-violet-neon font-semibold">2.</span> Accepter la demande de paiement reçue</li>
+              <li className="flex gap-2"><span className="text-violet-neon font-semibold">3.</span> Entrer son code secret</li>
+            </ol>
+          </div>
+
+          <div className="glass-card p-4 w-full text-center border border-violet-neon/10">
+            <p className="text-white/40 text-xs mb-1">Montant à payer</p>
+            <p className="font-bebas text-4xl tracking-wider text-violet-neon">{formatPrice(total)}</p>
+            <p className="text-white/30 text-xs mt-1">{totalTickets} billet{totalTickets !== 1 ? 's' : ''} · {selectedEvent?.title}</p>
+          </div>
+
+          <button
+            onClick={() => {
+              if (pollRef.current) clearInterval(pollRef.current);
+              setPendingOrderId(null);
+              setView('sale');
+            }}
+            className="flex items-center gap-2 text-white/40 hover:text-rose-neon transition-colors text-sm"
+          >
+            <XCircle className="w-4 h-4" />
+            Annuler et revenir
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // ── Vue : Formulaire de vente ──────────────────────────────────────────────
 
   if (view === 'sale' && selectedEvent) {
@@ -419,6 +560,35 @@ export default function AgentPOS() {
             </div>
           </section>
 
+          {/* Mode de paiement */}
+          <section>
+            <h2 className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">Mode de paiement</h2>
+            <div className="grid grid-cols-3 gap-2">
+              {([
+                { id: 'CASH',        label: 'Espèces',     Icon: Banknote,    color: 'green' },
+                { id: 'MOOV_MONEY',  label: 'Moov Money',  Icon: Smartphone,  color: 'blue'  },
+                { id: 'AIRTEL_MONEY',label: 'Airtel Money', Icon: Smartphone,  color: 'red'   },
+              ] as const).map(({ id, label, Icon, color }) => {
+                const active = paymentMethod === id;
+                const borderCls = active
+                  ? color === 'green' ? 'border-green-500 bg-green-500/10 text-green-400'
+                    : color === 'blue' ? 'border-blue-400 bg-blue-400/10 text-blue-300'
+                    : 'border-red-400 bg-red-400/10 text-red-300'
+                  : 'border-white/10 text-white/40 hover:border-white/25';
+                return (
+                  <button
+                    key={id}
+                    onClick={() => setPaymentMethod(id)}
+                    className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border transition-colors ${borderCls}`}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span className="text-[11px] font-semibold leading-tight text-center">{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
           {/* Infos acheteur */}
           <section>
             <h2 className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">Acheteur</h2>
@@ -433,24 +603,54 @@ export default function AgentPOS() {
                   className="w-full bg-bg-card border border-white/10 rounded-xl pl-9 pr-4 py-3 text-white placeholder:text-white/25 focus:border-violet-neon/50 focus:outline-none transition-colors"
                 />
               </div>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#25D366]" />
-                <input
-                  type="tel"
-                  placeholder="Numéro WhatsApp du client (ex: 241XXXXXXXX)"
-                  value={buyerPhone}
-                  onChange={(e) => setBuyerPhone(e.target.value)}
-                  className="w-full bg-bg-card border border-[#25D366]/30 rounded-xl pl-9 pr-4 py-3 text-white placeholder:text-white/25 focus:border-[#25D366]/70 focus:outline-none transition-colors"
-                />
-                {buyerPhone.trim() && (
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-[#25D366] bg-[#25D366]/10 px-1.5 py-0.5 rounded">
-                    WhatsApp
-                  </span>
-                )}
-              </div>
-              <p className="text-[#25D366]/60 text-xs -mt-1 pl-1">
-                Le QR Code sera envoyé automatiquement sur WhatsApp après la vente
-              </p>
+
+              {/* Champ numéro Mobile Money — uniquement si Moov ou Airtel */}
+              {paymentMethod !== 'CASH' && (
+                <>
+                  <div className="relative">
+                    <Smartphone className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${paymentMethod === 'MOOV_MONEY' ? 'text-blue-400' : 'text-red-400'}`} />
+                    <input
+                      type="tel"
+                      placeholder={`Numéro ${paymentMethod === 'MOOV_MONEY' ? 'Moov Money' : 'Airtel Money'} du client *`}
+                      value={payerPhone}
+                      onChange={(e) => setPayerPhone(e.target.value)}
+                      className={`w-full bg-bg-card rounded-xl pl-9 pr-4 py-3 text-white placeholder:text-white/25 focus:outline-none transition-colors border ${
+                        paymentMethod === 'MOOV_MONEY'
+                          ? 'border-blue-400/30 focus:border-blue-400/70'
+                          : 'border-red-400/30 focus:border-red-400/70'
+                      }`}
+                    />
+                  </div>
+                  <p className={`text-xs -mt-1 pl-1 ${paymentMethod === 'MOOV_MONEY' ? 'text-blue-400/60' : 'text-red-400/60'}`}>
+                    Une demande de paiement sera envoyée sur ce numéro. Le QR sera envoyé par WhatsApp après confirmation.
+                  </p>
+                </>
+              )}
+
+              {/* WhatsApp — uniquement pour les ventes espèces */}
+              {paymentMethod === 'CASH' && (
+                <>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#25D366]" />
+                    <input
+                      type="tel"
+                      placeholder="Numéro WhatsApp du client (ex: 241XXXXXXXX)"
+                      value={buyerPhone}
+                      onChange={(e) => setBuyerPhone(e.target.value)}
+                      className="w-full bg-bg-card border border-[#25D366]/30 rounded-xl pl-9 pr-4 py-3 text-white placeholder:text-white/25 focus:border-[#25D366]/70 focus:outline-none transition-colors"
+                    />
+                    {buyerPhone.trim() && (
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-[#25D366] bg-[#25D366]/10 px-1.5 py-0.5 rounded">
+                        WhatsApp
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[#25D366]/60 text-xs -mt-1 pl-1">
+                    Le QR Code sera envoyé automatiquement sur WhatsApp après la vente
+                  </p>
+                </>
+              )}
+
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                 <input
@@ -473,14 +673,23 @@ export default function AgentPOS() {
               <span className="font-bebas text-2xl tracking-wider text-white">{formatPrice(total)}</span>
             </div>
             <button
-              onClick={() => saleMutation.mutate()}
-              disabled={saleMutation.isLoading || totalTickets === 0 || !buyerName.trim()}
+              onClick={handleSubmit}
+              disabled={
+                saleMutation.isLoading || mobileMoneyMutation.isLoading ||
+                totalTickets === 0 || !buyerName.trim() ||
+                (paymentMethod !== 'CASH' && !payerPhone.trim())
+              }
               className="w-full py-3.5 rounded-xl bg-neon-gradient font-semibold text-white disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {saleMutation.isLoading && (
+              {(saleMutation.isLoading || mobileMoneyMutation.isLoading) && (
                 <span className="w-4 h-4 border-2 border-white/25 border-t-white rounded-full animate-spin" />
               )}
-              {saleMutation.isLoading ? 'Validation...' : 'Valider la vente — Espèces'}
+              {saleMutation.isLoading || mobileMoneyMutation.isLoading
+                ? 'Traitement...'
+                : paymentMethod === 'CASH'
+                  ? 'Valider — Espèces'
+                  : `Envoyer demande — ${paymentMethod === 'MOOV_MONEY' ? 'Moov Money' : 'Airtel Money'}`
+              }
             </button>
           </div>
         </div>
