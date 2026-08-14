@@ -7,7 +7,7 @@ import {
   ShieldAlert, LayoutDashboard, ListChecks, X, LogOut, Banknote,
   Star, Flame, Ban, Sparkles, ScanLine, Plus, Eye, EyeOff, Pencil, MessageSquare, FileSearch, RotateCcw, ScrollText, Settings,
   Square, CheckSquare, BadgeCheck, MapPin, QrCode, Download, ShoppingCart, UserCheck,
-  ChevronDown, ChevronLeft, ChevronRight, Search, AlertCircle, Heart, Ticket, Link2,
+  ChevronDown, ChevronLeft, ChevronRight, Search, AlertCircle, Heart, Ticket, Link2, ShoppingBag,
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -20,7 +20,7 @@ import { formatPrice } from '../utils/formatPrice';
 import { formatEventDate } from '../utils/formatDate';
 import toast from 'react-hot-toast';
 
-type TabType = 'dashboard' | 'events' | 'vitrine' | 'users' | 'retraits' | 'scanners' | 'refunds' | 'audit' | 'settings' | 'influenceurs';
+type TabType = 'dashboard' | 'events' | 'vitrine' | 'users' | 'retraits' | 'scanners' | 'agents' | 'refunds' | 'audit' | 'settings' | 'influenceurs';
 
 // ── Types ─────────────────────────────────────────────────────
 interface AuditLogEntry {
@@ -692,6 +692,12 @@ export default function AdminBackoffice() {
   const [showScannerConfirmPassword, setShowScannerConfirmPassword] = useState(false);
   const [createdScannerCreds, setCreatedScannerCreds] = useState<{ phone: string; password: string } | null>(null);
   const [editingScanner, setEditingScanner] = useState<ScannerRow | null>(null);
+
+  const [agentForm, setAgentForm] = useState({ firstName: '', lastName: '', phone: '', password: '', confirmPassword: '', eventIds: [] as string[] });
+  const [showAgentForm, setShowAgentForm] = useState(false);
+  const [showAgentPassword, setShowAgentPassword] = useState(false);
+  const [showAgentConfirmPassword, setShowAgentConfirmPassword] = useState(false);
+  const [createdAgentCreds, setCreatedAgentCreds] = useState<{ phone: string; password: string } | null>(null);
   const [editingCommission, setEditingCommission] = useState<{ id: string; value: string } | null>(null);
   const [reportEventId, setReportEventId] = useState<string | null>(null);
   const [deleteEventTarget, setDeleteEventTarget] = useState<{ id: string; title: string } | null>(null);
@@ -946,6 +952,65 @@ export default function AdminBackoffice() {
     }
   );
 
+  const { data: agentsData, isLoading: agentsLoading } = useQuery(
+    'admin-agents',
+    async () => {
+      const { data } = await api.get('/admin/agents');
+      return data.data as {
+        id: string; firstName: string; lastName: string; phone: string | null;
+        isActive: boolean; scannerPassword: string | null; createdAt: string;
+        agentAssignments: { id: string; event: { id: string; title: string; eventDate: string; status: string } }[];
+        _count: { agentOrders: number };
+      }[];
+    },
+    { enabled: tab === 'agents' }
+  );
+
+  const createAgent = useMutation(
+    async (payload: typeof agentForm) => {
+      const { confirmPassword: _cp, ...body } = payload;
+      const { data } = await api.post('/admin/agents/create-account', { ...body, eventIds: body.eventIds });
+      return data.data;
+    },
+    {
+      onSuccess: (result) => {
+        qc.invalidateQueries('admin-agents');
+        if (result.isNew) {
+          setCreatedAgentCreds({ phone: agentForm.phone, password: agentForm.password });
+        } else {
+          toast.success('Agent assigné à l\'événement');
+        }
+        setAgentForm({ firstName: '', lastName: '', phone: '', password: '', confirmPassword: '', eventIds: [] });
+        setShowAgentForm(false);
+      },
+      onError: (err: unknown) => {
+        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+        toast.error(msg || 'Erreur lors de la création');
+      },
+    }
+  );
+
+  const toggleAgentMutation = useMutation(
+    ({ id, isActive }: { id: string; isActive: boolean }) =>
+      api.patch(`/admin/users/${id}`, { isActive }),
+    {
+      onSuccess: () => { qc.invalidateQueries('admin-agents'); },
+      onError: () => { toast.error('Erreur lors de la mise à jour'); },
+    }
+  );
+
+  const removeAgentEventMutation = useMutation(
+    ({ agentId, eventId }: { agentId: string; eventId: string }) =>
+      api.delete(`/admin/agents/${agentId}/events/${eventId}`),
+    {
+      onSuccess: () => {
+        qc.invalidateQueries('admin-agents');
+        toast.success('Agent retiré de l\'événement');
+      },
+      onError: () => { toast.error('Erreur lors de la mise à jour'); },
+    }
+  );
+
   const { data: refundsData, isLoading: refundsLoading } = useQuery(
     'admin-refunds',
     () => api.get('/admin/refunds').then((r) => r.data.data),
@@ -1160,6 +1225,7 @@ export default function AdminBackoffice() {
     { key: 'events' as TabType, label: 'Validation', Icon: ListChecks, badge: (adminCounts?.pendingEvents ?? 0) + (adminCounts?.pendingChanges ?? 0) || undefined },
     { key: 'vitrine' as TabType, label: 'Vitrine', Icon: Sparkles },
     { key: 'scanners' as TabType, label: 'Scanners', Icon: ScanLine },
+    { key: 'agents' as TabType, label: 'Agents POS', Icon: ShoppingBag },
     { key: 'users' as TabType, label: 'Utilisateurs', Icon: Users },
     { key: 'retraits' as TabType, label: 'Retraits', Icon: Banknote, badge: adminCounts?.pendingPayouts || undefined },
     { key: 'refunds' as TabType, label: 'Remboursements', Icon: RotateCcw, badge: adminCounts?.pendingRefunds || undefined },
@@ -2661,6 +2727,214 @@ export default function AdminBackoffice() {
               </div>
               <div className="px-5 py-3 border-t border-white/5 text-xs text-white/30">
                 {scannersData.length} agent{scannersData.length > 1 ? 's' : ''} de scan
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Agents POS tab ── */}
+      {tab === 'agents' && (
+        <div>
+          <div className="flex items-center justify-between gap-3 mb-5">
+            <p className="text-white/40 text-sm">Créez des comptes agents POS et assignez-les à des événements.</p>
+            <Button variant="secondary" size="sm" className="flex-shrink-0" onClick={() => { setShowAgentForm((v) => !v); setCreatedAgentCreds(null); }}>
+              {showAgentForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+              {showAgentForm ? 'Annuler' : 'Nouvel agent'}
+            </Button>
+          </div>
+
+          {/* Credentials block */}
+          <AnimatePresence>
+            {createdAgentCreds && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mb-4">
+                <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
+                  <div className="flex items-center gap-2 mb-3">
+                    <CheckCircle className="w-5 h-5 text-green-400" />
+                    <p className="text-green-400 font-semibold text-sm">Compte agent créé — transmettez ces identifiants à l'agent</p>
+                  </div>
+                  <div className="space-y-1.5 text-sm font-mono">
+                    <div className="flex justify-between bg-bg-secondary rounded-lg px-3 py-2">
+                      <span className="text-white/40">Téléphone</span>
+                      <span className="text-white">{createdAgentCreds.phone}</span>
+                    </div>
+                    <div className="flex justify-between bg-bg-secondary rounded-lg px-3 py-2">
+                      <span className="text-white/40">Mot de passe</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-white">{showAgentPassword ? createdAgentCreds.password : '••••••••'}</span>
+                        <button onClick={() => setShowAgentPassword((v) => !v)} className="text-white/40 hover:text-white">
+                          {showAgentPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex justify-between bg-bg-secondary rounded-lg px-3 py-2">
+                      <span className="text-white/40">URL de connexion</span>
+                      <span className="text-violet-neon">billetgab.com/login → /pos</span>
+                    </div>
+                  </div>
+                  <button onClick={() => setCreatedAgentCreds(null)} className="mt-3 text-xs text-white/30 hover:text-white/60">Masquer</button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Creation form */}
+          <AnimatePresence>
+            {showAgentForm && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mb-5">
+                <div className="glass-card p-5 border border-violet-neon/20 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-white/40 uppercase tracking-widest block mb-1.5">Prénom</label>
+                    <input type="text" autoComplete="off" value={agentForm.firstName} onChange={(e) => setAgentForm((f) => ({ ...f, firstName: e.target.value }))} placeholder="Prénom"
+                      className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-white/40 uppercase tracking-widest block mb-1.5">Nom</label>
+                    <input type="text" autoComplete="off" value={agentForm.lastName} onChange={(e) => setAgentForm((f) => ({ ...f, lastName: e.target.value }))} placeholder="Nom"
+                      className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors" />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="text-xs text-white/40 uppercase tracking-widest block mb-1.5">Téléphone</label>
+                    <input type="tel" autoComplete="off" value={agentForm.phone} onChange={(e) => setAgentForm((f) => ({ ...f, phone: e.target.value }))} placeholder="07 00 00 00"
+                      className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-white/40 uppercase tracking-widest block mb-1.5">Mot de passe</label>
+                    <div className="relative">
+                      <input type={showAgentPassword ? 'text' : 'password'} autoComplete="new-password" value={agentForm.password} onChange={(e) => setAgentForm((f) => ({ ...f, password: e.target.value }))} placeholder="Min. 8 caractères"
+                        className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 pr-10 text-white text-sm placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors" />
+                      <button type="button" onClick={() => setShowAgentPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors">
+                        {showAgentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-white/40 uppercase tracking-widest block mb-1.5">Confirmer le mot de passe</label>
+                    <div className="relative">
+                      <input type={showAgentConfirmPassword ? 'text' : 'password'} autoComplete="new-password" value={agentForm.confirmPassword} onChange={(e) => setAgentForm((f) => ({ ...f, confirmPassword: e.target.value }))} placeholder="Répéter le mot de passe"
+                        className={`w-full bg-bg-secondary border rounded-xl px-3 py-2.5 pr-10 text-white text-sm placeholder-white/20 focus:outline-none transition-colors ${agentForm.confirmPassword && agentForm.confirmPassword !== agentForm.password ? 'border-rose-neon/60' : 'border-violet-neon/20 focus:border-violet-neon'}`} />
+                      <button type="button" onClick={() => setShowAgentConfirmPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors">
+                        {showAgentConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {agentForm.confirmPassword && agentForm.confirmPassword !== agentForm.password && (
+                      <p className="text-xs text-rose-neon mt-1">Les mots de passe ne correspondent pas</p>
+                    )}
+                  </div>
+                  <div className="sm:col-span-2">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="text-xs text-white/40 uppercase tracking-widest">
+                        Événements assignés
+                        {agentForm.eventIds.length > 0 && <span className="ml-2 text-violet-neon normal-case tracking-normal">{agentForm.eventIds.length} sélectionné{agentForm.eventIds.length > 1 ? 's' : ''}</span>}
+                      </label>
+                      <button type="button"
+                        onClick={() => { const allIds = (publishedEventsData ?? []).map((ev: Record<string, unknown>) => ev.id as string); setAgentForm((f) => ({ ...f, eventIds: f.eventIds.length === allIds.length ? [] : allIds })); }}
+                        className="text-xs text-violet-neon hover:text-white transition-colors">
+                        {agentForm.eventIds.length === (publishedEventsData ?? []).length && (publishedEventsData ?? []).length > 0 ? 'Désélectionner tout' : 'Tout'}
+                      </button>
+                    </div>
+                    <div className="border border-violet-neon/20 rounded-xl overflow-hidden max-h-48 overflow-y-auto bg-bg-secondary">
+                      {(publishedEventsData ?? []).length === 0 ? (
+                        <p className="text-white/30 text-sm px-3 py-3">Aucun événement disponible</p>
+                      ) : (
+                        (publishedEventsData ?? []).map((ev: Record<string, unknown>) => {
+                          const id = ev.id as string;
+                          const checked = agentForm.eventIds.includes(id);
+                          return (
+                            <label key={id} className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors hover:bg-white/5 ${checked ? 'bg-violet-neon/10' : ''}`}>
+                              <input type="checkbox" checked={checked} onChange={() => setAgentForm((f) => ({ ...f, eventIds: checked ? f.eventIds.filter((eid) => eid !== id) : [...f.eventIds, id] }))} className="accent-violet-neon w-4 h-4 flex-shrink-0" />
+                              <span className="text-sm text-white/80 truncate">{ev.title as string}</span>
+                            </label>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                  <div className="sm:col-span-2 flex justify-end">
+                    <Button variant="primary" size="md" onClick={() => createAgent.mutate(agentForm)} isLoading={createAgent.isLoading}
+                      disabled={!agentForm.firstName || !agentForm.lastName || !agentForm.phone || !agentForm.password || agentForm.password !== agentForm.confirmPassword}>
+                      <ShoppingBag className="w-4 h-4" />
+                      Créer le compte agent
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Agents list */}
+          {agentsLoading ? (
+            <SkeletonTable rows={4} />
+          ) : !agentsData?.length ? (
+            <div className="glass-card p-16 text-center">
+              <ShoppingBag className="w-12 h-12 text-white/10 mx-auto mb-3" />
+              <p className="text-white/40">Aucun agent POS créé</p>
+            </div>
+          ) : (
+            <div className="glass-card overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-white/5 text-white/40 text-xs uppercase tracking-widest">
+                      <th className="text-left px-5 py-3">Agent</th>
+                      <th className="text-left px-5 py-3 hidden sm:table-cell">Téléphone</th>
+                      <th className="text-left px-5 py-3 hidden md:table-cell">Événements assignés</th>
+                      <th className="text-center px-5 py-3 hidden sm:table-cell">Ventes</th>
+                      <th className="text-center px-5 py-3">Statut</th>
+                      <th className="px-5 py-3" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {agentsData.map((a) => (
+                      <tr key={a.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                        <td className="px-4 sm:px-5 py-4">
+                          <p className="text-white font-semibold text-sm">{a.firstName} {a.lastName}</p>
+                          {a.scannerPassword && (
+                            <p className="text-white/20 text-xs mt-0.5 font-mono hidden sm:block">MDP : {a.scannerPassword}</p>
+                          )}
+                        </td>
+                        <td className="px-5 py-4 text-white/60 text-xs font-mono hidden sm:table-cell">{a.phone || '—'}</td>
+                        <td className="px-5 py-4 hidden md:table-cell">
+                          <div className="flex flex-wrap gap-1 max-w-[260px]">
+                            {a.agentAssignments.slice(0, 3).map((asgn) => (
+                              <div key={asgn.id} className="flex items-center gap-1">
+                                <span className="text-[11px] px-2 py-0.5 rounded-full bg-violet-neon/10 text-violet-neon border border-violet-neon/20 truncate max-w-[120px]" title={asgn.event.title}>
+                                  {asgn.event.title}
+                                </span>
+                                <button onClick={() => removeAgentEventMutation.mutate({ agentId: a.id, eventId: asgn.event.id })} className="text-white/20 hover:text-rose-neon transition-colors" title="Retirer">
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))}
+                            {a.agentAssignments.length > 3 && <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/5 text-white/40">+{a.agentAssignments.length - 3}</span>}
+                            {a.agentAssignments.length === 0 && <span className="text-white/20 text-xs">Aucun</span>}
+                          </div>
+                        </td>
+                        <td className="px-5 py-4 text-center hidden sm:table-cell">
+                          <p className="text-white font-semibold">{a._count.agentOrders}</p>
+                          <p className="text-white/30 text-xs">vente{a._count.agentOrders !== 1 ? 's' : ''}</p>
+                        </td>
+                        <td className="px-4 sm:px-5 py-4 text-center">
+                          {a.isActive ? (
+                            <span className="text-xs px-2.5 py-1 rounded-full bg-green-500/20 text-green-400 font-semibold">Actif</span>
+                          ) : (
+                            <span className="text-xs px-2.5 py-1 rounded-full bg-rose-neon/20 text-rose-neon font-semibold">Bloqué</span>
+                          )}
+                        </td>
+                        <td className="px-4 sm:px-5 py-4">
+                          <Button variant={a.isActive ? 'danger' : 'secondary'} size="sm"
+                            onClick={() => toggleAgentMutation.mutate({ id: a.id, isActive: !a.isActive })}
+                            isLoading={toggleAgentMutation.isLoading}>
+                            {a.isActive ? 'Bloquer' : 'Activer'}
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="px-5 py-3 border-t border-white/5 text-xs text-white/30">
+                {agentsData.length} agent{agentsData.length > 1 ? 's' : ''} POS
               </div>
             </div>
           )}
