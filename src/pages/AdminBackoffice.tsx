@@ -2876,8 +2876,7 @@ export default function AdminBackoffice() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-white/5 text-white/40 text-xs uppercase tracking-widest">
-                      <th className="text-left px-5 py-3">Agent</th>
-                      <th className="text-left px-5 py-3 hidden sm:table-cell">Téléphone</th>
+                      <th className="text-left px-5 py-3">Agent / Identifiants</th>
                       <th className="text-left px-5 py-3 hidden md:table-cell">Événements assignés</th>
                       <th className="text-center px-5 py-3 hidden sm:table-cell">Ventes</th>
                       <th className="text-center px-5 py-3">Statut</th>
@@ -2889,11 +2888,13 @@ export default function AdminBackoffice() {
                       <tr key={a.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
                         <td className="px-4 sm:px-5 py-4">
                           <p className="text-white font-semibold text-sm">{a.firstName} {a.lastName}</p>
+                          <p className="text-white/40 text-xs mt-0.5 font-mono">{a.phone || '—'}</p>
                           {a.scannerPassword && (
-                            <p className="text-white/20 text-xs mt-0.5 font-mono hidden sm:block">MDP : {a.scannerPassword}</p>
+                            <p className="text-violet-neon/70 text-xs mt-1 font-mono">
+                              MDP : <span className="text-white/80">{a.scannerPassword}</span>
+                            </p>
                           )}
                         </td>
-                        <td className="px-5 py-4 text-white/60 text-xs font-mono hidden sm:table-cell">{a.phone || '—'}</td>
                         <td className="px-5 py-4 hidden md:table-cell">
                           <div className="flex flex-wrap gap-1 max-w-[260px]">
                             {a.agentAssignments.slice(0, 3).map((asgn) => (
