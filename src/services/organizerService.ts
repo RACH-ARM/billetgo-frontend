@@ -9,6 +9,11 @@ export interface CategoryStat {
   revenue: number;
 }
 
+export interface ChannelCount {
+  count: number;
+  revenue: number;
+}
+
 export interface OrganizerEventStat {
   eventId: string;
   title: string;
@@ -27,6 +32,7 @@ export interface OrganizerEventStat {
   occupancyRate: number;
   promoEnabled: boolean;
   categoryStats: CategoryStat[];
+  channelStats?: { online: ChannelCount; pos: ChannelCount };
 }
 
 export interface OrganizerStats {
@@ -36,6 +42,7 @@ export interface OrganizerStats {
   eventsCount: number;
   totalFollowers: number;
   totalLikes: number;
+  channelStats?: { online: ChannelCount; pos: ChannelCount };
 }
 
 export interface BuyerOrder {

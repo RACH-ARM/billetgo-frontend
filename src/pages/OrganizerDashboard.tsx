@@ -8,11 +8,11 @@ import {
 import {
   CalendarDays, Ticket, TrendingUp, TrendingDown,
   LogOut, Check, Clock, Upload, FileCheck,
-  UserCircle, Minus, Banknote, Heart, Users,
+  UserCircle, Minus, Banknote, Heart, Users, Globe, ShoppingBag,
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useOrganizerStats, useOrganizerProfile, useOrganizerAnalytics, useUploadKYC, useOrganizerPayouts } from '../hooks/useOrganizer';
-import { type OrganizerEventStat, type CategoryStat } from '../services/organizerService';
+import { type OrganizerEventStat, type CategoryStat, type ChannelCount } from '../services/organizerService';
 import { formatPrice } from '../utils/formatPrice';
 import Spinner from '../components/common/Spinner';
 import { SkeletonKpiGrid, SkeletonCard, SkeletonTable } from '../components/common/Skeleton';
@@ -180,6 +180,64 @@ function CategoryBreakdown({ events }: { events: OrganizerEventStat[] }) {
           }
         </div>
       )}
+    </motion.div>
+  );
+}
+
+// ── Channel breakdown (ONLINE vs POS) ────────────────────────
+function ChannelBreakdown({ channelStats }: { channelStats?: { online: ChannelCount; pos: ChannelCount } }) {
+  if (!channelStats) return null;
+  const { online, pos } = channelStats;
+  const total = online.count + pos.count;
+  if (total === 0) return null;
+  const onlinePct = Math.round((online.count / total) * 100);
+  const posPct = 100 - onlinePct;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.06 }}
+      className="glass-card p-5 mb-8 border border-violet-neon/10"
+    >
+      <div className="flex items-center gap-2 mb-4">
+        <TrendingUp className="w-4 h-4 text-violet-neon" />
+        <h2 className="font-bebas text-xl tracking-wider text-white">Ventes par canal</h2>
+      </div>
+
+      {/* Barre de répartition */}
+      <div className="h-3 rounded-full overflow-hidden flex mb-4">
+        <div className="bg-violet-neon transition-all" style={{ width: `${onlinePct}%` }} />
+        <div className="bg-[#25D366] transition-all" style={{ width: `${posPct}%` }} />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        {/* ONLINE */}
+        <div className="bg-violet-neon/5 border border-violet-neon/20 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-7 h-7 rounded-lg bg-violet-neon/10 flex items-center justify-center">
+              <Globe className="w-4 h-4 text-violet-neon" />
+            </div>
+            <span className="text-xs font-semibold text-violet-neon uppercase tracking-widest">En ligne</span>
+          </div>
+          <p className="font-bebas text-3xl text-white mb-0.5">{online.count.toLocaleString('fr-FR')}</p>
+          <p className="text-xs text-white/30">commandes · {onlinePct}%</p>
+          <p className="text-sm font-semibold text-violet-neon mt-2">{formatPrice(online.revenue, 'FCFA', '0 FCFA')}</p>
+        </div>
+
+        {/* POS */}
+        <div className="bg-[#25D366]/5 border border-[#25D366]/20 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-7 h-7 rounded-lg bg-[#25D366]/10 flex items-center justify-center">
+              <ShoppingBag className="w-4 h-4 text-[#25D366]" />
+            </div>
+            <span className="text-xs font-semibold text-[#25D366] uppercase tracking-widest">Guichet POS</span>
+          </div>
+          <p className="font-bebas text-3xl text-white mb-0.5">{pos.count.toLocaleString('fr-FR')}</p>
+          <p className="text-xs text-white/30">commandes · {posPct}%</p>
+          <p className="text-sm font-semibold text-[#25D366] mt-2">{formatPrice(pos.revenue, 'FCFA', '0 FCFA')}</p>
+        </div>
+      </div>
     </motion.div>
   );
 }
@@ -588,6 +646,9 @@ export default function OrganizerDashboard() {
           color="rose"
         />
       </div>
+
+      {/* Ventes par canal (ONLINE vs POS) */}
+      <ChannelBreakdown channelStats={data?.channelStats} />
 
       {/* Ventes par catégorie */}
       <CategoryBreakdown events={data?.events ?? []} />

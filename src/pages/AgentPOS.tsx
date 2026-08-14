@@ -87,6 +87,7 @@ export default function AgentPOS() {
   const [buyerEmail, setBuyerEmail] = useState('');
   const [buyerPhone, setBuyerPhone] = useState('');
   const [saleResult, setSaleResult] = useState<SaleResult | null>(null);
+  const [saleWhatsApp, setSaleWhatsApp] = useState('');
 
   const handleLogout = async () => {
     await logout();
@@ -137,6 +138,7 @@ export default function AgentPOS() {
     {
       onSuccess: (data) => {
         setSaleResult(data);
+        setSaleWhatsApp(buyerPhone.trim());
         setView('success');
         setQuantities({});
         setBuyerName('');
@@ -332,13 +334,22 @@ export default function AgentPOS() {
               alt="QR Code"
               className="w-48 h-48 mx-auto rounded-xl bg-white p-2"
             />
-            <p className="text-white/30 text-xs mt-3">
-              Montrez ce QR à l'acheteur pour qu'il le prenne en photo.
-            </p>
+            {saleWhatsApp ? (
+              <div className="mt-3 flex items-center justify-center gap-2 bg-[#25D366]/10 border border-[#25D366]/30 rounded-lg px-3 py-2">
+                <Phone className="w-3.5 h-3.5 text-[#25D366]" />
+                <p className="text-[#25D366] text-xs font-medium">
+                  QR Code envoyé sur WhatsApp · {saleWhatsApp}
+                </p>
+              </div>
+            ) : (
+              <p className="text-white/30 text-xs mt-3">
+                Montrez ce QR à l'acheteur pour qu'il le prenne en photo.
+              </p>
+            )}
           </div>
 
           <button
-            onClick={() => { setSaleResult(null); setSelectedEvent(null); setView('events'); }}
+            onClick={() => { setSaleResult(null); setSaleWhatsApp(''); setSelectedEvent(null); setView('events'); }}
             className="w-full py-3 rounded-xl bg-neon-gradient font-semibold text-white"
           >
             Nouvelle vente
@@ -423,15 +434,23 @@ export default function AgentPOS() {
                 />
               </div>
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#25D366]" />
                 <input
                   type="tel"
-                  placeholder="Téléphone (optionnel)"
+                  placeholder="Numéro WhatsApp du client (ex: 241XXXXXXXX)"
                   value={buyerPhone}
                   onChange={(e) => setBuyerPhone(e.target.value)}
-                  className="w-full bg-bg-card border border-white/10 rounded-xl pl-9 pr-4 py-3 text-white placeholder:text-white/25 focus:border-violet-neon/50 focus:outline-none transition-colors"
+                  className="w-full bg-bg-card border border-[#25D366]/30 rounded-xl pl-9 pr-4 py-3 text-white placeholder:text-white/25 focus:border-[#25D366]/70 focus:outline-none transition-colors"
                 />
+                {buyerPhone.trim() && (
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-[#25D366] bg-[#25D366]/10 px-1.5 py-0.5 rounded">
+                    WhatsApp
+                  </span>
+                )}
               </div>
+              <p className="text-[#25D366]/60 text-xs -mt-1 pl-1">
+                Le QR Code sera envoyé automatiquement sur WhatsApp après la vente
+              </p>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
                 <input
