@@ -555,9 +555,8 @@ export default function AgentPOS() {
                     <p className="text-xs font-semibold uppercase tracking-widest">Étapes pour le client</p>
                   </div>
                   <ol className="space-y-2 text-sm text-white/70">
-                    <li className="flex gap-2"><span className={`font-semibold ${paymentMethod === 'MOOV_MONEY' ? 'text-blue-400' : 'text-red-400'}`}>1.</span> Ouvrir l'app {opLabel}</li>
-                    <li className="flex gap-2"><span className={`font-semibold ${paymentMethod === 'MOOV_MONEY' ? 'text-blue-400' : 'text-red-400'}`}>2.</span> Accepter la demande de paiement reçue</li>
-                    <li className="flex gap-2"><span className={`font-semibold ${paymentMethod === 'MOOV_MONEY' ? 'text-blue-400' : 'text-red-400'}`}>3.</span> Entrer son code secret</li>
+                    <li className="flex gap-2"><span className={`font-semibold ${paymentMethod === 'MOOV_MONEY' ? 'text-blue-400' : 'text-red-400'}`}>1.</span> Demander au client de rester sur l'écran d'accueil pour ne pas manquer le pop-up USSD</li>
+                    <li className="flex gap-2"><span className={`font-semibold ${paymentMethod === 'MOOV_MONEY' ? 'text-blue-400' : 'text-red-400'}`}>2.</span> Le client saisit son code secret pour valider le paiement</li>
                   </ol>
                 </div>
 
