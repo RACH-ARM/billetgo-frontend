@@ -133,8 +133,15 @@ export default function AgentPOS() {
         const { status, qrToken } = res.data.data as { orderId: string; status: string; qrToken: string | null };
         if (status === 'COMPLETED' && qrToken) {
           clearInterval(pollRef.current!);
+          // Si numéro WhatsApp différent du numéro de paiement → envoi explicite
+          const waPhone = buyerPhone.trim();
+          const mmPhone = payerPhone.trim();
+          const waTarget = waPhone && waPhone !== mmPhone ? waPhone : mmPhone;
+          if (waPhone && waPhone !== mmPhone) {
+            api.post(`/agent/orders/${pendingOrderId}/send-whatsapp`, { phone: waPhone }).catch(() => {});
+          }
           setSaleResult({ orderId: pendingOrderId, qrToken, totalAmount: total, buyerName: buyerName.trim() });
-          setSaleWhatsApp(payerPhone.trim());
+          setSaleWhatsApp(waTarget);
           setShowWaiting(false);
           setShowQR(true);
           resetForm();
@@ -417,20 +424,30 @@ export default function AgentPOS() {
                       </div>
                     )}
 
-                    {/* WhatsApp — espèces uniquement */}
-                    {paymentMethod === 'CASH' && (
-                      <div>
-                        <div className="relative">
-                          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#25D366]" />
-                          <input type="tel" placeholder="Numéro WhatsApp du client (optionnel)" value={buyerPhone} onChange={(e) => setBuyerPhone(e.target.value)}
-                            className="w-full bg-bg-card border border-[#25D366]/30 rounded-xl pl-9 pr-4 py-3 text-white placeholder:text-white/25 focus:border-[#25D366]/70 focus:outline-none transition-colors" />
-                          {buyerPhone.trim() && (
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-[#25D366] bg-[#25D366]/10 px-1.5 py-0.5 rounded">WA</span>
-                          )}
-                        </div>
-                        <p className="text-[#25D366]/50 text-xs mt-1 pl-1">QR Code envoyé sur WhatsApp après la vente</p>
+                    {/* WhatsApp — tous modes (optionnel) */}
+                    <div>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#25D366]" />
+                        <input type="tel"
+                          placeholder={
+                            paymentMethod === 'CASH'
+                              ? 'Numéro WhatsApp du client (optionnel)'
+                              : 'WhatsApp si différent du numéro de paiement (optionnel)'
+                          }
+                          value={buyerPhone} onChange={(e) => setBuyerPhone(e.target.value)}
+                          className="w-full bg-bg-card border border-[#25D366]/30 rounded-xl pl-9 pr-4 py-3 text-white placeholder:text-white/25 focus:border-[#25D366]/70 focus:outline-none transition-colors"
+                        />
+                        {buyerPhone.trim() && (
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-[#25D366] bg-[#25D366]/10 px-1.5 py-0.5 rounded">WA</span>
+                        )}
                       </div>
-                    )}
+                      <p className="text-[#25D366]/50 text-xs mt-1 pl-1">
+                        {paymentMethod === 'CASH'
+                          ? 'QR Code envoyé sur WhatsApp après la vente'
+                          : 'QR envoyé au numéro de paiement. Si le WhatsApp est différent, entrez-le ici.'
+                        }
+                      </p>
+                    </div>
 
                     {/* Email */}
                     <div className="relative">
