@@ -1242,8 +1242,6 @@ export default function AdminBackoffice() {
     { key: 'agents' as TabType, label: 'Agents POS', Icon: ShoppingBag },
     { key: 'users' as TabType, label: 'Utilisateurs', Icon: Users },
     { key: 'retraits' as TabType, label: 'Retraits', Icon: Banknote, badge: adminCounts?.pendingPayouts || undefined },
-    { key: 'refunds' as TabType, label: 'Remboursements', Icon: RotateCcw, badge: adminCounts?.pendingRefunds || undefined },
-    { key: 'influenceurs' as TabType, label: 'Influenceurs', Icon: Ticket },
     { key: 'audit' as TabType, label: 'Audit', Icon: ScrollText },
     { key: 'settings' as TabType, label: 'Paramètres', Icon: Settings },
     { key: 'communication' as TabType, label: 'Communication', Icon: Megaphone },
@@ -4166,50 +4164,93 @@ Vous gérez l'événement. Nous gérons les billets.
                   </div>
                 ))}
                 {calShowAdd ? (
-                  <div className="flex items-end gap-2 flex-wrap">
-                    <div className="flex-1 min-w-[180px]">
-                      <label className="text-[10px] text-white/30 uppercase tracking-widest block mb-1">Nom de l'événement</label>
-                      <input
-                        type="text"
-                        placeholder="Ex: Concert de Noël"
-                        value={calNewEvent.name}
-                        onChange={e => setCalNewEvent(prev => ({ ...prev, name: e.target.value }))}
-                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-violet-neon/50"
-                      />
-                    </div>
+                  <div className="space-y-4">
+                    {/* Events from platform DB */}
+                    {(() => {
+                      const addedIds = new Set(calEvents.map(e => e.id));
+                      const platformEvs = ((publishedEventsData ?? []) as Array<{ id: string; title: string; eventDate: string }>)
+                        .filter(ev => !addedIds.has(ev.id))
+                        .sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime());
+
+                      const addFromPlatform = (ev: { id: string; title: string; eventDate: string }) => {
+                        const dateStr = ev.eventDate.slice(0, 10);
+                        const evDate = new Date(dateStr + 'T12:00:00');
+                        setCalEvents(prev => [...prev, { id: ev.id, name: ev.title, date: dateStr }]);
+                        setCalMonth(new Date(evDate.getFullYear(), evDate.getMonth(), 1));
+                        setCalShowAdd(false);
+                      };
+
+                      return (
+                        <div>
+                          <p className="text-[10px] text-white/30 uppercase tracking-widest mb-2">Événements sur la plateforme</p>
+                          {platformEvs.length === 0 ? (
+                            <p className="text-white/20 text-xs px-1">Tous les événements sont déjà ajoutés.</p>
+                          ) : (
+                            <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
+                              {platformEvs.map(ev => (
+                                <button
+                                  key={ev.id}
+                                  onClick={() => addFromPlatform(ev)}
+                                  className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-white/3 hover:bg-violet-neon/15 border border-white/5 hover:border-violet-neon/30 transition-all text-left group"
+                                >
+                                  <span className="text-sm text-white/80 group-hover:text-white truncate">{ev.title}</span>
+                                  <span className="text-[10px] text-white/30 group-hover:text-violet-neon flex-shrink-0">
+                                    {new Date(ev.eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+
+                    {/* Manual fallback */}
                     <div>
-                      <label className="text-[10px] text-white/30 uppercase tracking-widest block mb-1">Date de l'événement</label>
-                      <input
-                        type="date"
-                        value={calNewEvent.date}
-                        min="2026-08-01"
-                        max="2028-08-31"
-                        onChange={e => setCalNewEvent(prev => ({ ...prev, date: e.target.value }))}
-                        className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-neon/50"
-                      />
+                      <p className="text-[10px] text-white/30 uppercase tracking-widest mb-2">Événement non encore sur la plateforme</p>
+                      <div className="flex items-end gap-2 flex-wrap">
+                        <div className="flex-1 min-w-[180px]">
+                          <input
+                            type="text"
+                            placeholder="Nom de l'événement"
+                            value={calNewEvent.name}
+                            onChange={e => setCalNewEvent(prev => ({ ...prev, name: e.target.value }))}
+                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-violet-neon/50"
+                          />
+                        </div>
+                        <div>
+                          <input
+                            type="date"
+                            value={calNewEvent.date}
+                            min="2026-08-01"
+                            max="2028-08-31"
+                            onChange={e => setCalNewEvent(prev => ({ ...prev, date: e.target.value }))}
+                            className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-neon/50"
+                          />
+                        </div>
+                        <button
+                          onClick={() => {
+                            if (calNewEvent.name && calNewEvent.date) {
+                              const evDate = new Date(calNewEvent.date + 'T12:00:00');
+                              setCalEvents(prev => [...prev, { id: Date.now().toString(), name: calNewEvent.name, date: calNewEvent.date }]);
+                              setCalMonth(new Date(evDate.getFullYear(), evDate.getMonth(), 1));
+                              setCalNewEvent({ name: '', date: '' });
+                              setCalShowAdd(false);
+                            }
+                          }}
+                          className="px-3 py-2 bg-white/10 text-white text-xs font-bold rounded-lg hover:bg-white/15 transition-colors"
+                        >
+                          Ajouter
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          if (calNewEvent.name && calNewEvent.date) {
-                            const evDate = new Date(calNewEvent.date + 'T12:00:00');
-                            setCalEvents(prev => [...prev, { id: Date.now().toString(), name: calNewEvent.name, date: calNewEvent.date }]);
-                            setCalMonth(new Date(evDate.getFullYear(), evDate.getMonth(), 1));
-                            setCalNewEvent({ name: '', date: '' });
-                            setCalShowAdd(false);
-                          }
-                        }}
-                        className="px-3 py-2 bg-violet-neon text-white text-xs font-bold rounded-lg hover:opacity-90 transition-opacity"
-                      >
-                        Ajouter
-                      </button>
-                      <button
-                        onClick={() => { setCalShowAdd(false); setCalNewEvent({ name: '', date: '' }); }}
-                        className="px-3 py-2 bg-white/5 text-white/40 text-xs rounded-lg hover:bg-white/10 transition-colors"
-                      >
-                        Annuler
-                      </button>
-                    </div>
+
+                    <button
+                      onClick={() => { setCalShowAdd(false); setCalNewEvent({ name: '', date: '' }); }}
+                      className="text-xs text-white/30 hover:text-white transition-colors"
+                    >
+                      Annuler
+                    </button>
                   </div>
                 ) : (
                   <button onClick={() => setCalShowAdd(true)} className="flex items-center gap-1.5 text-xs text-violet-neon hover:text-white transition-colors">
