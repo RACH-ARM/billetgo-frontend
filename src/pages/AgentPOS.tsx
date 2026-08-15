@@ -4,7 +4,7 @@ import {
   ShoppingBag, Minus, Plus, User, Phone, Mail, CheckCircle,
   QrCode, LogOut, BarChart3, Ticket, RefreshCw,
   Banknote, Smartphone, Loader2, XCircle, ChevronDown,
-  AlertCircle,
+  AlertCircle, Printer,
 } from 'lucide-react';
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
@@ -84,9 +84,23 @@ export default function AgentPOS() {
   const [saleResult, setSaleResult] = useState<SaleResult | null>(null);
   const [saleWhatsApp, setSaleWhatsApp] = useState('');
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
+  const [ticketImageSrc, setTicketImageSrc] = useState<string | null>(null);
+  const [ticketImageLoading, setTicketImageLoading] = useState(false);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollStartRef = useRef<number>(0);
+
+  // Charger l'image billet complète après chaque vente
+  useEffect(() => {
+    if (!saleResult) { setTicketImageSrc(null); return; }
+    let objectUrl: string | null = null;
+    setTicketImageLoading(true);
+    api.get(`/agent/orders/${saleResult.orderId}/ticket-image`, { responseType: 'blob' })
+      .then(res => { objectUrl = URL.createObjectURL(res.data); setTicketImageSrc(objectUrl); })
+      .catch(() => setTicketImageSrc(null))
+      .finally(() => setTicketImageLoading(false));
+    return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
+  }, [saleResult?.orderId]);
 
   const handleLogout = async () => {
     await logout();
@@ -580,10 +594,10 @@ export default function AgentPOS() {
         </div>
       )}
 
-      {/* ══ OVERLAY : QR Code succès ══ */}
+      {/* ══ OVERLAY : Billet succès ══ */}
       {showQR && saleResult && (
-        <div className="fixed inset-0 z-50 bg-bg/98 backdrop-blur-md flex flex-col">
-          <div className="max-w-sm mx-auto w-full px-4 py-8 flex flex-col items-center text-center gap-5 flex-1 justify-center">
+        <div className="fixed inset-0 z-50 bg-bg/98 backdrop-blur-md flex flex-col overflow-y-auto">
+          <div className="max-w-xl mx-auto w-full px-4 py-8 flex flex-col items-center text-center gap-5">
 
             <div className="w-14 h-14 rounded-2xl bg-green-500/20 border border-green-500/40 flex items-center justify-center">
               <CheckCircle className="w-7 h-7 text-green-400" />
@@ -594,28 +608,68 @@ export default function AgentPOS() {
               <p className="text-white/50 text-sm">Vente pour <span className="text-white">{saleResult.buyerName}</span></p>
             </div>
 
-            <div className="glass-card p-4 w-full">
-              <div className="flex items-center gap-2 mb-3 text-violet-neon">
-                <QrCode className="w-4 h-4" />
-                <p className="text-sm font-medium">QR Code d'entrée</p>
-              </div>
-              <img
-                src={getQRImageUrl(saleResult.orderId, saleResult.qrToken)}
-                alt="QR Code"
-                className="w-48 h-48 mx-auto rounded-xl bg-white p-2"
-              />
+            {/* Billet complet ou QR en fallback */}
+            <div className="glass-card p-3 w-full">
+              {ticketImageLoading ? (
+                <div className="flex items-center justify-center gap-3 py-10 text-white/40">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span className="text-sm">Génération du billet…</span>
+                </div>
+              ) : ticketImageSrc ? (
+                <img
+                  src={ticketImageSrc}
+                  alt="Billet"
+                  className="w-full rounded-lg"
+                  style={{ aspectRatio: '900/380' }}
+                />
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 mb-3 text-violet-neon">
+                    <QrCode className="w-4 h-4" />
+                    <p className="text-sm font-medium">QR Code d'entrée</p>
+                  </div>
+                  <img
+                    src={getQRImageUrl(saleResult.orderId, saleResult.qrToken)}
+                    alt="QR Code"
+                    className="w-48 h-48 mx-auto rounded-xl bg-white p-2"
+                  />
+                </>
+              )}
+
               {saleWhatsApp ? (
                 <div className="mt-3 flex items-center justify-center gap-2 bg-[#25D366]/10 border border-[#25D366]/30 rounded-lg px-3 py-2">
                   <Phone className="w-3.5 h-3.5 text-[#25D366]" />
-                  <p className="text-[#25D366] text-xs font-medium">QR envoyé sur WhatsApp · {saleWhatsApp}</p>
+                  <p className="text-[#25D366] text-xs font-medium">Billet envoyé sur WhatsApp · {saleWhatsApp}</p>
                 </div>
               ) : (
-                <p className="text-white/30 text-xs mt-3">Montrez ce QR au client pour qu'il le prenne en photo</p>
+                <p className="text-white/30 text-xs mt-3">Montrez le billet au client ou imprimez-le</p>
               )}
             </div>
 
+            {/* Bouton imprimer */}
+            {ticketImageSrc && (
+              <button
+                onClick={() => {
+                  const win = window.open('', '_blank');
+                  if (!win) return;
+                  win.document.write(
+                    `<!DOCTYPE html><html><head><title>Billet — BilletGab</title>`
+                    + `<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#000}`
+                    + `img{display:block;width:100%;max-width:900px;margin:0 auto}</style></head>`
+                    + `<body><img src="${ticketImageSrc}"></body></html>`
+                  );
+                  win.document.close();
+                  win.addEventListener('load', () => { win.focus(); win.print(); });
+                }}
+                className="flex items-center gap-2 text-sm font-medium text-white/70 hover:text-white border border-white/20 hover:border-white/40 rounded-xl px-5 py-2.5 transition-colors"
+              >
+                <Printer className="w-4 h-4" />
+                Imprimer le billet
+              </button>
+            )}
+
             <button
-              onClick={() => { setSaleResult(null); setSaleWhatsApp(''); setShowQR(false); }}
+              onClick={() => { setSaleResult(null); setSaleWhatsApp(''); setShowQR(false); setTicketImageSrc(null); }}
               className="w-full py-3 rounded-xl bg-neon-gradient font-semibold text-white"
             >
               Nouvelle vente
