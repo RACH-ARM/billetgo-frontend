@@ -8,7 +8,7 @@ import {
 import {
   CalendarDays, Ticket, TrendingUp, TrendingDown,
   LogOut, Check, Clock, Upload, FileCheck,
-  UserCircle, Minus, Banknote, Heart, Users, Globe, ShoppingBag,
+  UserCircle, Minus, Banknote, Heart, Users, Globe, ShoppingBag, ChevronDown,
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useOrganizerStats, useOrganizerProfile, useOrganizerAnalytics, useUploadKYC, useOrganizerPayouts } from '../hooks/useOrganizer';
@@ -108,9 +108,8 @@ function CatRow({ cat, eventTitle }: { cat: CategoryStat; eventTitle?: string })
   );
 }
 
-function CategoryBreakdown({ events }: { events: OrganizerEventStat[] }) {
+function CategoryBreakdown({ events, selectedId }: { events: OrganizerEventStat[]; selectedId: string }) {
   const active = events.filter((e) => ['PUBLISHED', 'APPROVED', 'COMPLETED'].includes(e.status));
-  const [selectedId, setSelectedId] = useState<string>('all');
 
   if (!active.length) return null;
 
@@ -137,16 +136,6 @@ function CategoryBreakdown({ events }: { events: OrganizerEventStat[] }) {
           <Ticket className="w-4 h-4 text-violet-neon" />
           <h2 className="font-bebas text-xl tracking-wider text-white">Ventes par catégorie</h2>
         </div>
-        <select
-          value={selectedId}
-          onChange={(e) => setSelectedId(e.target.value)}
-          className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-1.5 text-white text-xs focus:outline-none focus:border-violet-neon transition-colors max-w-[220px] truncate"
-        >
-          <option value="all">Tous les événements</option>
-          {active.map((ev) => (
-            <option key={ev.eventId} value={ev.eventId}>{ev.title}</option>
-          ))}
-        </select>
       </div>
 
       {/* Mini KPIs */}
@@ -185,7 +174,7 @@ function CategoryBreakdown({ events }: { events: OrganizerEventStat[] }) {
 }
 
 // ── Channel breakdown (ONLINE vs POS) ────────────────────────
-function ChannelBreakdown({ channelStats }: { channelStats?: { online: ChannelCount; pos: ChannelCount } }) {
+function ChannelBreakdown({ channelStats }: { channelStats?: { online: ChannelCount; pos: ChannelCount } | null }) {
   if (!channelStats) return null;
   const { online, pos } = channelStats;
   const total = online.count + pos.count;
@@ -545,6 +534,18 @@ export default function OrganizerDashboard() {
   const { data: analytics60 } = useOrganizerAnalytics(60);
   const { data: payoutsData } = useOrganizerPayouts();
 
+  // Filtre événement partagé entre ChannelBreakdown et CategoryBreakdown
+  const [selectedEventId, setSelectedEventId] = useState<string>('');
+
+  // Initialiser sur l'événement le plus récent dès que les données arrivent
+  useEffect(() => {
+    if (!data?.events?.length || selectedEventId) return;
+    const active = data.events
+      .filter((e) => ['PUBLISHED', 'APPROVED', 'COMPLETED'].includes(e.status))
+      .sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime());
+    setSelectedEventId(active[0]?.eventId ?? 'all');
+  }, [data?.events, selectedEventId]);
+
   // Calcul de tendance : 30 derniers jours vs 30 jours précédents
   const computeTrend = (key: 'tickets' | 'revenue'): number | undefined => {
     const days = analytics60?.dailySales as Array<{ tickets: number; revenue: number }> | undefined;
@@ -647,11 +648,40 @@ export default function OrganizerDashboard() {
         />
       </div>
 
+      {/* Filtre événement global */}
+      {(data?.events?.filter((e) => ['PUBLISHED', 'APPROVED', 'COMPLETED'].includes(e.status)).length ?? 0) > 1 && (
+        <div className="flex items-center gap-3 mb-5">
+          <span className="text-xs text-white/40 uppercase tracking-wider whitespace-nowrap">Événement</span>
+          <div className="relative flex-1 max-w-xs">
+            <select
+              value={selectedEventId}
+              onChange={(e) => setSelectedEventId(e.target.value)}
+              className="w-full bg-bg-card border border-violet-neon/20 rounded-xl px-3 py-2 pr-8 text-white text-sm focus:outline-none focus:border-violet-neon transition-colors appearance-none"
+            >
+              <option value="all">Tous les événements</option>
+              {data?.events
+                .filter((e) => ['PUBLISHED', 'APPROVED', 'COMPLETED'].includes(e.status))
+                .sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime())
+                .map((ev) => (
+                  <option key={ev.eventId} value={ev.eventId}>{ev.title}</option>
+                ))}
+            </select>
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+          </div>
+        </div>
+      )}
+
       {/* Ventes par canal (ONLINE vs POS) */}
-      <ChannelBreakdown channelStats={data?.channelStats} />
+      {(() => {
+        const activeEvents = data?.events?.filter((e) => ['PUBLISHED', 'APPROVED', 'COMPLETED'].includes(e.status)) ?? [];
+        const channelStats = selectedEventId === 'all' || !selectedEventId
+          ? data?.channelStats
+          : activeEvents.find((e) => e.eventId === selectedEventId)?.channelStats ?? null;
+        return <ChannelBreakdown channelStats={channelStats} />;
+      })()}
 
       {/* Ventes par catégorie */}
-      <CategoryBreakdown events={data?.events ?? []} />
+      <CategoryBreakdown events={data?.events ?? []} selectedId={selectedEventId || 'all'} />
 
       {/* Chart */}
       {chartData.length > 0 && (
