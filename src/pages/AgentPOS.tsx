@@ -155,7 +155,7 @@ export default function AgentPOS() {
 
   // ── Données ────────────────────────────────────────────────────────────────
 
-  const { data: events, isLoading: eventsLoading, refetch: refetchEvents } = useQuery<AgentEvent[]>(
+  const { data: events, isLoading: eventsLoading, isFetching: eventsFetching, refetch: refetchEvents } = useQuery<AgentEvent[]>(
     'agent-events',
     async () => { const res = await api.get('/agent/events'); return res.data.data; },
     { refetchOnWindowFocus: false }
@@ -315,7 +315,7 @@ export default function AgentPOS() {
             onClick={() => refetchEvents()}
             className="p-2 rounded-xl bg-bg-card border border-white/10 hover:border-white/25 transition-colors"
           >
-            <RefreshCw className="w-4 h-4 text-white/40" />
+            <RefreshCw className={`w-4 h-4 text-white/40 transition-transform ${eventsFetching ? 'animate-spin' : ''}`} />
           </button>
           <button
             onClick={handleLogout}
