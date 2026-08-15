@@ -133,9 +133,10 @@ export default function AgentPOS() {
     pollStartRef.current = Date.now();
 
     pollRef.current = setInterval(async () => {
-      // Timeout : si le client ne répond pas en 3 minutes → afficher échec
+      // Timeout : si le client ne répond pas en 3 minutes → forcer annulation + afficher échec
       if (Date.now() - pollStartRef.current > POLL_TIMEOUT_MS) {
         clearInterval(pollRef.current!);
+        api.post(`/agent/orders/${pendingOrderId}/cancel`).catch(() => {});
         setWaitingFailed(true);
         return;
       }
