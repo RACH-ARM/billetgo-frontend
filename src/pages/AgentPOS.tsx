@@ -4,7 +4,7 @@ import {
   ShoppingBag, Minus, Plus, User, Phone, Mail, CheckCircle,
   QrCode, LogOut, BarChart3, Ticket, RefreshCw,
   Banknote, Smartphone, Loader2, XCircle, ChevronDown,
-  AlertCircle,
+  AlertCircle, Send,
 } from 'lucide-react';
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
@@ -86,6 +86,9 @@ export default function AgentPOS() {
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
   const [ticketImageSrc, setTicketImageSrc] = useState<string | null>(null);
   const [ticketImageLoading, setTicketImageLoading] = useState(false);
+  const [waResendPhone, setWaResendPhone] = useState('');
+  const [waResendSending, setWaResendSending] = useState(false);
+  const [waSentNumbers, setWaSentNumbers] = useState<string[]>([]);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollStartRef = useRef<number>(0);
@@ -101,6 +104,22 @@ export default function AgentPOS() {
       .finally(() => setTicketImageLoading(false));
     return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
   }, [saleResult?.orderId]);
+
+  const handleWaResend = async () => {
+    const phone = waResendPhone.trim();
+    if (!phone || !saleResult) return;
+    setWaResendSending(true);
+    try {
+      await api.post(`/agent/orders/${saleResult.orderId}/send-whatsapp`, { phone });
+      setWaSentNumbers(prev => [...prev, phone]);
+      setWaResendPhone('');
+      toast.success(`Billet envoyé · ${phone}`);
+    } catch {
+      toast.error('Échec de l\'envoi WhatsApp');
+    } finally {
+      setWaResendSending(false);
+    }
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -636,18 +655,60 @@ export default function AgentPOS() {
                 </>
               )}
 
-              {saleWhatsApp ? (
-                <div className="mt-3 flex items-center justify-center gap-2 bg-[#25D366]/10 border border-[#25D366]/30 rounded-lg px-3 py-2">
-                  <Phone className="w-3.5 h-3.5 text-[#25D366]" />
-                  <p className="text-[#25D366] text-xs font-medium">Billet envoyé sur WhatsApp · {saleWhatsApp}</p>
+            </div>
+
+            {/* ── Envoi WhatsApp ── */}
+            <div className="w-full glass-card p-4">
+              <p className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">Envoyer le billet sur WhatsApp</p>
+
+              {/* Numéros déjà envoyés */}
+              {saleWhatsApp && (
+                <div className="flex items-center gap-2 mb-2 bg-[#25D366]/10 border border-[#25D366]/20 rounded-lg px-3 py-1.5">
+                  <Phone className="w-3 h-3 text-[#25D366]" />
+                  <span className="text-[#25D366] text-xs font-medium flex-1">{saleWhatsApp}</span>
+                  <span className="text-[#25D366]/60 text-xs">✓ Envoyé auto</span>
                 </div>
-              ) : (
-                <p className="text-white/30 text-xs mt-3">Montrez le billet au client ou imprimez-le</p>
               )}
+              {waSentNumbers.map(n => (
+                <div key={n} className="flex items-center gap-2 mb-2 bg-[#25D366]/10 border border-[#25D366]/20 rounded-lg px-3 py-1.5">
+                  <Phone className="w-3 h-3 text-[#25D366]" />
+                  <span className="text-[#25D366] text-xs font-medium flex-1">{n}</span>
+                  <span className="text-[#25D366]/60 text-xs">✓ Envoyé</span>
+                </div>
+              ))}
+
+              {/* Champ + bouton envoi */}
+              <div className="flex gap-2 mt-2">
+                <div className="relative flex-1">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#25D366]/60" />
+                  <input
+                    type="tel"
+                    placeholder="Autre numéro WhatsApp"
+                    value={waResendPhone}
+                    onChange={e => setWaResendPhone(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleWaResend()}
+                    className="w-full bg-bg border border-[#25D366]/30 rounded-xl pl-9 pr-3 py-2.5 text-white placeholder:text-white/25 focus:border-[#25D366]/70 focus:outline-none text-sm transition-colors"
+                  />
+                </div>
+                <button
+                  onClick={handleWaResend}
+                  disabled={!waResendPhone.trim() || waResendSending}
+                  className="px-4 py-2.5 rounded-xl bg-[#25D366] text-white text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 shrink-0"
+                >
+                  {waResendSending
+                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                    : <Send className="w-4 h-4" />
+                  }
+                  Envoyer
+                </button>
+              </div>
             </div>
 
             <button
-              onClick={() => { setSaleResult(null); setSaleWhatsApp(''); setShowQR(false); setTicketImageSrc(null); }}
+              onClick={() => {
+                setSaleResult(null); setSaleWhatsApp(''); setShowQR(false);
+                setTicketImageSrc(null); setWaSentNumbers([]); setWaResendPhone('');
+              }}
               className="w-full py-3 rounded-xl bg-neon-gradient font-semibold text-white"
             >
               Nouvelle vente
