@@ -196,7 +196,7 @@ export default function AgentPOS() {
         if (status === 'COMPLETED' && qrToken) {
           clearInterval(pollRef.current!);
           setSaleResult({ orderId: pendingOrderId, qrToken, totalAmount: total, buyerName: buyerName.trim() });
-          setSaleWhatsApp(payerPhone.trim());
+          setSaleWhatsApp('');
           setShowWaiting(false);
           setShowQR(true);
           resetForm();
