@@ -4137,7 +4137,10 @@ Vous gérez l'événement. Nous gérons les billets.
                     onClick={() => setCalMode(m)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${calMode === m ? 'bg-violet-neon text-white shadow' : 'text-white/40 hover:text-white'}`}
                   >
-                    {m === 'standard' ? '📅 Planning standard' : '🎟️ Avec événement'}
+                    {m === 'standard'
+                      ? <><CalendarDays className="w-3.5 h-3.5" /> Planning standard</>
+                      : <><Ticket className="w-3.5 h-3.5" /> Avec événement</>
+                    }
                   </button>
                 ))}
               </div>
