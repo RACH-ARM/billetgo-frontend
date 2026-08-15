@@ -712,6 +712,8 @@ export default function AdminBackoffice() {
   const [showAgentPassword, setShowAgentPassword] = useState(false);
   const [showAgentConfirmPassword, setShowAgentConfirmPassword] = useState(false);
   const [createdAgentCreds, setCreatedAgentCreds] = useState<{ phone: string; password: string } | null>(null);
+  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+  const [selectedAgentName, setSelectedAgentName] = useState<string>('');
   const [editingCommission, setEditingCommission] = useState<{ id: string; value: string } | null>(null);
   const [reportEventId, setReportEventId] = useState<string | null>(null);
   const [deleteEventTarget, setDeleteEventTarget] = useState<{ id: string; title: string } | null>(null);
@@ -978,6 +980,23 @@ export default function AdminBackoffice() {
       }[];
     },
     { enabled: tab === 'agents' }
+  );
+
+  type AgentOrder = {
+    id: string; buyerName: string; totalAmount: number; organizerAmount: number;
+    serviceFee: number; createdAt: string;
+    event: { title: string };
+    orderItems: { quantity: number; unitPrice: number; category: { name: string } }[];
+    payments: { provider: string }[];
+  };
+
+  const { data: agentOrdersData, isLoading: agentOrdersLoading } = useQuery<AgentOrder[]>(
+    ['admin-agent-orders', selectedAgentId],
+    async () => {
+      const { data } = await api.get(`/admin/agents/${selectedAgentId}/orders`);
+      return data.data;
+    },
+    { enabled: !!selectedAgentId }
   );
 
   const createAgent = useMutation(
@@ -2925,8 +2944,13 @@ export default function AdminBackoffice() {
                           </div>
                         </td>
                         <td className="px-5 py-4 text-center hidden sm:table-cell">
-                          <p className="text-white font-semibold">{a._count.agentOrders}</p>
-                          <p className="text-white/30 text-xs">vente{a._count.agentOrders !== 1 ? 's' : ''}</p>
+                          <button
+                            onClick={() => { setSelectedAgentId(a.id); setSelectedAgentName(`${a.firstName} ${a.lastName}`); }}
+                            className="hover:text-violet-neon transition-colors group"
+                          >
+                            <p className="text-white font-semibold group-hover:text-violet-neon">{a._count.agentOrders}</p>
+                            <p className="text-white/30 text-xs group-hover:text-violet-neon/60">vente{a._count.agentOrders !== 1 ? 's' : ''} →</p>
+                          </button>
                         </td>
                         <td className="px-4 sm:px-5 py-4 text-center">
                           {a.isActive ? (
@@ -2952,6 +2976,82 @@ export default function AdminBackoffice() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ══ OVERLAY : Ventes détaillées d'un agent ══ */}
+      {selectedAgentId && (
+        <div className="fixed inset-0 z-50 bg-bg/95 backdrop-blur-md flex flex-col">
+          <div className="sticky top-0 bg-bg/95 backdrop-blur-md border-b border-violet-neon/20 px-6 py-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs text-white/40 uppercase tracking-wider mb-0.5">Ventes agent</p>
+              <p className="font-bebas text-xl tracking-wider text-violet-neon">{selectedAgentName}</p>
+            </div>
+            <button onClick={() => setSelectedAgentId(null)} className="p-2 rounded-xl hover:bg-white/5 transition-colors">
+              <X className="w-5 h-5 text-white/50" />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-4 py-6 max-w-4xl mx-auto w-full">
+            {agentOrdersLoading ? (
+              <div className="text-center py-20 text-white/30">Chargement…</div>
+            ) : !agentOrdersData?.length ? (
+              <div className="text-center py-20 text-white/30">Aucune vente complétée</div>
+            ) : (
+              <>
+                {/* Résumé */}
+                <div className="grid grid-cols-3 gap-3 mb-6">
+                  <div className="glass-card p-4 text-center">
+                    <p className="text-white/40 text-xs mb-1">Ventes</p>
+                    <p className="font-bebas text-3xl text-white">{agentOrdersData.length}</p>
+                  </div>
+                  <div className="glass-card p-4 text-center">
+                    <p className="text-white/40 text-xs mb-1">Total encaissé</p>
+                    <p className="font-bebas text-2xl text-white">
+                      {agentOrdersData.reduce((s, o) => s + Number(o.totalAmount), 0).toLocaleString('fr-FR')} FCFA
+                    </p>
+                  </div>
+                  <div className="glass-card p-4 text-center">
+                    <p className="text-white/40 text-xs mb-1">Net organisateur</p>
+                    <p className="font-bebas text-2xl text-violet-neon">
+                      {agentOrdersData.reduce((s, o) => s + Number(o.organizerAmount), 0).toLocaleString('fr-FR')} FCFA
+                    </p>
+                  </div>
+                </div>
+
+                {/* Liste des ventes */}
+                <div className="flex flex-col gap-2">
+                  {agentOrdersData.map((order) => (
+                    <div key={order.id} className="glass-card p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-white truncate">{order.buyerName}</p>
+                          <p className="text-white/40 text-sm truncate">{order.event.title}</p>
+                          <p className="text-white/25 text-xs mt-0.5">
+                            {order.orderItems.map(i => `${i.quantity}× ${i.category.name}`).join(', ')}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1.5">
+                            {order.payments[0]?.provider && (
+                              <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/5 text-white/40 border border-white/10">
+                                {order.payments[0].provider.replace('_', ' ')}
+                              </span>
+                            )}
+                            <span className="text-white/25 text-xs">
+                              {new Date(order.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="font-semibold text-white">{Number(order.totalAmount).toLocaleString('fr-FR')} FCFA</p>
+                          <p className="text-violet-neon/70 text-xs">→ {Number(order.organizerAmount).toLocaleString('fr-FR')} orga</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       )}
 
