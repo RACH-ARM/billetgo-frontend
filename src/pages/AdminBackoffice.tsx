@@ -8,6 +8,7 @@ import {
   Star, Flame, Ban, Sparkles, ScanLine, Plus, Eye, EyeOff, Pencil, MessageSquare, FileSearch, RotateCcw, ScrollText, Settings,
   Square, CheckSquare, BadgeCheck, MapPin, QrCode, Download, ShoppingCart, UserCheck,
   ChevronDown, ChevronLeft, ChevronRight, Search, AlertCircle, Heart, Ticket, Link2, ShoppingBag,
+  Megaphone, Copy, Check,
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -20,7 +21,7 @@ import { formatPrice } from '../utils/formatPrice';
 import { formatEventDate } from '../utils/formatDate';
 import toast from 'react-hot-toast';
 
-type TabType = 'dashboard' | 'events' | 'vitrine' | 'users' | 'retraits' | 'scanners' | 'agents' | 'refunds' | 'audit' | 'settings' | 'influenceurs';
+type TabType = 'dashboard' | 'events' | 'vitrine' | 'users' | 'retraits' | 'scanners' | 'agents' | 'refunds' | 'audit' | 'settings' | 'influenceurs' | 'communication';
 
 // ── Types ─────────────────────────────────────────────────────
 interface AuditLogEntry {
@@ -666,6 +667,19 @@ export default function AdminBackoffice() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const [tab, setTab] = useState<TabType>('dashboard');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const handleCopy = (text: string, id: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    });
+  };
+  const [calMonth, setCalMonth] = useState(() => new Date(2026, 7, 1));
+  const [calMode, setCalMode] = useState<'standard' | 'event'>('standard');
+  const [calEvents, setCalEvents] = useState<Array<{ id: string; name: string; date: string }>>([]);
+  const [calSelectedDay, setCalSelectedDay] = useState<string | null>(null);
+  const [calShowAdd, setCalShowAdd] = useState(false);
+  const [calNewEvent, setCalNewEvent] = useState({ name: '', date: '' });
   const [dashPeriod, setDashPeriod] = useState<'week' | 'month' | 'year' | 'all'>('month');
 
   // Onglet retraits
@@ -1232,6 +1246,7 @@ export default function AdminBackoffice() {
     { key: 'influenceurs' as TabType, label: 'Influenceurs', Icon: Ticket },
     { key: 'audit' as TabType, label: 'Audit', Icon: ScrollText },
     { key: 'settings' as TabType, label: 'Paramètres', Icon: Settings },
+    { key: 'communication' as TabType, label: 'Communication', Icon: Megaphone },
   ];
 
   return (
@@ -3831,6 +3846,610 @@ export default function AdminBackoffice() {
           )}
         </div>
       )}
+
+      {/* ── Communication tab ── */}
+      {tab === 'communication' && (() => {
+        // ─── Platform config ───
+        type Post = { platform: 'Instagram' | 'Facebook' | 'TikTok' | 'LinkedIn'; type: string; templateKey: string };
+        const PLAT: Record<string, { color: string; dot: string }> = {
+          Instagram: { color: 'text-pink-400', dot: 'bg-pink-400' },
+          Facebook:  { color: 'text-blue-400', dot: 'bg-blue-400' },
+          TikTok:    { color: 'text-white/70', dot: 'bg-white/60' },
+          LinkedIn:  { color: 'text-sky-300',  dot: 'bg-sky-300'  },
+        };
+
+        // ─── Weekly schedule 0=Lun…6=Dim ───
+        const WEEKLY: Record<number, Post[]> = {
+          0: [
+            { platform: 'LinkedIn', type: 'B2B organisateur', templateKey: 'linkedin-organizer' },
+            { platform: 'Instagram', type: 'Teaser événement', templateKey: 'event-launch' },
+          ],
+          1: [
+            { platform: 'Facebook', type: 'Éducation', templateKey: 'how-to-buy' },
+            { platform: 'TikTok', type: 'Tuto vidéo', templateKey: 'how-to-buy' },
+          ],
+          2: [
+            { platform: 'Instagram', type: 'Fonctionnalité', templateKey: 'new-feature' },
+          ],
+          3: [
+            { platform: 'Facebook', type: 'Rappel places', templateKey: 'reminder-j7' },
+            { platform: 'Instagram', type: 'Stories urgence', templateKey: 'last-seats' },
+          ],
+          4: [
+            { platform: 'TikTok', type: 'Contenu fun', templateKey: 'how-to-buy' },
+            { platform: 'LinkedIn', type: 'Insight marché', templateKey: 'linkedin-organizer' },
+          ],
+          5: [
+            { platform: 'Instagram', type: 'Communauté', templateKey: 'after-event' },
+            { platform: 'Facebook', type: 'Communauté', templateKey: 'after-event' },
+          ],
+          6: [],
+        };
+
+        // ─── Event timeline (offset en jours par rapport à la date de l'event) ───
+        const EVENT_OFFSETS: Array<{ offset: number; label: string; posts: Post[] }> = [
+          { offset: -30, label: 'Annonce J-30', posts: [
+            { platform: 'Instagram', type: 'Annonce lancement', templateKey: 'event-launch' },
+            { platform: 'Facebook', type: 'Annonce lancement', templateKey: 'event-launch' },
+            { platform: 'LinkedIn', type: 'Annonce B2B', templateKey: 'new-partner' },
+          ]},
+          { offset: -14, label: 'Lancement billetterie', posts: [
+            { platform: 'Instagram', type: 'Billets disponibles', templateKey: 'event-launch' },
+            { platform: 'Facebook', type: 'Billets disponibles', templateKey: 'event-launch' },
+            { platform: 'LinkedIn', type: 'Disponible sur BilletGab', templateKey: 'linkedin-organizer' },
+          ]},
+          { offset: -7, label: 'Rappel J-7', posts: [
+            { platform: 'Instagram', type: 'Rappel + compte à rebours', templateKey: 'reminder-j7' },
+            { platform: 'Facebook', type: 'Rappel', templateKey: 'reminder-j7' },
+            { platform: 'TikTok', type: 'Teaser vidéo', templateKey: 'reminder-j7' },
+          ]},
+          { offset: -3, label: 'Urgence J-3', posts: [
+            { platform: 'Instagram', type: 'Dernières places', templateKey: 'last-seats' },
+            { platform: 'Facebook', type: 'Dernières places', templateKey: 'last-seats' },
+          ]},
+          { offset: -1, label: 'Dernières heures', posts: [
+            { platform: 'Instagram', type: 'Story J-1', templateKey: 'last-seats' },
+            { platform: 'Facebook', type: 'Urgence finale', templateKey: 'last-seats' },
+          ]},
+          { offset: 0, label: '🔴 Jour J', posts: [
+            { platform: 'Instagram', type: 'Live / Stories en direct', templateKey: 'event-launch' },
+            { platform: 'Facebook', type: 'Post jour J', templateKey: 'event-launch' },
+            { platform: 'TikTok', type: 'Vidéo live', templateKey: 'after-event' },
+          ]},
+          { offset: 1, label: 'After event', posts: [
+            { platform: 'Instagram', type: 'Photos after event', templateKey: 'after-event' },
+            { platform: 'TikTok', type: 'Vidéo after', templateKey: 'after-event' },
+            { platform: 'Facebook', type: 'Merci à tous', templateKey: 'after-event' },
+          ]},
+          { offset: 7, label: 'Retour J+7', posts: [
+            { platform: 'LinkedIn', type: 'Bilan partenariat', templateKey: 'linkedin-organizer' },
+            { platform: 'Instagram', type: 'Rétrospective', templateKey: 'after-event' },
+          ]},
+        ];
+
+        const TEMPLATES = [
+          {
+            id: 'event-launch',
+            title: 'Lancement d\'événement',
+            platforms: ['Instagram', 'Facebook'],
+            urgency: 'high' as const,
+            content: `🎟️ [NOM ÉVÉNEMENT] est disponible sur BilletGab !
+
+📅 [JOUR] [DATE] [HEURE]
+📍 [LIEU], Libreville
+💰 À partir de [PRIX] FCFA
+
+Réservez vos places avant qu'il ne soit trop tard 👇
+🔗 billetgab.com
+
+#BilletGab #Gabon #[NomÉvénement] #Libreville`,
+            tip: 'Ajoute la photo ou l\'affiche de l\'événement. Si tu n\'en as pas, demande à l\'organisateur.',
+          },
+          {
+            id: 'reminder-j7',
+            title: 'Rappel J-7 (et J-3, J-1)',
+            platforms: ['Instagram', 'Facebook'],
+            urgency: 'medium' as const,
+            content: `⏰ Plus qu'une semaine !
+
+[NOM ÉVÉNEMENT] arrive dans 7 jours. Tu as ton billet ? 🎟️
+
+📅 [DATE] · 📍 [LIEU]
+
+Les places partent vite → billetgab.com
+
+#BilletGab #[NomÉvénement] #Gabon`,
+            tip: 'Réutilise ce template en changeant juste le chiffre : J-7, J-3, J-1.',
+          },
+          {
+            id: 'last-seats',
+            title: 'Dernières places disponibles',
+            platforms: ['Instagram', 'Facebook', 'Stories'],
+            urgency: 'high' as const,
+            content: `🔴 DERNIÈRES PLACES — [NOM ÉVÉNEMENT]
+
+Les billets se font rares. Il en reste très peu.
+
+Si tu veux être là, c'est maintenant.
+
+👉 billetgab.com
+
+#BilletGab #Gabon #[NomÉvénement]`,
+            tip: 'Poste à 18h en semaine. En story : ajoute un compte à rebours.',
+          },
+          {
+            id: 'after-event',
+            title: 'Après l\'événement',
+            platforms: ['Instagram', 'Facebook', 'TikTok'],
+            urgency: 'low' as const,
+            content: `✨ [NOM ÉVÉNEMENT], c'est fait !
+
+Merci à tous ceux qui étaient là. Quelle soirée 🔥
+
+Pour ceux qui ont raté ça... restez connectés.
+Le prochain événement arrive bientôt sur billetgab.com 👀
+
+#BilletGab #Gabon #[NomÉvénement]`,
+            tip: 'Utilise les photos/vidéos de l\'événement. Demande aux participants de te taguer.',
+          },
+          {
+            id: 'new-partner',
+            title: 'Nouveau partenaire organisateur',
+            platforms: ['Facebook', 'LinkedIn', 'Instagram'],
+            urgency: 'medium' as const,
+            content: `Bienvenue [NOM ORGANISATEUR] sur BilletGab ! 🤝
+
+Nous sommes fiers de compter [NOM ORGANISATEUR] parmi nos partenaires.
+Leurs événements sont désormais disponibles sur notre plateforme.
+
+Tu veux organiser un événement au Gabon ?
+On s'occupe des billets. Toi tu t'occupes du show.
+
+📩 billetgab.com
+
+#BilletGab #Gabon #Événement #Partenariat`,
+            tip: 'Version LinkedIn : retire les emojis, ajoute des chiffres concrets.',
+          },
+          {
+            id: 'new-feature',
+            title: 'Nouvelle fonctionnalité',
+            platforms: ['Instagram', 'LinkedIn', 'Facebook'],
+            urgency: 'medium' as const,
+            content: `🆕 [NOM FONCTIONNALITÉ] est maintenant disponible !
+
+[Une phrase qui explique ce que ça fait pour l'utilisateur]
+
+✅ [Avantage 1]
+✅ [Avantage 2]
+✅ [Avantage 3]
+
+Disponible dès maintenant sur billetgab.com
+
+#BilletGab #Gabon #Billetterie`,
+            tip: 'Exemple : "🆕 Recevez votre billet sur WhatsApp ! Votre QR Code arrive en quelques secondes après l\'achat."',
+          },
+          {
+            id: 'how-to-buy',
+            title: 'Comment acheter un billet (éducatif)',
+            platforms: ['TikTok', 'Instagram', 'Facebook'],
+            urgency: 'low' as const,
+            content: `Tu ne sais pas comment acheter ton billet sur BilletGab ?
+Voilà comment ça marche 👇
+
+1️⃣ Va sur billetgab.com
+2️⃣ Choisis ton événement
+3️⃣ Sélectionne le nombre de billets
+4️⃣ Paye par Mobile Money (Moov ou Airtel)
+5️⃣ Reçois ton QR Code directement sur WhatsApp
+
+C'est tout. 🎟️
+
+#BilletGab #Gabon #Comment #Billetterie`,
+            tip: 'En TikTok : filme-toi en train de faire les étapes sur le vrai site.',
+          },
+          {
+            id: 'linkedin-organizer',
+            title: 'Cibler les organisateurs (LinkedIn)',
+            platforms: ['LinkedIn'],
+            urgency: 'medium' as const,
+            content: `Organiser un événement au Gabon, ça prend du temps.
+
+La vente de billets ne devrait pas en faire partie.
+
+BilletGab prend en charge :
+→ La billetterie en ligne (paiement Mobile Money)
+→ Les ventes physiques sur place (agents POS)
+→ Le suivi en temps réel de vos ventes
+→ L'envoi automatique des billets sur WhatsApp
+
+Commission : 7% par billet vendu. Rien à payer d'avance.
+
+Vous gérez l'événement. Nous gérons les billets.
+
+📩 billetgab.com`,
+            tip: 'Pas d\'emojis excessifs sur LinkedIn. Ton professionnel, chiffres concrets.',
+          },
+        ];
+
+        const HASHTAGS_PERMANENT = ['#BilletGab', '#Gabon', '#Libreville', '#Billetterie'];
+        const HASHTAGS_SITUATIONAL = ['#Événement', '#Concert', '#Gabon241', '#MoovMoney', '#AirtelMoney', '#StartupGabon', '#AfriqueDigitale', '#TechAfrique'];
+
+        const urgencyLabel = (u: 'high' | 'medium' | 'low') => ({
+          high: { label: 'Priorité haute', cls: 'bg-rose-neon/20 text-rose-neon' },
+          medium: { label: 'Régulier', cls: 'bg-amber-400/20 text-amber-400' },
+          low: { label: 'Ponctuel', cls: 'bg-violet-neon/20 text-violet-neon' },
+        }[u]);
+
+        // ─── Calendar helpers ───
+        const pad = (n: number) => String(n).padStart(2, '0');
+        const toDateStr = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        const monthLabel = (d: Date) => d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+        const getDow = (dateStr: string) => (new Date(dateStr + 'T12:00:00').getDay() + 6) % 7;
+
+        const getDayPosts = (dateStr: string) => {
+          const posts: Array<Post & { eventLabel?: string; eventName?: string }> = [];
+          const eventDays: Array<{ label: string; name: string }> = [];
+          if (calMode === 'event') {
+            calEvents.forEach(ev => {
+              const diffDays = Math.round(
+                (new Date(dateStr + 'T12:00:00').getTime() - new Date(ev.date + 'T12:00:00').getTime()) / 86400000
+              );
+              const match = EVENT_OFFSETS.find(o => o.offset === diffDays);
+              if (match) {
+                eventDays.push({ label: match.label, name: ev.name });
+                match.posts.forEach(p => posts.push({ ...p, eventLabel: match.label, eventName: ev.name }));
+              }
+            });
+          }
+          if (eventDays.length === 0) {
+            (WEEKLY[getDow(dateStr)] || []).forEach(p => posts.push(p));
+          }
+          return { posts, eventDays };
+        };
+
+        const yr = calMonth.getFullYear();
+        const mo = calMonth.getMonth();
+        const daysInMonth = new Date(yr, mo + 1, 0).getDate();
+        const firstDow = (new Date(yr, mo, 1).getDay() + 6) % 7;
+        const gridDays: (string | null)[] = [
+          ...Array(firstDow).fill(null),
+          ...Array.from({ length: daysInMonth }, (_, i) => toDateStr(new Date(yr, mo, i + 1))),
+        ];
+        while (gridDays.length % 7 !== 0) gridDays.push(null);
+        const minMonth = new Date(2026, 7, 1);
+        const maxMonth = new Date(2028, 7, 1);
+        const canPrevMonth = calMonth > minMonth;
+        const canNextMonth = calMonth < maxMonth;
+        const todayStr = toDateStr(new Date());
+        const selectedData = calSelectedDay ? getDayPosts(calSelectedDay) : null;
+
+        return (
+          <div className="space-y-8">
+
+            {/* Header + mode toggle */}
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <h2 className="font-bebas text-2xl tracking-wider text-white">CALENDRIER ÉDITORIAL</h2>
+                <p className="text-white/40 text-xs mt-0.5">Planification sur 2 ans · Août 2026 → Août 2028</p>
+              </div>
+              <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1">
+                {(['standard', 'event'] as const).map(m => (
+                  <button
+                    key={m}
+                    onClick={() => setCalMode(m)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${calMode === m ? 'bg-violet-neon text-white shadow' : 'text-white/40 hover:text-white'}`}
+                  >
+                    {m === 'standard' ? '📅 Planning standard' : '🎟️ Avec événement'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Event mode panel */}
+            {calMode === 'event' && (
+              <div className="glass-card p-4 space-y-3">
+                <p className="text-white/40 text-xs font-semibold uppercase tracking-widest">Événements planifiés</p>
+                {calEvents.length === 0 && !calShowAdd && (
+                  <p className="text-white/30 text-xs">Aucun événement ajouté — le calendrier affiche le planning standard.</p>
+                )}
+                {calEvents.map(ev => (
+                  <div key={ev.id} className="flex items-center justify-between bg-violet-neon/10 border border-violet-neon/20 rounded-lg px-3 py-2">
+                    <div>
+                      <p className="text-sm font-semibold text-white">{ev.name}</p>
+                      <p className="text-xs text-violet-neon/70">
+                        {new Date(ev.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                      </p>
+                    </div>
+                    <button onClick={() => setCalEvents(prev => prev.filter(e => e.id !== ev.id))} className="text-white/30 hover:text-rose-400 transition-colors p-1">
+                      <XCircle className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+                {calShowAdd ? (
+                  <div className="flex items-end gap-2 flex-wrap">
+                    <div className="flex-1 min-w-[180px]">
+                      <label className="text-[10px] text-white/30 uppercase tracking-widest block mb-1">Nom de l'événement</label>
+                      <input
+                        type="text"
+                        placeholder="Ex: Concert de Noël"
+                        value={calNewEvent.name}
+                        onChange={e => setCalNewEvent(prev => ({ ...prev, name: e.target.value }))}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-violet-neon/50"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-white/30 uppercase tracking-widest block mb-1">Date de l'événement</label>
+                      <input
+                        type="date"
+                        value={calNewEvent.date}
+                        min="2026-08-01"
+                        max="2028-08-31"
+                        onChange={e => setCalNewEvent(prev => ({ ...prev, date: e.target.value }))}
+                        className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-neon/50"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          if (calNewEvent.name && calNewEvent.date) {
+                            const evDate = new Date(calNewEvent.date + 'T12:00:00');
+                            setCalEvents(prev => [...prev, { id: Date.now().toString(), name: calNewEvent.name, date: calNewEvent.date }]);
+                            setCalMonth(new Date(evDate.getFullYear(), evDate.getMonth(), 1));
+                            setCalNewEvent({ name: '', date: '' });
+                            setCalShowAdd(false);
+                          }
+                        }}
+                        className="px-3 py-2 bg-violet-neon text-white text-xs font-bold rounded-lg hover:opacity-90 transition-opacity"
+                      >
+                        Ajouter
+                      </button>
+                      <button
+                        onClick={() => { setCalShowAdd(false); setCalNewEvent({ name: '', date: '' }); }}
+                        className="px-3 py-2 bg-white/5 text-white/40 text-xs rounded-lg hover:bg-white/10 transition-colors"
+                      >
+                        Annuler
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button onClick={() => setCalShowAdd(true)} className="flex items-center gap-1.5 text-xs text-violet-neon hover:text-white transition-colors">
+                    <span className="text-base leading-none">+</span> Ajouter un événement
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Month calendar */}
+            <div className="glass-card overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+                <button
+                  onClick={() => { if (canPrevMonth) { const d = new Date(calMonth); d.setMonth(d.getMonth() - 1); setCalMonth(d); setCalSelectedDay(null); } }}
+                  disabled={!canPrevMonth}
+                  className="p-1.5 rounded-lg hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4 text-white" />
+                </button>
+                <p className="font-semibold text-white capitalize text-sm">{monthLabel(calMonth)}</p>
+                <button
+                  onClick={() => { if (canNextMonth) { const d = new Date(calMonth); d.setMonth(d.getMonth() + 1); setCalMonth(d); setCalSelectedDay(null); } }}
+                  disabled={!canNextMonth}
+                  className="p-1.5 rounded-lg hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4 text-white" />
+                </button>
+              </div>
+              <div className="grid grid-cols-7 border-b border-white/5">
+                {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map(d => (
+                  <div key={d} className="px-1 py-2 text-center text-[10px] font-bold text-white/30 uppercase tracking-widest">{d}</div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7">
+                {gridDays.map((dateStr, idx) => {
+                  if (!dateStr) return <div key={`e${idx}`} className="min-h-[76px] border-b border-r border-white/5 bg-white/1" />;
+                  const { posts, eventDays } = getDayPosts(dateStr);
+                  const isSelected = calSelectedDay === dateStr;
+                  const hasEvent = eventDays.length > 0;
+                  const isWeekend = getDow(dateStr) >= 5;
+                  const isToday = dateStr === todayStr;
+                  const dayNum = parseInt(dateStr.slice(-2));
+                  return (
+                    <div
+                      key={dateStr}
+                      onClick={() => setCalSelectedDay(isSelected ? null : dateStr)}
+                      className={`min-h-[76px] p-1.5 border-b border-r border-white/5 cursor-pointer transition-colors ${
+                        isSelected ? 'bg-violet-neon/15 ring-1 ring-inset ring-violet-neon/40' :
+                        hasEvent ? 'bg-amber-400/8 hover:bg-amber-400/12' :
+                        isWeekend ? 'bg-white/1 hover:bg-white/4' : 'hover:bg-white/3'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className={`text-[11px] font-bold leading-none ${
+                          isToday ? 'bg-violet-neon text-white rounded-full w-[18px] h-[18px] flex items-center justify-center text-[9px]' :
+                          isWeekend ? 'text-white/30' : 'text-white/50'
+                        }`}>{dayNum}</span>
+                        {hasEvent && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />}
+                      </div>
+                      <div className="space-y-0.5">
+                        {posts.slice(0, 3).map((p, pi) => (
+                          <div key={pi} className="flex items-center gap-1">
+                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${PLAT[p.platform]?.dot || 'bg-white/30'}`} />
+                            <span className="text-[9px] text-white/40 truncate leading-tight">{p.platform.slice(0, 2).toUpperCase()}</span>
+                          </div>
+                        ))}
+                        {posts.length > 3 && <span className="text-[9px] text-white/25">+{posts.length - 3}</span>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex items-center gap-4 px-4 py-2.5 border-t border-white/5 flex-wrap">
+                {Object.entries(PLAT).map(([name, { dot }]) => (
+                  <span key={name} className="flex items-center gap-1.5 text-[10px] text-white/40">
+                    <span className={`w-2 h-2 rounded-full ${dot}`} />{name}
+                  </span>
+                ))}
+                {calMode === 'event' && (
+                  <span className="flex items-center gap-1.5 text-[10px] text-amber-400/70">
+                    <span className="w-2 h-2 rounded-full bg-amber-400" />Jour événement
+                  </span>
+                )}
+                <span className="ml-auto text-[10px] text-white/20">Cliquer sur un jour pour voir le post</span>
+              </div>
+            </div>
+
+            {/* Day detail */}
+            {calSelectedDay && selectedData && (
+              <div className="glass-card p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="font-semibold text-white text-sm">
+                      {new Date(calSelectedDay + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                    </p>
+                    {selectedData.eventDays.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {selectedData.eventDays.map((ed, i) => (
+                          <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-400 font-semibold">
+                            {ed.label} · {ed.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <button onClick={() => setCalSelectedDay(null)} className="text-white/30 hover:text-white p-1 flex-shrink-0">
+                    <XCircle className="w-4 h-4" />
+                  </button>
+                </div>
+                {selectedData.posts.length === 0 ? (
+                  <p className="text-white/30 text-xs">Pas de post prévu ce jour. Profite-en pour planifier ou te reposer.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {selectedData.posts.map((p, pi) => {
+                      const tpl = TEMPLATES.find(t => t.id === p.templateKey);
+                      const pid = `day-${calSelectedDay}-${pi}`;
+                      return (
+                        <div key={pi} className="border border-white/8 rounded-xl overflow-hidden">
+                          <div className="flex items-center gap-2 px-3 py-2 bg-white/3 border-b border-white/5 flex-wrap">
+                            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${PLAT[p.platform]?.dot}`} />
+                            <span className={`text-xs font-semibold ${PLAT[p.platform]?.color}`}>{p.platform}</span>
+                            <span className="text-white/20 text-xs">·</span>
+                            <span className="text-xs text-white/50">{p.type}</span>
+                            {p.eventLabel && <span className="ml-auto text-[10px] text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full flex-shrink-0">{p.eventLabel}</span>}
+                          </div>
+                          {tpl && (
+                            <div className="relative p-3">
+                              <pre className="text-[11px] text-white/70 whitespace-pre-wrap font-sans leading-relaxed pr-8">{tpl.content}</pre>
+                              <button onClick={() => handleCopy(tpl.content, pid)} className="absolute top-2 right-2 p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-white/40 hover:text-white">
+                                {copiedId === pid ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                              </button>
+                              {tpl.tip && <p className="text-[10px] text-violet-neon/60 mt-2 bg-violet-neon/5 rounded px-2 py-1">💡 {tpl.tip}</p>}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Templates library */}
+            <div>
+              <p className="text-white/40 text-xs font-semibold uppercase tracking-widest mb-3">Bibliothèque de templates</p>
+              <div className="space-y-3">
+                {TEMPLATES.map((t) => (
+                  <div key={t.id} className="glass-card overflow-hidden">
+                    <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-white/5 flex-wrap">
+                      <p className="font-semibold text-sm text-white">{t.title}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {t.platforms.map((pl) => (
+                          <span key={pl} className={`text-xs px-2 py-0.5 rounded bg-white/5 ${PLAT[pl]?.color || 'text-white/50'}`}>{pl}</span>
+                        ))}
+                        <span className={`text-xs px-2 py-0.5 rounded font-semibold ${urgencyLabel(t.urgency).cls}`}>
+                          {urgencyLabel(t.urgency).label}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-4 space-y-3">
+                      <div className="relative">
+                        <pre className="bg-white/3 border border-white/8 rounded-lg p-4 text-xs text-white/80 whitespace-pre-wrap font-sans leading-relaxed">{t.content}</pre>
+                        <button
+                          onClick={() => handleCopy(t.content, t.id)}
+                          className="absolute top-2 right-2 p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-white/40 hover:text-white"
+                          title="Copier"
+                        >
+                          {copiedId === t.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                      {t.tip && (
+                        <p className="text-xs text-violet-neon/70 bg-violet-neon/5 rounded-lg px-3 py-2">
+                          💡 {t.tip}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Tone guide */}
+            <div>
+              <p className="text-white/40 text-xs font-semibold uppercase tracking-widest mb-3">Guide du ton</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="glass-card p-4">
+                  <p className="text-emerald-400 font-bold text-xs uppercase tracking-widest mb-3">Ce qu'on fait ✓</p>
+                  <ul className="space-y-2">
+                    {['Parler simplement, comme à un ami', 'Être direct — une idée par post', 'Utiliser des chiffres concrets (7%, 2 min...)', 'Montrer la fierté du Gabon', 'Créer l\'urgence sans mentir', 'Répondre aux commentaires'].map((item) => (
+                      <li key={item} className="text-xs text-white/60 flex items-start gap-2">
+                        <CheckCircle className="w-3 h-3 text-emerald-400 mt-0.5 flex-shrink-0" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="glass-card p-4">
+                  <p className="text-rose-neon font-bold text-xs uppercase tracking-widest mb-3">Ce qu'on évite ✗</p>
+                  <ul className="space-y-2">
+                    {['Les textes trop longs sans structure', 'Le jargon technique (API, webhook...)', 'Plusieurs messages dans un seul post', 'Poster sans visuel', 'Les fautes d\'orthographe visibles', 'Supprimer les commentaires négatifs'].map((item) => (
+                      <li key={item} className="text-xs text-white/60 flex items-start gap-2">
+                        <XCircle className="w-3 h-3 text-rose-neon mt-0.5 flex-shrink-0" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Hashtags */}
+            <div>
+              <p className="text-white/40 text-xs font-semibold uppercase tracking-widest mb-3">Banque de hashtags</p>
+              <div className="space-y-3">
+                <div className="glass-card p-4">
+                  <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest mb-2">Permanents — dans chaque post</p>
+                  <div className="flex flex-wrap gap-2">
+                    {HASHTAGS_PERMANENT.map((h) => (
+                      <button key={h} onClick={() => handleCopy(h, h)} className="text-xs px-2.5 py-1 rounded-lg bg-violet-neon/10 text-violet-neon hover:bg-violet-neon/20 transition-colors font-mono">
+                        {copiedId === h ? '✓ copié' : h}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="glass-card p-4">
+                  <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest mb-2">Situationnels — selon le post</p>
+                  <div className="flex flex-wrap gap-2">
+                    {HASHTAGS_SITUATIONAL.map((h) => (
+                      <button key={h} onClick={() => handleCopy(h, h)} className="text-xs px-2.5 py-1 rounded-lg bg-white/5 text-white/50 hover:bg-white/10 hover:text-white transition-colors font-mono">
+                        {copiedId === h ? '✓ copié' : h}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        );
+      })()}
 
       {/* Preview modal */}
       <AnimatePresence>
