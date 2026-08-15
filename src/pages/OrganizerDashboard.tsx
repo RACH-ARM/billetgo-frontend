@@ -649,7 +649,7 @@ export default function OrganizerDashboard() {
       </div>
 
       {/* Filtre événement global */}
-      {(data?.events?.filter((e) => ['PUBLISHED', 'APPROVED', 'COMPLETED'].includes(e.status)).length ?? 0) > 1 && (
+      {(data?.events?.filter((e) => ['PUBLISHED', 'APPROVED', 'COMPLETED'].includes(e.status)).length ?? 0) > 0 && (
         <div className="flex items-center gap-3 mb-5">
           <span className="text-xs text-white/40 uppercase tracking-wider whitespace-nowrap">Événement</span>
           <div className="relative flex-1 max-w-xs">
