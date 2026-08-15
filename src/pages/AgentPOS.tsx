@@ -4,7 +4,7 @@ import {
   ShoppingBag, Minus, Plus, User, Phone, Mail, CheckCircle,
   QrCode, LogOut, BarChart3, Ticket, RefreshCw,
   Banknote, Smartphone, Loader2, XCircle, ChevronDown,
-  AlertCircle, Printer,
+  AlertCircle,
 } from 'lucide-react';
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
@@ -645,28 +645,6 @@ export default function AgentPOS() {
                 <p className="text-white/30 text-xs mt-3">Montrez le billet au client ou imprimez-le</p>
               )}
             </div>
-
-            {/* Bouton imprimer */}
-            {ticketImageSrc && (
-              <button
-                onClick={() => {
-                  const win = window.open('', '_blank');
-                  if (!win) return;
-                  win.document.write(
-                    `<!DOCTYPE html><html><head><title>Billet — BilletGab</title>`
-                    + `<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#000}`
-                    + `img{display:block;width:100%;max-width:900px;margin:0 auto}</style></head>`
-                    + `<body><img src="${ticketImageSrc}"></body></html>`
-                  );
-                  win.document.close();
-                  win.addEventListener('load', () => { win.focus(); win.print(); });
-                }}
-                className="flex items-center gap-2 text-sm font-medium text-white/70 hover:text-white border border-white/20 hover:border-white/40 rounded-xl px-5 py-2.5 transition-colors"
-              >
-                <Printer className="w-4 h-4" />
-                Imprimer le billet
-              </button>
-            )}
 
             <button
               onClick={() => { setSaleResult(null); setSaleWhatsApp(''); setShowQR(false); setTicketImageSrc(null); }}
