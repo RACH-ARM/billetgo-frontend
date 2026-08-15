@@ -70,8 +70,6 @@ export default function AgentPOS() {
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH');
   const [buyerName, setBuyerName] = useState('');
-  const [buyerEmail, setBuyerEmail] = useState('');
-  const [buyerPhone, setBuyerPhone] = useState('');   // WhatsApp (cash)
   const [payerPhone, setPayerPhone] = useState('');   // numéro Mobile Money
 
   // ── Overlay state ──────────────────────────────────────────────────────────
@@ -89,6 +87,9 @@ export default function AgentPOS() {
   const [waResendPhone, setWaResendPhone] = useState('');
   const [waResendSending, setWaResendSending] = useState(false);
   const [waSentNumbers, setWaSentNumbers] = useState<string[]>([]);
+  const [emailResend, setEmailResend] = useState('');
+  const [emailResendSending, setEmailResendSending] = useState(false);
+  const [emailSentList, setEmailSentList] = useState<string[]>([]);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollStartRef = useRef<number>(0);
@@ -121,6 +122,22 @@ export default function AgentPOS() {
     }
   };
 
+  const handleEmailResend = async () => {
+    const email = emailResend.trim();
+    if (!email || !saleResult) return;
+    setEmailResendSending(true);
+    try {
+      await api.post(`/agent/orders/${saleResult.orderId}/send-email`, { email });
+      setEmailSentList(prev => [...prev, email]);
+      setEmailResend('');
+      toast.success(`Billet envoyé à ${email}`);
+    } catch {
+      toast.error('Échec de l\'envoi email');
+    } finally {
+      setEmailResendSending(false);
+    }
+  };
+
   const handleLogout = async () => {
     await logout();
     toast.success('Déconnexion réussie');
@@ -130,8 +147,6 @@ export default function AgentPOS() {
   const resetForm = () => {
     setQuantities({});
     setBuyerName('');
-    setBuyerEmail('');
-    setBuyerPhone('');
     setPayerPhone('');
     setPaymentMethod('CASH');
     setPendingOrderId(null);
@@ -180,14 +195,8 @@ export default function AgentPOS() {
 
         if (status === 'COMPLETED' && qrToken) {
           clearInterval(pollRef.current!);
-          const waPhone = buyerPhone.trim();
-          const mmPhone = payerPhone.trim();
-          const waTarget = waPhone && waPhone !== mmPhone ? waPhone : mmPhone;
-          if (waPhone && waPhone !== mmPhone) {
-            api.post(`/agent/orders/${pendingOrderId}/send-whatsapp`, { phone: waPhone }).catch(() => {});
-          }
           setSaleResult({ orderId: pendingOrderId, qrToken, totalAmount: total, buyerName: buyerName.trim() });
-          setSaleWhatsApp(waTarget);
+          setSaleWhatsApp(payerPhone.trim());
           setShowWaiting(false);
           setShowQR(true);
           resetForm();
@@ -220,15 +229,13 @@ export default function AgentPOS() {
       const res = await api.post('/agent/pos/sale', {
         eventId: selectedEvent!.id, items,
         buyerName: buyerName.trim(),
-        buyerEmail: buyerEmail.trim() || undefined,
-        buyerPhone: buyerPhone.trim() || undefined,
       });
       return res.data.data as SaleResult;
     },
     {
       onSuccess: (data) => {
         setSaleResult(data);
-        setSaleWhatsApp(buyerPhone.trim());
+        setSaleWhatsApp('');
         setShowQR(true);
         resetForm();
         refetchEvents();
@@ -249,8 +256,6 @@ export default function AgentPOS() {
       const res = await api.post('/agent/pos/mobile-money', {
         eventId: selectedEvent!.id, items,
         buyerName: buyerName.trim(),
-        buyerEmail: buyerEmail.trim() || undefined,
-        buyerPhone: buyerPhone.trim() || undefined,
         payerPhone: payerPhone.trim(),
         operator: paymentMethod,
       });
@@ -470,37 +475,6 @@ export default function AgentPOS() {
                       </div>
                     )}
 
-                    {/* WhatsApp — tous modes (optionnel) */}
-                    <div>
-                      <div className="relative">
-                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#25D366]" />
-                        <input type="tel"
-                          placeholder={
-                            paymentMethod === 'CASH'
-                              ? 'Numéro WhatsApp du client (optionnel)'
-                              : 'WhatsApp si différent du numéro de paiement (optionnel)'
-                          }
-                          value={buyerPhone} onChange={(e) => setBuyerPhone(e.target.value)}
-                          className="w-full bg-bg-card border border-[#25D366]/30 rounded-xl pl-9 pr-4 py-3 text-white placeholder:text-white/25 focus:border-[#25D366]/70 focus:outline-none transition-colors"
-                        />
-                        {buyerPhone.trim() && (
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-[#25D366] bg-[#25D366]/10 px-1.5 py-0.5 rounded">WA</span>
-                        )}
-                      </div>
-                      <p className="text-[#25D366]/50 text-xs mt-1 pl-1">
-                        {paymentMethod === 'CASH'
-                          ? 'QR Code envoyé sur WhatsApp après la vente'
-                          : 'QR envoyé au numéro de paiement. Si le WhatsApp est différent, entrez-le ici.'
-                        }
-                      </p>
-                    </div>
-
-                    {/* Email */}
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                      <input type="email" placeholder="Email (optionnel)" value={buyerEmail} onChange={(e) => setBuyerEmail(e.target.value)}
-                        className="w-full bg-bg-card border border-white/10 rounded-xl pl-9 pr-4 py-3 text-white placeholder:text-white/25 focus:border-violet-neon/50 focus:outline-none transition-colors" />
-                    </div>
                   </div>
                 </section>
               </>
@@ -704,10 +678,49 @@ export default function AgentPOS() {
               </div>
             </div>
 
+            {/* ── Envoi Email ── */}
+            <div className="w-full glass-card p-4">
+              <p className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">Envoyer le billet par email</p>
+
+              {emailSentList.map(e => (
+                <div key={e} className="flex items-center gap-2 mb-2 bg-violet-neon/10 border border-violet-neon/20 rounded-lg px-3 py-1.5">
+                  <Mail className="w-3 h-3 text-violet-neon" />
+                  <span className="text-violet-neon text-xs font-medium flex-1 truncate">{e}</span>
+                  <span className="text-violet-neon/60 text-xs">✓ Envoyé</span>
+                </div>
+              ))}
+
+              <div className="flex gap-2 mt-2">
+                <div className="relative flex-1">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-violet-neon/60" />
+                  <input
+                    type="email"
+                    placeholder="Email du client"
+                    value={emailResend}
+                    onChange={e => setEmailResend(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleEmailResend()}
+                    className="w-full bg-bg border border-violet-neon/30 rounded-xl pl-9 pr-3 py-2.5 text-white placeholder:text-white/25 focus:border-violet-neon/70 focus:outline-none text-sm transition-colors"
+                  />
+                </div>
+                <button
+                  onClick={handleEmailResend}
+                  disabled={!emailResend.trim() || emailResendSending}
+                  className="px-4 py-2.5 rounded-xl bg-violet-neon text-white text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 shrink-0"
+                >
+                  {emailResendSending
+                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                    : <Send className="w-4 h-4" />
+                  }
+                  Envoyer
+                </button>
+              </div>
+            </div>
+
             <button
               onClick={() => {
                 setSaleResult(null); setSaleWhatsApp(''); setShowQR(false);
                 setTicketImageSrc(null); setWaSentNumbers([]); setWaResendPhone('');
+                setEmailSentList([]); setEmailResend('');
               }}
               className="w-full py-3 rounded-xl bg-neon-gradient font-semibold text-white"
             >
