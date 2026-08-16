@@ -1582,6 +1582,20 @@ export default function AdminBackoffice() {
   const [calAiPosts, setCalAiPosts] = useState<Record<string, string>>({});
   const [calAiLoading, setCalAiLoading] = useState<string | null>(null);
   const [calAiContext, setCalAiContext] = useState('');
+  type StrategyMonth = { month: string; label: string; theme: string; formats: string[]; pillar: string };
+  type WeekPost = { date: string; day: string; platform: string; type: string; angle: string; text: string };
+  const [comStrategy, setComStrategy] = useState<StrategyMonth[] | null>(null);
+  const [comStrategyLoading, setComStrategyLoading] = useState(false);
+  const [comWeekPlan, setComWeekPlan] = useState<WeekPost[] | null>(null);
+  const [comWeekPlanLoading, setComWeekPlanLoading] = useState(false);
+  const [comWeekContext, setComWeekContext] = useState('');
+  const [comWeekStart, setComWeekStart] = useState<string>(() => {
+    const d = new Date();
+    const diff = d.getDay() === 0 ? -6 : 1 - d.getDay();
+    d.setDate(d.getDate() + diff);
+    return d.toISOString().slice(0, 10);
+  });
+  const [comCopiedId, setComCopiedId] = useState<string | null>(null);
   const [dashPeriod, setDashPeriod] = useState<'week' | 'month' | 'year' | 'all'>('month');
 
   // Onglet retraits
@@ -5148,6 +5162,220 @@ Vous gérez l'événement. Nous gérons les billets.
                 ))}
               </div>
             </div>
+
+            {/* ── Planning semaine IA ── */}
+            {(() => {
+              const pad = (n: number) => String(n).padStart(2, '0');
+              const addDays = (dateStr: string, n: number) => {
+                const d = new Date(dateStr + 'T12:00:00');
+                d.setDate(d.getDate() + n);
+                return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+              };
+              const weekDays = Array.from({ length: 7 }, (_, i) => {
+                const dateStr = addDays(comWeekStart, i);
+                const d = new Date(dateStr + 'T12:00:00');
+                const dow = (d.getDay() + 6) % 7;
+                const dayNames = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+                return { date: dateStr, day: dayNames[dow], posts: WEEKLY[dow] ?? [] };
+              });
+              const weekEnd = addDays(comWeekStart, 6);
+              const fmtShort = (s: string) => new Date(s + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+              const weekLabel = `${new Date(comWeekStart + 'T12:00:00').getDate()} – ${fmtShort(weekEnd)}`;
+              const prevWeek = () => { setComWeekStart(addDays(comWeekStart, -7)); setComWeekPlan(null); };
+              const nextWeek = () => { setComWeekStart(addDays(comWeekStart, 7)); setComWeekPlan(null); };
+
+              const generateWeek = async () => {
+                setComWeekPlanLoading(true);
+                setComWeekPlan(null);
+                try {
+                  const { data } = await api.post('/admin/communication/generate-week', {
+                    weekLabel,
+                    context: comWeekContext,
+                    schedule: weekDays.map(d => ({ date: d.date, day: d.day, posts: d.posts.map(p => ({ platform: p.platform, type: p.type })) })),
+                  });
+                  setComWeekPlan(data.data.plan);
+                } catch {
+                  toast.error('Erreur lors de la génération du planning semaine');
+                } finally {
+                  setComWeekPlanLoading(false);
+                }
+              };
+
+              const copyPost = (text: string, id: string) => {
+                navigator.clipboard.writeText(text);
+                setComCopiedId(id);
+                setTimeout(() => setComCopiedId(null), 2000);
+              };
+
+              return (
+                <div className="glass-card p-5 space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <div>
+                      <p className="text-xs text-white/30 uppercase tracking-widest mb-0.5">Planning IA</p>
+                      <h3 className="font-bebas text-xl tracking-wider text-white flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-violet-neon" /> IDÉES DE LA SEMAINE
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button onClick={prevWeek} className="p-1.5 rounded-lg hover:bg-white/5 text-white/40 hover:text-white transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+                      <span className="text-sm text-white/70 font-medium min-w-[200px] text-center capitalize">{weekLabel}</span>
+                      <button onClick={nextWeek} className="p-1.5 rounded-lg hover:bg-white/5 text-white/40 hover:text-white transition-colors"><ChevronRight className="w-4 h-4" /></button>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 flex-wrap">
+                    <textarea
+                      value={comWeekContext}
+                      onChange={e => setComWeekContext(e.target.value)}
+                      placeholder="Contexte de la semaine (ex: lancement d'un partenariat, événement à venir, promotion spéciale...)"
+                      rows={2}
+                      className="flex-1 min-w-[240px] bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-violet-neon/50 resize-none"
+                    />
+                    <button
+                      onClick={generateWeek}
+                      disabled={comWeekPlanLoading}
+                      className="flex items-center gap-2 px-5 py-2 rounded-xl bg-violet-neon text-white text-sm font-bold hover:bg-violet-neon/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors self-end"
+                    >
+                      <Sparkles className={`w-4 h-4 ${comWeekPlanLoading ? 'animate-pulse' : ''}`} />
+                      {comWeekPlanLoading ? 'Génération...' : comWeekPlan ? 'Regénérer' : 'Générer les idées'}
+                    </button>
+                  </div>
+
+                  {comWeekPlanLoading && (
+                    <div className="text-center py-8 text-white/30 text-sm">
+                      <div className="inline-block w-5 h-5 border-2 border-violet-neon/30 border-t-violet-neon rounded-full animate-spin mr-2" />
+                      Claude planifie votre semaine...
+                    </div>
+                  )}
+
+                  {!comWeekPlanLoading && comWeekPlan && (() => {
+                    const byDay = weekDays.map(d => ({
+                      ...d,
+                      aiPosts: comWeekPlan.filter(p => p.date === d.date),
+                    })).filter(d => d.aiPosts.length > 0 || d.posts.length > 0);
+
+                    return (
+                      <div className="space-y-3">
+                        {byDay.map(d => (
+                          <div key={d.date} className="rounded-xl border border-white/8 overflow-hidden">
+                            <div className="flex items-center gap-3 px-4 py-2.5 bg-white/3 border-b border-white/5">
+                              <span className="font-bebas text-base tracking-wider text-white">{d.day}</span>
+                              <span className="text-xs text-white/30">{new Date(d.date + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}</span>
+                              {d.aiPosts.length === 0 && <span className="text-xs text-white/20 ml-auto">Pas de post prévu</span>}
+                            </div>
+                            {d.aiPosts.length > 0 && (
+                              <div className="divide-y divide-white/5">
+                                {d.aiPosts.map((p, pi) => {
+                                  const pid = `week-${d.date}-${pi}`;
+                                  return (
+                                    <div key={pi} className="p-4">
+                                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${PLAT[p.platform]?.dot ?? 'bg-white/30'}`} />
+                                        <span className={`text-xs font-bold ${PLAT[p.platform]?.color ?? 'text-white/50'}`}>{p.platform}</span>
+                                        <span className="text-white/20 text-xs">·</span>
+                                        <span className="text-xs text-white/40">{p.type}</span>
+                                        <span className="ml-auto text-[10px] text-violet-neon/60 italic">{p.angle}</span>
+                                      </div>
+                                      <div className="relative bg-white/3 rounded-lg p-3">
+                                        <pre className="text-xs text-white/75 whitespace-pre-wrap font-sans leading-relaxed pr-8">{p.text}</pre>
+                                        <button onClick={() => copyPost(p.text, pid)} className="absolute top-2 right-2 p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-white/40 hover:text-white">
+                                          {comCopiedId === pid ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+
+                  {!comWeekPlanLoading && !comWeekPlan && (
+                    <p className="text-white/20 text-xs text-center py-4">Renseigne le contexte (optionnel) puis clique sur "Générer les idées" — Claude planifie toute la semaine.</p>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* ── Stratégie éditoriale 2 ans ── */}
+            {(() => {
+              const generateStrategy = async () => {
+                setComStrategyLoading(true);
+                setComStrategy(null);
+                try {
+                  const { data } = await api.post('/admin/communication/generate-strategy', { monthCount: 24 });
+                  setComStrategy(data.data.strategy);
+                } catch {
+                  toast.error('Erreur lors de la génération de la stratégie');
+                } finally {
+                  setComStrategyLoading(false);
+                }
+              };
+
+              const copyPost = (text: string, id: string) => {
+                navigator.clipboard.writeText(text);
+                setComCopiedId(id);
+                setTimeout(() => setComCopiedId(null), 2000);
+              };
+
+              return (
+                <div className="glass-card p-5 space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <div>
+                      <p className="text-xs text-white/30 uppercase tracking-widest mb-0.5">Planning IA</p>
+                      <h3 className="font-bebas text-xl tracking-wider text-white">STRATÉGIE 2 ANS</h3>
+                    </div>
+                    <button
+                      onClick={generateStrategy}
+                      disabled={comStrategyLoading}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm font-semibold hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <Sparkles className={`w-3.5 h-3.5 text-violet-neon ${comStrategyLoading ? 'animate-pulse' : ''}`} />
+                      {comStrategyLoading ? 'Génération en cours...' : comStrategy ? 'Regénérer la stratégie' : 'Générer la stratégie 2 ans'}
+                    </button>
+                  </div>
+
+                  {comStrategyLoading && (
+                    <div className="text-center py-10 text-white/30 text-sm">
+                      <div className="inline-block w-5 h-5 border-2 border-violet-neon/30 border-t-violet-neon rounded-full animate-spin mr-2" />
+                      Claude planifie vos 24 prochains mois... (15-20 secondes)
+                    </div>
+                  )}
+
+                  {!comStrategyLoading && !comStrategy && (
+                    <p className="text-white/20 text-xs text-center py-6">Génère une ligne éditoriale mois par mois sur 2 ans — thème, formats prioritaires et idée pilier pour chaque mois.</p>
+                  )}
+
+                  {!comStrategyLoading && comStrategy && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {comStrategy.map((m, i) => (
+                        <div key={m.month} className="rounded-xl border border-white/8 bg-white/2 p-4 space-y-2 hover:border-violet-neon/20 transition-colors group">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] text-white/25 font-semibold uppercase tracking-widest">{String(i + 1).padStart(2, '0')}</span>
+                            <span className="text-xs text-violet-neon/60 font-medium capitalize">{m.label}</span>
+                          </div>
+                          <p className="text-sm font-semibold text-white leading-snug">{m.theme}</p>
+                          <div className="flex flex-wrap gap-1">
+                            {m.formats.map((f, fi) => (
+                              <span key={fi} className="text-[10px] px-2 py-0.5 rounded-full bg-violet-neon/10 text-violet-neon/70 border border-violet-neon/15">{f}</span>
+                            ))}
+                          </div>
+                          <div className="relative pt-2 border-t border-white/5">
+                            <p className="text-[11px] text-white/40 italic leading-relaxed pr-6">💡 {m.pillar}</p>
+                            <button onClick={() => copyPost(m.pillar, `str-${m.month}`)} className="absolute top-2 right-0 p-1 text-white/20 hover:text-white/60 transition-colors">
+                              {comCopiedId === `str-${m.month}` ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Event mode panel */}
             {calMode === 'event' && (
