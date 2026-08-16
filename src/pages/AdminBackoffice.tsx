@@ -5205,7 +5205,7 @@ Vous gérez l'événement. Nous gérons les billets.
                         byMonth[month].push(p);
                       });
 
-                      const platColors: Record<string, string> = { Instagram: '#E1306C', Facebook: '#1877F2', TikTok: '#aaa', LinkedIn: '#0A66C2' };
+                      const platColors: Record<string, string> = { Instagram: '#E1306C', Facebook: '#1877F2', TikTok: '#333', LinkedIn: '#0A66C2' };
 
                       const monthSections = Object.entries(byMonth).sort(([a], [b]) => a.localeCompare(b)).map(([month, mPosts]) => {
                         const byDay: Record<string, typeof posts> = {};
@@ -5214,42 +5214,52 @@ Vous gérez l'événement. Nous gérons les billets.
                         const daySections = Object.entries(byDay).sort(([a], [b]) => a.localeCompare(b)).map(([date, dPosts]) => {
                           const dayLabel = new Date(date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
                           const postCards = dPosts.map(p => `
-                            <div style="margin-bottom:12px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
-                              <div style="background:#f9fafb;padding:8px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #e5e7eb;">
-                                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${platColors[p.platform] ?? '#888'};"></span>
-                                <strong style="color:${platColors[p.platform] ?? '#555'};font-size:12px;">${p.platform}</strong>
-                                <span style="color:#9ca3af;font-size:12px;">· ${p.type}</span>
-                                ${p.angle ? `<span style="margin-left:auto;color:#a78bfa;font-size:11px;font-style:italic;">${p.angle}</span>` : ''}
+                            <div style="margin-bottom:10px;border-left:3px solid ${platColors[p.platform] ?? '#888'};padding:10px 14px;border-radius:0 4px 4px 0;border-top:1px solid #e8e8e8;border-right:1px solid #e8e8e8;border-bottom:1px solid #e8e8e8;">
+                              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                                <span style="font-weight:700;font-size:10px;color:${platColors[p.platform] ?? '#555'};text-transform:uppercase;letter-spacing:0.8px;">${p.platform}</span>
+                                <span style="color:#888;font-size:10px;">· ${p.type}</span>
+                                ${p.angle ? `<span style="margin-left:auto;font-size:10px;color:#6b21a8;font-style:italic;max-width:45%;text-align:right;">${p.angle}</span>` : ''}
                               </div>
-                              <div style="padding:10px 12px;white-space:pre-wrap;font-size:12px;line-height:1.6;color:#374151;">${p.text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+                              <div style="font-size:12px;line-height:1.7;color:#1a1a1a;white-space:pre-wrap;">${p.text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
                             </div>`).join('');
-                          return `<div style="margin-bottom:20px;">
-                            <div style="font-weight:600;font-size:13px;color:#1f2937;border-left:3px solid #7c3aed;padding-left:10px;margin-bottom:8px;text-transform:capitalize;">${dayLabel}</div>
+                          return `<div style="margin-bottom:22px;">
+                            <div style="font-weight:600;font-size:12px;color:#444;padding:5px 0;margin-bottom:8px;border-bottom:1px dashed #ddd;text-transform:capitalize;">${dayLabel}</div>
                             ${postCards}
                           </div>`;
                         }).join('');
-                        return `<div style="page-break-inside:avoid;margin-bottom:32px;">
-                          <h2 style="font-size:18px;font-weight:800;color:#7c3aed;text-transform:uppercase;letter-spacing:1px;margin:0 0 16px;padding-bottom:8px;border-bottom:2px solid #ede9fe;text-transform:capitalize;">${monthLabel}</h2>
+                        return `<div style="margin-bottom:36px;page-break-inside:avoid;">
+                          <h2 style="font-size:15px;font-weight:800;color:#1a1a1a;text-transform:capitalize;margin:0 0 14px;padding:8px 12px;background:#f5f5f5;border-left:4px solid #7c3aed;letter-spacing:0.3px;">${monthLabel}</h2>
                           ${daySections}
                         </div>`;
                       }).join('');
 
                       const printContent = `
-                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;padding-bottom:16px;border-bottom:3px solid #7c3aed;">
-                          <div><h1 style="font-size:28px;font-weight:900;color:#7c3aed;margin:0;letter-spacing:2px;">BILLETGAB</h1><p style="margin:4px 0 0;color:#6b7280;font-size:13px;">Calendrier éditorial — exporté le ${new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p></div>
-                          <div style="text-align:right;color:#9ca3af;font-size:12px;">${posts.length} posts sauvegardés<br/>${Object.keys(byMonth).length} mois planifiés</div>
+                        <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:28px;padding-bottom:14px;border-bottom:2px solid #1a1a1a;">
+                          <div>
+                            <div style="font-size:11px;font-weight:700;color:#7c3aed;letter-spacing:3px;text-transform:uppercase;margin-bottom:2px;">BilletGab</div>
+                            <div style="font-size:20px;font-weight:900;color:#1a1a1a;margin:0;">Calendrier éditorial</div>
+                          </div>
+                          <div style="text-align:right;font-size:10px;color:#666;line-height:1.6;">
+                            ${posts.length} posts · ${Object.keys(byMonth).length} mois<br/>
+                            Exporté le ${new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                          </div>
                         </div>
                         ${monthSections}`;
 
                       const printDiv = document.createElement('div');
                       printDiv.id = '__cal-print__';
-                      printDiv.style.cssText = 'display:none;font-family:system-ui,sans-serif;color:#111;padding:32px;max-width:900px;margin:0 auto;box-sizing:border-box;';
+                      printDiv.style.cssText = 'display:none;font-family:system-ui,sans-serif;color:#1a1a1a;background:#fff;padding:28px;max-width:800px;margin:0 auto;box-sizing:border-box;';
                       printDiv.innerHTML = printContent;
                       document.body.appendChild(printDiv);
 
                       const style = document.createElement('style');
                       style.id = '__cal-print-style__';
-                      style.innerHTML = '@media print{body>*:not(#__cal-print__){display:none!important}#__cal-print__{display:block!important}}';
+                      style.innerHTML = `@media print{
+                        html,body{background:#fff!important;color:#1a1a1a!important;}
+                        body>*:not(#__cal-print__){display:none!important;visibility:hidden!important;}
+                        #__cal-print__{display:block!important;visibility:visible!important;background:#fff!important;color:#1a1a1a!important;}
+                        *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+                      }`;
                       document.head.appendChild(style);
 
                       window.print();
@@ -5257,7 +5267,7 @@ Vous gérez l'événement. Nous gérons les billets.
                       setTimeout(() => {
                         document.getElementById('__cal-print__')?.remove();
                         document.getElementById('__cal-print-style__')?.remove();
-                      }, 1500);
+                      }, 2000);
                     } catch { toast.error('Erreur lors de l\'export PDF'); }
                   };
 
