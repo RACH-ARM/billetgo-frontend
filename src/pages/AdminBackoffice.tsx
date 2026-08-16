@@ -8,7 +8,7 @@ import {
   Star, Flame, Ban, Sparkles, ScanLine, Plus, Eye, EyeOff, Pencil, MessageSquare, FileSearch, RotateCcw, ScrollText, Settings,
   Square, CheckSquare, BadgeCheck, MapPin, QrCode, Download, ShoppingCart, UserCheck,
   ChevronDown, ChevronLeft, ChevronRight, Search, AlertCircle, Heart, Ticket, Link2, ShoppingBag,
-  Megaphone, Copy, Check,
+  Megaphone, Copy, Check, Target, Phone, Instagram, Trash2, Bell,
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -21,7 +21,7 @@ import { formatPrice } from '../utils/formatPrice';
 import { formatEventDate } from '../utils/formatDate';
 import toast from 'react-hot-toast';
 
-type TabType = 'dashboard' | 'events' | 'vitrine' | 'users' | 'retraits' | 'scanners' | 'agents' | 'refunds' | 'audit' | 'settings' | 'influenceurs' | 'communication';
+type TabType = 'dashboard' | 'events' | 'vitrine' | 'users' | 'retraits' | 'scanners' | 'agents' | 'refunds' | 'audit' | 'settings' | 'influenceurs' | 'communication' | 'prospection';
 
 // ── Types ─────────────────────────────────────────────────────
 interface AuditLogEntry {
@@ -662,6 +662,491 @@ function EditScannerModal({
   );
 }
 
+// ── Prospection CRM ──────────────────────────────────────────
+
+type ProspectStatus = 'TO_CONTACT' | 'CONTACTED' | 'REPLIED' | 'INFO_SENT' | 'MEETING_PLANNED' | 'DEMO_DONE' | 'PROPOSAL_SENT' | 'NEGOTIATION' | 'SIGNED' | 'LOST' | 'TO_FOLLOW_UP';
+type ProspectPotential = 'LOW' | 'MEDIUM' | 'HIGH';
+
+interface Prospect {
+  id: string;
+  firstName: string;
+  lastName?: string | null;
+  structure?: string | null;
+  phone?: string | null;
+  instagram?: string | null;
+  eventCategory: string;
+  currentPlatform?: string | null;
+  status: ProspectStatus;
+  potential: ProspectPotential;
+  notes?: string | null;
+  lastContactAt?: string | null;
+  nextContactAt?: string | null;
+  createdAt: string;
+}
+
+const PROSPECT_STATUSES: { value: ProspectStatus; label: string; color: string }[] = [
+  { value: 'TO_CONTACT',      label: 'À contacter',       color: 'bg-white/10 text-white/50' },
+  { value: 'CONTACTED',       label: 'Contacté',          color: 'bg-blue-500/20 text-blue-300' },
+  { value: 'REPLIED',         label: 'A répondu',         color: 'bg-cyan-500/20 text-cyan-300' },
+  { value: 'INFO_SENT',       label: 'Infos envoyées',    color: 'bg-violet-500/20 text-violet-300' },
+  { value: 'MEETING_PLANNED', label: 'RDV planifié',      color: 'bg-yellow-500/20 text-yellow-300' },
+  { value: 'DEMO_DONE',       label: 'Démo effectuée',    color: 'bg-orange-500/20 text-orange-300' },
+  { value: 'PROPOSAL_SENT',   label: 'Proposition envoyée', color: 'bg-pink-500/20 text-pink-300' },
+  { value: 'NEGOTIATION',     label: 'Négociation',       color: 'bg-amber-500/20 text-amber-300' },
+  { value: 'SIGNED',          label: 'Signé ✓',           color: 'bg-green-500/20 text-green-300' },
+  { value: 'LOST',            label: 'Perdu',             color: 'bg-rose-500/20 text-rose-400' },
+  { value: 'TO_FOLLOW_UP',    label: 'À relancer',        color: 'bg-teal-500/20 text-teal-300' },
+];
+
+const EVENT_CATEGORIES = ['Miss / Beauté', 'Concert / DJ', 'Mode / Fashion', 'Religieux', 'Randonnée', 'Scolaire', 'Festival', 'Sport', 'Littéraire', 'Autre'];
+
+const PITCH_SCRIPTS = [
+  {
+    id: 'principal', title: 'Pitch principal',
+    content: `BilletGab est une plateforme gabonaise de billetterie événementielle qui permet aux organisateurs de vendre leurs billets en ligne, de suivre leurs ventes en temps réel et de contrôler les entrées grâce aux QR codes. Nous intégrons Airtel Money et Moov Money, mais aussi des outils comme les codes promo et les campagnes influenceurs pour aider les organisateurs à vendre davantage. Notre différence, c'est qu'on combine une technologie moderne avec un accompagnement très proche des organisateurs et une plateforme qui évolue rapidement selon leurs besoins.`,
+  },
+  {
+    id: 'gros-orga', title: 'Version gros organisateur',
+    content: `BilletGab est une solution de billetterie événementielle conçue pour les organisateurs au Gabon. Nous prenons en charge toute la chaîne : vente en ligne, paiements Mobile Money, billets QR, contrôle des accès et suivi des ventes. Là où nous voulons nous différencier, c'est par notre réactivité : nous travaillons directement avec les organisateurs et faisons évoluer rapidement la plateforme en fonction de leurs besoins. Je ne vous demande pas de changer de solution simplement pour changer, mais de regarder ce que BilletGab pourrait apporter à vos prochains événements.`,
+  },
+  {
+    id: 'informel', title: 'Version courte (rencontre informelle)',
+    content: `J'ai créé BilletGab, une plateforme de billetterie événementielle au Gabon. Les organisateurs peuvent vendre leurs billets en ligne, recevoir les paiements Mobile Money, suivre leurs ventes en temps réel et contrôler les entrées avec des QR codes. On développe aussi des outils comme les codes promo et les campagnes influenceurs pour les aider à vendre davantage.`,
+  },
+];
+
+const WHATSAPP_TEMPLATES: { id: string; title: string; category: string; content: string }[] = [
+  {
+    id: 'principal', title: 'Message principal', category: 'Général',
+    content: `Bonjour [Prénom],
+
+Je me permets de vous contacter au nom de BilletGab, une plateforme gabonaise de billetterie événementielle.
+
+Nous accompagnons aujourd'hui plusieurs organisateurs dans la commercialisation et le contrôle de leurs billets, avec une solution qui permet notamment :
+• Vente de billets numériques via Airtel Money et Moov Money
+• QR codes sécurisés et contrôle des entrées
+• Tableau de bord des ventes en temps réel
+• Export des données acheteurs
+• Codes promo et campagnes influenceurs
+• Reversements directement sur Mobile Money
+• Support technique avant et pendant l'événement
+• Aucun abonnement ni frais d'installation
+• Commission standard de 7 %
+
+J'ai vu que vous êtes actifs dans [type d'événement] et je souhaiterais vous présenter BilletGab afin de voir si nous pouvons vous accompagner sur vos prochains événements.
+
+Seriez-vous disponible pour un court échange cette semaine ?`,
+  },
+  {
+    id: 'miss', title: 'Accroche Miss / Beauté', category: 'Segmenté',
+    content: `Bonjour [Prénom], je me permets de vous contacter car nous suivons votre travail autour des concours et événements de beauté au Gabon. Je souhaiterais vous présenter BilletGab, une solution de billetterie que nous développons spécifiquement pour les organisateurs événementiels.`,
+  },
+  {
+    id: 'concert', title: 'Accroche Concert / DJ', category: 'Segmenté',
+    content: `Bonjour [Prénom], je vois que vous êtes actifs dans l'organisation de shows et événements musicaux. Je souhaiterais vous présenter BilletGab, une plateforme conçue pour gérer les ventes de billets, les promotions et le contrôle des entrées.`,
+  },
+  {
+    id: 'mode', title: 'Accroche Mode / Fashion', category: 'Segmenté',
+    content: `Bonjour [Prénom], je suis votre travail dans l'univers de la mode et de l'événementiel et je souhaiterais vous présenter BilletGab, notre solution de billetterie événementielle.`,
+  },
+  {
+    id: 'religieux', title: 'Accroche Religieux', category: 'Segmenté',
+    content: `Bonjour [Prénom], je me permets de vous contacter concernant vos événements et activités. Nous avons développé BilletGab, une plateforme gabonaise permettant notamment de gérer simplement les ventes de billets et le contrôle des participants.`,
+  },
+  {
+    id: 'relance1', title: 'Relance 1 (2-3 jours)', category: 'Relance',
+    content: `Bonjour [Prénom], je me permets de revenir vers vous concernant mon précédent message. Je serais ravi de pouvoir vous présenter BilletGab et voir simplement si notre solution pourrait être intéressante pour vos prochains événements. Même un court échange de quelques minutes me conviendrait.`,
+  },
+  {
+    id: 'relance2', title: 'Relance finale', category: 'Relance',
+    content: `Bonjour [Prénom], je vous laisse ce dernier message afin de ne pas vous solliciter inutilement. Si vous avez prochainement un événement pour lequel vous souhaitez comparer les solutions de billetterie, je reste directement disponible. Bonne continuation pour vos prochains événements.`,
+  },
+];
+
+const OBJECTIONS = [
+  { q: '« Je travaille déjà avec Tikerama. »', r: `Je comprends parfaitement. Si votre solution actuelle vous convient, je ne vous demanderai pas de changer simplement pour changer. L'idée est de vous présenter BilletGab et de voir si nous pouvons vous apporter quelque chose de supplémentaire. Vous pourrez ensuite comparer tranquillement.` },
+  { q: "« 7 %, c'est trop cher. »", r: `Je comprends. Par rapport à quelle solution comparez-vous ? Les 7 % couvrent la billetterie, le paiement Mobile Money, les QR codes, le contrôle des entrées, le tableau de bord, les outils promo et le support technique — sans abonnement. Regardons ce que vous obtenez pour cette commission.` },
+  { q: '« Votre plateforme est nouvelle. »', r: `Oui, BilletGab est plus récent. Mais cette jeunesse nous donne une grande capacité d'évolution. Nous développons rapidement les fonctionnalités demandées par les organisateurs. Et surtout, BilletGab est déjà opérationnel sur des événements réels.` },
+  { q: '« Je veux réfléchir. »', r: `Bien sûr. Pour que je puisse vous accompagner correctement, qu'est-ce qui vous fait principalement hésiter : le tarif, le fonctionnement, le fait que BilletGab soit récent, ou simplement le besoin de comparer ?` },
+  { q: '« Envoyez-moi vos tarifs. »', r: `Avec plaisir. Mais avant, j'aimerais connaître votre prochain événement : date, nombre de personnes attendu et catégories de billets. Cela me permettra de vous présenter l'offre qui correspond réellement à votre événement.` },
+  { q: '« Et si votre plateforme tombe ? »', r: `Aucun système ne peut garantir zéro incident. Ce que nous garantissons : nous prenons la disponibilité au sérieux, nous surveillons l'infrastructure et nous avons un accompagnement technique autour des événements. C'est aussi pour ça que nous préparons chaque événement en amont.` },
+];
+
+function ProspectionTab() {
+  const qc = useQueryClient();
+  const [activeSection, setActiveSection] = useState<'crm' | 'scripts' | 'objections'>('crm');
+  const [showForm, setShowForm] = useState(false);
+  const [editingProspect, setEditingProspect] = useState<Prospect | null>(null);
+  const [filterStatus, setFilterStatus] = useState<ProspectStatus | 'ALL'>('ALL');
+  const [filterCategory, setFilterCategory] = useState('ALL');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [scriptTab, setScriptTab] = useState<'pitchs' | 'whatsapp' | 'objections'>('pitchs');
+
+  const emptyForm = { firstName: '', lastName: '', structure: '', phone: '', instagram: '', eventCategory: 'Miss / Beauté', currentPlatform: '', status: 'TO_CONTACT' as ProspectStatus, potential: 'MEDIUM' as ProspectPotential, notes: '', nextContactAt: '' };
+  const [form, setForm] = useState(emptyForm);
+
+  const { data: prospects = [], isLoading } = useQuery<Prospect[]>(
+    'admin-prospects',
+    async () => { const { data } = await api.get('/admin/prospects'); return data.data; },
+    { enabled: true }
+  );
+
+  const saveMutation = useMutation(
+    async (payload: typeof form & { id?: string }) => {
+      if (payload.id) {
+        await api.patch(`/admin/prospects/${payload.id}`, payload);
+      } else {
+        await api.post('/admin/prospects', payload);
+      }
+    },
+    {
+      onSuccess: () => {
+        qc.invalidateQueries('admin-prospects');
+        setShowForm(false);
+        setEditingProspect(null);
+        setForm(emptyForm);
+        toast.success(editingProspect ? 'Prospect mis à jour' : 'Prospect ajouté');
+      },
+      onError: () => { toast.error('Erreur lors de la sauvegarde'); },
+    }
+  );
+
+  const deleteMutation = useMutation(
+    (id: string) => api.delete(`/admin/prospects/${id}`),
+    {
+      onSuccess: () => { qc.invalidateQueries('admin-prospects'); toast.success('Prospect supprimé'); },
+    }
+  );
+
+  const statusMutation = useMutation(
+    ({ id, status }: { id: string; status: ProspectStatus }) => api.patch(`/admin/prospects/${id}`, { status }),
+    { onSuccess: () => qc.invalidateQueries('admin-prospects') }
+  );
+
+  const today = new Date().toISOString().slice(0, 10);
+  const todayReminders = prospects.filter(p => p.nextContactAt && p.nextContactAt.slice(0, 10) <= today && p.status !== 'SIGNED' && p.status !== 'LOST');
+
+  const filtered = prospects.filter(p =>
+    (filterStatus === 'ALL' || p.status === filterStatus) &&
+    (filterCategory === 'ALL' || p.eventCategory === filterCategory)
+  );
+
+  const getStatusMeta = (s: ProspectStatus) => PROSPECT_STATUSES.find(x => x.value === s) ?? PROSPECT_STATUSES[0];
+
+  const copyText = (text: string, id: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    });
+  };
+
+  const openEdit = (p: Prospect) => {
+    setEditingProspect(p);
+    setForm({
+      firstName: p.firstName, lastName: p.lastName ?? '', structure: p.structure ?? '',
+      phone: p.phone ?? '', instagram: p.instagram ?? '', eventCategory: p.eventCategory,
+      currentPlatform: p.currentPlatform ?? '', status: p.status, potential: p.potential,
+      notes: p.notes ?? '', nextContactAt: p.nextContactAt ? p.nextContactAt.slice(0, 10) : '',
+    });
+    setShowForm(true);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="font-bebas text-2xl tracking-wider text-white">PROSPECTION COMMERCIALE</h2>
+          <p className="text-white/40 text-sm">CRM · Scripts · Objections</p>
+        </div>
+        <div className="flex gap-2">
+          {(['crm', 'scripts', 'objections'] as const).map((s) => (
+            <button key={s} onClick={() => setActiveSection(s)}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${activeSection === s ? 'bg-violet-neon/20 text-violet-neon border border-violet-neon/30' : 'text-white/40 hover:text-white border border-white/10 hover:border-white/20'}`}>
+              {s === 'crm' ? 'CRM' : s === 'scripts' ? 'Scripts' : 'Objections'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── SECTION CRM ── */}
+      {activeSection === 'crm' && (
+        <div className="space-y-4">
+          {/* Rappels du jour */}
+          {todayReminders.length > 0 && (
+            <div className="glass-card p-4 border border-yellow-500/30 bg-yellow-500/5">
+              <div className="flex items-center gap-2 mb-3">
+                <Bell className="w-4 h-4 text-yellow-400" />
+                <p className="text-yellow-400 font-semibold text-sm">{todayReminders.length} relance{todayReminders.length > 1 ? 's' : ''} à faire aujourd'hui</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {todayReminders.map(p => (
+                  <span key={p.id} className="text-xs bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 px-2 py-1 rounded-lg">
+                    {p.firstName} {p.lastName} · {p.eventCategory}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Stats pipeline */}
+          <div className="grid grid-cols-4 gap-3">
+            {[
+              { label: 'Total', count: prospects.length, color: 'text-white' },
+              { label: 'Actifs', count: prospects.filter(p => !['SIGNED','LOST'].includes(p.status)).length, color: 'text-violet-neon' },
+              { label: 'Signés', count: prospects.filter(p => p.status === 'SIGNED').length, color: 'text-green-400' },
+              { label: 'Relances', count: todayReminders.length, color: 'text-yellow-400' },
+            ].map(s => (
+              <div key={s.label} className="glass-card p-4 text-center">
+                <p className={`font-bebas text-3xl ${s.color}`}>{s.count}</p>
+                <p className="text-white/30 text-xs uppercase tracking-wider">{s.label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Filtres + bouton ajouter */}
+          <div className="flex flex-wrap items-center gap-2 justify-between">
+            <div className="flex flex-wrap gap-2">
+              <select value={filterStatus} onChange={e => setFilterStatus(e.target.value as ProspectStatus | 'ALL')}
+                className="bg-bg-card border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-violet-neon">
+                <option value="ALL">Tous les statuts</option>
+                {PROSPECT_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
+              <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
+                className="bg-bg-card border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-violet-neon">
+                <option value="ALL">Toutes les catégories</option>
+                {EVENT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <button onClick={() => { setEditingProspect(null); setForm(emptyForm); setShowForm(true); }}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-neon/20 text-violet-neon border border-violet-neon/30 text-sm font-semibold hover:bg-violet-neon/30 transition-colors">
+              <Plus className="w-4 h-4" /> Nouveau prospect
+            </button>
+          </div>
+
+          {/* Liste prospects */}
+          {isLoading ? (
+            <div className="text-center py-12 text-white/30">Chargement...</div>
+          ) : filtered.length === 0 ? (
+            <div className="glass-card p-12 text-center">
+              <Target className="w-12 h-12 text-white/10 mx-auto mb-3" />
+              <p className="text-white/30">Aucun prospect — commence à prospecter !</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {filtered.map(p => {
+                const sm = getStatusMeta(p.status);
+                const isOverdue = p.nextContactAt && p.nextContactAt.slice(0, 10) < today && p.status !== 'SIGNED' && p.status !== 'LOST';
+                return (
+                  <div key={p.id} className={`glass-card p-4 ${isOverdue ? 'border border-yellow-500/30' : ''}`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <p className="font-semibold text-white">{p.firstName} {p.lastName}</p>
+                          {p.structure && <span className="text-white/40 text-xs">· {p.structure}</span>}
+                          <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${sm.color}`}>{sm.label}</span>
+                          {p.potential === 'HIGH' && <span className="text-[11px] px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-300">⭐ Fort potentiel</span>}
+                        </div>
+                        <div className="flex flex-wrap gap-3 text-xs text-white/40">
+                          <span className="bg-white/5 px-2 py-0.5 rounded-full">{p.eventCategory}</span>
+                          {p.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{p.phone}</span>}
+                          {p.instagram && <span className="flex items-center gap-1"><Instagram className="w-3 h-3" />{p.instagram}</span>}
+                          {p.currentPlatform && <span>Plateforme actuelle : {p.currentPlatform}</span>}
+                        </div>
+                        {p.notes && <p className="text-white/30 text-xs mt-1.5 italic line-clamp-2">{p.notes}</p>}
+                        <div className="flex gap-3 mt-1.5 text-[11px]">
+                          {p.lastContactAt && <span className="text-white/25">Dernier contact : {new Date(p.lastContactAt).toLocaleDateString('fr-FR')}</span>}
+                          {p.nextContactAt && (
+                            <span className={isOverdue ? 'text-yellow-400 font-semibold' : 'text-white/25'}>
+                              Relance : {new Date(p.nextContactAt).toLocaleDateString('fr-FR')} {isOverdue && '⚠️'}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-2 flex-shrink-0">
+                        <select value={p.status}
+                          onChange={e => statusMutation.mutate({ id: p.id, status: e.target.value as ProspectStatus })}
+                          className="bg-bg border border-white/10 rounded-lg px-2 py-1 text-white text-xs focus:outline-none">
+                          {PROSPECT_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                        </select>
+                        <div className="flex gap-1 justify-end">
+                          <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg hover:bg-white/5 text-white/30 hover:text-white transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => { if (confirm('Supprimer ce prospect ?')) deleteMutation.mutate(p.id); }} className="p-1.5 rounded-lg hover:bg-rose-neon/10 text-white/30 hover:text-rose-neon transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Modal ajout / édition */}
+          {showForm && (
+            <div className="fixed inset-0 z-50 bg-bg/95 backdrop-blur-md flex items-center justify-center p-4">
+              <div className="bg-bg-card border border-violet-neon/20 rounded-2xl w-full max-w-lg p-6 overflow-y-auto max-h-[90vh]">
+                <div className="flex items-center justify-between mb-5">
+                  <h3 className="font-bebas text-xl tracking-wider text-white">{editingProspect ? 'Modifier le prospect' : 'Nouveau prospect'}</h3>
+                  <button onClick={() => { setShowForm(false); setEditingProspect(null); }} className="text-white/40 hover:text-white"><X className="w-5 h-5" /></button>
+                </div>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-white/40 uppercase tracking-wider">Prénom *</label>
+                      <input value={form.firstName} onChange={e => setForm(f => ({ ...f, firstName: e.target.value }))}
+                        className="w-full mt-1 bg-bg border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-neon" placeholder="Prénom" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-white/40 uppercase tracking-wider">Nom</label>
+                      <input value={form.lastName} onChange={e => setForm(f => ({ ...f, lastName: e.target.value }))}
+                        className="w-full mt-1 bg-bg border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-neon" placeholder="Nom" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-white/40 uppercase tracking-wider">Structure / Organisation</label>
+                    <input value={form.structure} onChange={e => setForm(f => ({ ...f, structure: e.target.value }))}
+                      className="w-full mt-1 bg-bg border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-neon" placeholder="Nom de l'organisation" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-white/40 uppercase tracking-wider">Téléphone</label>
+                      <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                        className="w-full mt-1 bg-bg border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-neon" placeholder="06 XX XX XX" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-white/40 uppercase tracking-wider">Instagram</label>
+                      <input value={form.instagram} onChange={e => setForm(f => ({ ...f, instagram: e.target.value }))}
+                        className="w-full mt-1 bg-bg border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-neon" placeholder="@compte" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-white/40 uppercase tracking-wider">Catégorie d'événement *</label>
+                      <select value={form.eventCategory} onChange={e => setForm(f => ({ ...f, eventCategory: e.target.value }))}
+                        className="w-full mt-1 bg-bg border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-neon">
+                        {EVENT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-white/40 uppercase tracking-wider">Plateforme actuelle</label>
+                      <input value={form.currentPlatform} onChange={e => setForm(f => ({ ...f, currentPlatform: e.target.value }))}
+                        className="w-full mt-1 bg-bg border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-neon" placeholder="Tikerama, aucune..." />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-white/40 uppercase tracking-wider">Statut</label>
+                      <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value as ProspectStatus }))}
+                        className="w-full mt-1 bg-bg border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-neon">
+                        {PROSPECT_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-white/40 uppercase tracking-wider">Potentiel</label>
+                      <select value={form.potential} onChange={e => setForm(f => ({ ...f, potential: e.target.value as ProspectPotential }))}
+                        className="w-full mt-1 bg-bg border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-neon">
+                        <option value="LOW">Faible</option>
+                        <option value="MEDIUM">Moyen</option>
+                        <option value="HIGH">Fort ⭐</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-white/40 uppercase tracking-wider">Date de prochaine relance</label>
+                    <input type="date" value={form.nextContactAt} onChange={e => setForm(f => ({ ...f, nextContactAt: e.target.value }))}
+                      className="w-full mt-1 bg-bg border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-neon" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-white/40 uppercase tracking-wider">Notes</label>
+                    <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3}
+                      className="w-full mt-1 bg-bg border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-neon resize-none" placeholder="Notes, contexte, prochaines étapes..." />
+                  </div>
+                  <button onClick={() => saveMutation.mutate({ ...form, ...(editingProspect ? { id: editingProspect.id } : {}) })}
+                    disabled={!form.firstName || !form.eventCategory || saveMutation.isLoading}
+                    className="w-full py-3 rounded-xl bg-neon-gradient font-semibold text-white disabled:opacity-40 mt-2">
+                    {saveMutation.isLoading ? 'Enregistrement...' : editingProspect ? 'Enregistrer' : 'Ajouter le prospect'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── SECTION SCRIPTS ── */}
+      {activeSection === 'scripts' && (
+        <div className="space-y-4">
+          <div className="flex gap-2">
+            {(['pitchs', 'whatsapp'] as const).map(t => (
+              <button key={t} onClick={() => setScriptTab(t)}
+                className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${scriptTab === t ? 'bg-violet-neon/20 text-violet-neon border border-violet-neon/30' : 'text-white/40 border border-white/10 hover:text-white hover:border-white/20'}`}>
+                {t === 'pitchs' ? 'Pitchs' : 'Messages WhatsApp'}
+              </button>
+            ))}
+          </div>
+
+          {scriptTab === 'pitchs' && (
+            <div className="flex flex-col gap-4">
+              {PITCH_SCRIPTS.map(p => (
+                <div key={p.id} className="glass-card p-5 border border-violet-neon/10">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="font-semibold text-white">{p.title}</p>
+                    <button onClick={() => copyText(p.content, p.id)} className="flex items-center gap-1.5 text-xs text-violet-neon hover:text-violet-neon/70 transition-colors">
+                      {copiedId === p.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copiedId === p.id ? 'Copié !' : 'Copier'}
+                    </button>
+                  </div>
+                  <p className="text-white/60 text-sm leading-relaxed">{p.content}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {scriptTab === 'whatsapp' && (
+            <div className="flex flex-col gap-4">
+              {['Général', 'Segmenté', 'Relance'].map(cat => (
+                <div key={cat}>
+                  <p className="text-xs text-white/40 uppercase tracking-wider mb-2">{cat}</p>
+                  <div className="flex flex-col gap-3">
+                    {WHATSAPP_TEMPLATES.filter(t => t.category === cat).map(t => (
+                      <div key={t.id} className="glass-card p-4 border border-[#25D366]/10">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="font-medium text-white text-sm">{t.title}</p>
+                          <button onClick={() => copyText(t.content, t.id)} className="flex items-center gap-1.5 text-xs text-[#25D366] hover:text-[#25D366]/70 transition-colors">
+                            {copiedId === t.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                            {copiedId === t.id ? 'Copié !' : 'Copier'}
+                          </button>
+                        </div>
+                        <pre className="text-white/50 text-xs leading-relaxed whitespace-pre-wrap font-sans">{t.content}</pre>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── SECTION OBJECTIONS ── */}
+      {activeSection === 'objections' && (
+        <div className="flex flex-col gap-3">
+          {OBJECTIONS.map((o, i) => (
+            <div key={i} className="glass-card p-5 border border-violet-neon/10">
+              <p className="font-semibold text-white mb-2">{o.q}</p>
+              <p className="text-white/60 text-sm leading-relaxed">{o.r}</p>
+              <button onClick={() => copyText(`${o.q}\n\nRéponse :\n${o.r}`, `obj-${i}`)} className="flex items-center gap-1.5 text-xs text-violet-neon/60 hover:text-violet-neon mt-3 transition-colors">
+                {copiedId === `obj-${i}` ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                {copiedId === `obj-${i}` ? 'Copié !' : 'Copier'}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main ──────────────────────────────────────────────────────
 export default function AdminBackoffice() {
   const { user, logout } = useAuthStore();
@@ -1264,6 +1749,7 @@ export default function AdminBackoffice() {
     { key: 'audit' as TabType, label: 'Audit', Icon: ScrollText },
     { key: 'settings' as TabType, label: 'Paramètres', Icon: Settings },
     { key: 'communication' as TabType, label: 'Communication', Icon: Megaphone },
+    { key: 'prospection' as TabType, label: 'Prospection', Icon: Target },
   ];
 
   return (
@@ -4594,6 +5080,9 @@ Vous gérez l'événement. Nous gérons les billets.
           </div>
         );
       })()}
+
+      {/* ══ ONGLET : Prospection CRM ══ */}
+      {tab === 'prospection' && <ProspectionTab />}
 
       {/* Preview modal */}
       <AnimatePresence>
