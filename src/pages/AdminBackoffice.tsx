@@ -1563,361 +1563,591 @@ function ProspectionTab() {
 
 // ── Main ──────────────────────────────────────────────────────
 const CHARTE_CSS = `
-  :root{--bg:#0D0D1A;--bg-sec:#13132A;--bg-card:#1A1A35;--violet:#7B2FBE;--violet-lt:#9B4FDE;--rose:#E040FB;--rose-lt:#F060FF;--cyan:#00E5FF;--cyan-lt:#40F0FF;--white:#FFFFFF;--white-70:rgba(255,255,255,.70);--white-50:rgba(255,255,255,.50);--white-30:rgba(255,255,255,.30);--white-15:rgba(255,255,255,.15);--white-08:rgba(255,255,255,.08);--white-05:rgba(255,255,255,.05);--g-neon:linear-gradient(135deg,#7B2FBE,#E040FB);--g-cyan:linear-gradient(135deg,#00E5FF,#7B2FBE);--g-cover:linear-gradient(135deg,#2D1060 0%,#0D0D1A 50%,#003060 100%);--s-violet:0 0 20px rgba(123,47,190,.5);--s-rose:0 0 20px rgba(224,64,251,.5);--s-cyan:0 0 20px rgba(0,229,255,.5);--s-card:inset 0 1px 0 rgba(255,255,255,.06),0 4px 24px rgba(0,0,0,.25);--font-display:'Impact','Arial Narrow',Arial,sans-serif;--font-body:system-ui,-apple-system,'Segoe UI',sans-serif;--font-mono:'Courier New','Lucida Console',monospace;}
-  #charte-gfx{background:var(--bg);background-image:radial-gradient(ellipse at 20% 40%,rgba(123,47,190,.12) 0%,transparent 55%),radial-gradient(ellipse at 80% 10%,rgba(0,229,255,.07) 0%,transparent 50%),radial-gradient(ellipse at 60% 85%,rgba(224,64,251,.06) 0%,transparent 40%);color:var(--white);font-family:var(--font-body);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;padding-bottom:80px;border-radius:20px;overflow:hidden;}
-  #charte-gfx *{box-sizing:border-box;margin:0;padding:0;}
-  #charte-gfx .wrap{max-width:960px;margin:0 auto;padding:0 24px;}
-  #charte-gfx .site-header{padding:64px 0 56px;border-bottom:1px solid var(--white-08);margin-bottom:64px;}
-  #charte-gfx .header-label{font-family:var(--font-mono);font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--violet-lt);margin-bottom:16px;}
-  #charte-gfx .header-title{font-family:var(--font-display);font-size:clamp(52px,10vw,96px);letter-spacing:.06em;text-transform:uppercase;line-height:.95;background:var(--g-neon);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-  #charte-gfx .header-sub{margin-top:20px;font-size:15px;color:var(--white-50);max-width:520px;line-height:1.7;}
-  #charte-gfx .header-meta{display:flex;gap:24px;margin-top:28px;flex-wrap:wrap;}
-  #charte-gfx .header-meta span{font-family:var(--font-mono);font-size:11px;color:var(--white-30);letter-spacing:.05em;}
-  #charte-gfx .toc{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:64px;}
-  #charte-gfx .toc a{font-size:12px;font-weight:600;color:var(--white-50);text-decoration:none;padding:6px 14px;border:1px solid var(--white-15);border-radius:999px;transition:color .15s,border-color .15s;}
-  #charte-gfx .toc a:hover{color:var(--white);border-color:var(--violet-lt);}
-  #charte-gfx .section{margin-bottom:72px;}
-  #charte-gfx .section-label{font-family:var(--font-mono);font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--violet-lt);margin-bottom:8px;}
-  #charte-gfx .section-title{font-family:var(--font-display);font-size:36px;letter-spacing:.05em;text-transform:uppercase;color:var(--white);margin-bottom:32px;padding-bottom:16px;border-bottom:1px solid var(--white-08);}
-  #charte-gfx .swatch-group{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:24px;}
-  #charte-gfx .swatch{border-radius:12px;overflow:hidden;background:var(--bg-card);border:1px solid var(--white-08);}
-  #charte-gfx .swatch-color{height:80px;}
-  #charte-gfx .swatch-info{padding:10px 12px;}
-  #charte-gfx .swatch-name{font-size:12px;font-weight:600;color:var(--white-70);display:block;margin-bottom:3px;}
-  #charte-gfx .swatch-hex{font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,.4);}
-  #charte-gfx .swatch-use{font-size:10px;color:var(--white-30);margin-top:4px;display:block;line-height:1.4;}
-  #charte-gfx .gradient-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;}
-  #charte-gfx .gradient-card{border-radius:16px;overflow:hidden;background:var(--bg-card);border:1px solid var(--white-08);}
-  #charte-gfx .gradient-preview{height:120px;}
-  #charte-gfx .gradient-info{padding:14px 16px;}
-  #charte-gfx .gradient-name{font-size:13px;font-weight:600;color:var(--white-70);margin-bottom:4px;}
-  #charte-gfx .gradient-code{font-family:var(--font-mono);font-size:10px;color:var(--white-30);line-height:1.5;}
-  #charte-gfx .gradient-role{font-size:11px;color:var(--cyan);margin-top:6px;}
-  #charte-gfx .type-samples{display:flex;flex-direction:column;gap:32px;}
-  #charte-gfx .type-block{background:var(--bg-card);border:1px solid var(--white-08);border-radius:16px;padding:28px 32px;display:grid;grid-template-columns:200px 1fr;gap:24px;align-items:center;}
-  #charte-gfx .type-meta-name{font-size:13px;font-weight:700;color:var(--white-70);margin-bottom:4px;}
-  #charte-gfx .type-meta-role{font-size:11px;color:var(--violet-lt);margin-bottom:12px;font-family:var(--font-mono);letter-spacing:.05em;}
-  #charte-gfx .type-meta-detail{font-family:var(--font-mono);font-size:10px;color:var(--white-30);line-height:1.8;}
-  #charte-gfx .type-sample-display{font-family:var(--font-display);font-size:clamp(40px,7vw,72px);letter-spacing:.08em;text-transform:uppercase;line-height:1;background:var(--g-neon);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-  #charte-gfx .type-sample-body{font-family:var(--font-body);font-size:17px;line-height:1.7;color:var(--white-70);}
-  #charte-gfx .type-sample-body strong{color:var(--white);font-weight:700;}
-  #charte-gfx .type-sample-mono{font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--cyan);letter-spacing:.02em;}
-  #charte-gfx .type-scale{display:flex;flex-direction:column;gap:8px;}
-  #charte-gfx .type-scale-row{display:flex;align-items:baseline;gap:16px;}
-  #charte-gfx .type-scale-label{font-family:var(--font-mono);font-size:10px;color:var(--white-30);width:80px;flex-shrink:0;}
-  #charte-gfx .comp-card{background:var(--bg-card);border:1px solid var(--white-08);border-radius:16px;padding:24px;}
-  #charte-gfx .comp-card-label{font-size:11px;font-weight:600;color:var(--white-30);letter-spacing:.08em;text-transform:uppercase;margin-bottom:20px;font-family:var(--font-mono);}
-  #charte-gfx .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;font-family:var(--font-body);font-weight:600;cursor:pointer;border:none;transition:all .2s;text-decoration:none;}
-  #charte-gfx .btn-md{padding:10px 20px;font-size:14px;}
-  #charte-gfx .btn-sm{padding:6px 12px;font-size:13px;}
-  #charte-gfx .btn-lg{padding:14px 32px;font-size:16px;}
-  #charte-gfx .btn-primary{background:var(--g-neon);color:#fff;}
-  #charte-gfx .btn-primary:hover{box-shadow:var(--s-rose);transform:scale(1.02);}
-  #charte-gfx .btn-secondary{background:var(--bg-card);border:1px solid rgba(123,47,190,.4);color:#fff;}
-  #charte-gfx .btn-secondary:hover{border-color:var(--violet-lt);}
-  #charte-gfx .btn-ghost{background:transparent;color:var(--white-70);}
-  #charte-gfx .btn-ghost:hover{color:#fff;background:var(--white-05);}
-  #charte-gfx .btn-danger{background:rgba(224,64,251,.15);border:1px solid rgba(224,64,251,.4);color:var(--rose);}
-  #charte-gfx .btn-danger:hover{background:rgba(224,64,251,.25);}
-  #charte-gfx .btn-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center;}
-  #charte-gfx .badge{display:inline-block;padding:4px 12px;font-size:12px;font-weight:600;border-radius:999px;border:1px solid;}
-  #charte-gfx .badge-violet{background:rgba(123,47,190,.2);color:var(--violet-lt);border-color:rgba(123,47,190,.3);}
-  #charte-gfx .badge-rose{background:rgba(224,64,251,.2);color:var(--rose-lt);border-color:rgba(224,64,251,.3);}
-  #charte-gfx .badge-cyan{background:rgba(0,229,255,.2);color:var(--cyan);border-color:rgba(0,229,255,.3);}
-  #charte-gfx .badge-green{background:rgba(74,222,128,.2);color:#4ade80;border-color:rgba(74,222,128,.3);}
-  #charte-gfx .badge-gray{background:rgba(255,255,255,.1);color:rgba(255,255,255,.6);border-color:rgba(255,255,255,.2);}
-  #charte-gfx .badge-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
-  #charte-gfx .live-row{display:flex;flex-wrap:wrap;gap:16px;align-items:center;}
-  #charte-gfx .pill{display:inline-flex;align-items:center;gap:8px;padding:5px 14px;border-radius:999px;border:1px solid;font-size:12px;font-weight:700;letter-spacing:.08em;}
-  #charte-gfx .pill-dot{position:relative;width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-  #charte-gfx .pill-dot::before{content:'';position:absolute;inset:0;border-radius:50%;animation:cgPing 1.2s ease-in-out infinite;}
-  #charte-gfx .pill-live{background:rgba(224,64,251,.12);border-color:rgba(224,64,251,.5);color:var(--rose);}
-  #charte-gfx .pill-live .pill-dot{background:var(--rose);}
-  #charte-gfx .pill-live .pill-dot::before{background:var(--rose);}
-  #charte-gfx .pill-soon{background:rgba(0,229,255,.1);border-color:rgba(0,229,255,.5);color:var(--cyan);}
-  #charte-gfx .pill-soon .pill-dot{background:var(--cyan);}
-  #charte-gfx .pill-soon .pill-dot::before{background:var(--cyan);}
-  #charte-gfx .cg-glass-card{background:rgba(26,26,53,.8);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.05);border-radius:20px;box-shadow:var(--s-card);padding:24px;}
-  #charte-gfx .neon-border-demo{border:1px solid rgba(123,47,190,.3);box-shadow:var(--s-violet);border-radius:12px;padding:16px 20px;color:var(--white-70);font-size:13px;}
-  #charte-gfx .event-card-demo{background:var(--bg-card);border:1px solid var(--white-08);border-radius:20px;box-shadow:var(--s-card);overflow:hidden;max-width:280px;transition:transform .2s;}
-  #charte-gfx .event-card-demo:hover{transform:translateY(-4px);}
-  #charte-gfx .event-cover{height:200px;background:var(--g-cover);position:relative;display:flex;align-items:flex-end;padding:12px;}
-  #charte-gfx .event-cover-title{font-family:var(--font-display);font-size:28px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.3);line-height:1;}
-  #charte-gfx .event-body{padding:14px 16px;}
-  #charte-gfx .event-title{font-family:var(--font-display);font-size:20px;letter-spacing:.05em;text-transform:uppercase;color:#fff;margin-bottom:4px;line-height:1.1;}
-  #charte-gfx .event-price{font-family:var(--font-mono);font-size:16px;font-weight:700;color:var(--cyan);margin-bottom:4px;}
-  #charte-gfx .event-date{font-size:11px;color:var(--white-50);}
-  #charte-gfx .shadow-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;}
-  #charte-gfx .shadow-card{background:var(--bg-card);border:1px solid var(--white-08);border-radius:16px;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:16px;}
-  #charte-gfx .shadow-demo{width:64px;height:64px;border-radius:14px;background:var(--bg-sec);}
-  #charte-gfx .shadow-name{font-size:12px;font-weight:600;color:var(--white-50);text-align:center;}
-  #charte-gfx .shadow-code{font-family:var(--font-mono);font-size:9px;color:var(--white-30);text-align:center;line-height:1.5;}
-  #charte-gfx .anim-table{width:100%;border-collapse:collapse;}
-  #charte-gfx .anim-table th{font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--white-30);text-align:left;padding:10px 16px;border-bottom:1px solid var(--white-08);font-weight:600;}
-  #charte-gfx .anim-table td{padding:14px 16px;border-bottom:1px solid var(--white-05);font-size:13px;color:var(--white-70);vertical-align:top;}
-  #charte-gfx .anim-table tr:last-child td{border-bottom:none;}
-  #charte-gfx .anim-table td:first-child{font-family:var(--font-mono);color:var(--violet-lt);font-size:12px;white-space:nowrap;}
-  #charte-gfx .anim-table td:nth-child(3){font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,.4);}
-  #charte-gfx .rule-list{display:flex;flex-direction:column;gap:0;}
-  #charte-gfx .rule-item{display:grid;grid-template-columns:32px 1fr;gap:16px;padding:16px 0;border-bottom:1px solid var(--white-05);align-items:start;}
-  #charte-gfx .rule-item:last-child{border-bottom:none;}
-  #charte-gfx .rule-num{font-family:var(--font-mono);font-size:11px;color:var(--violet-lt);padding-top:2px;}
-  #charte-gfx .rule-text{font-size:14px;color:var(--white-70);line-height:1.6;}
-  #charte-gfx .rule-text strong{color:var(--white);}
-  #charte-gfx .rule-text code{font-family:var(--font-mono);font-size:12px;color:var(--cyan);background:rgba(0,229,255,.08);padding:1px 6px;border-radius:4px;}
-  #charte-gfx .divider{height:1px;background:linear-gradient(to right,transparent,var(--violet),transparent);margin:48px 0;opacity:.4;}
-  @keyframes cgPing{0%,100%{transform:scale(1);opacity:.7}50%{transform:scale(2);opacity:0}}
-  @keyframes cgLiveGlow{0%,100%{box-shadow:0 0 10px rgba(224,64,251,.25),0 0 30px rgba(224,64,251,.08)}50%{box-shadow:0 0 20px rgba(224,64,251,.50),0 0 50px rgba(224,64,251,.18)}}
-  @keyframes cgPulseNeon{0%,100%{box-shadow:0 0 10px rgba(123,47,190,.3)}50%{box-shadow:0 0 30px rgba(123,47,190,.8)}}
-  @media(max-width:600px){#charte-gfx .type-block{grid-template-columns:1fr;padding:20px;}#charte-gfx .swatch-group{grid-template-columns:repeat(2,1fr);}#charte-gfx .comp-card{padding:20px;}}
+#charte-gfx *,#charte-gfx *::before,#charte-gfx *::after{box-sizing:border-box;margin:0;padding:0;}
+#charte-gfx{--ink:#0D0D1A;--ink2:#13132A;--card:#1A1A35;--v:#7B2FBE;--v2:#9B4FDE;--r:#E040FB;--r2:#F060FF;--c:#00E5FF;--c2:#40F0FF;--w:rgba(255,255,255,1);--w70:rgba(255,255,255,.7);--w50:rgba(255,255,255,.5);--w30:rgba(255,255,255,.3);--w10:rgba(255,255,255,.1);--w05:rgba(255,255,255,.05);--gn:linear-gradient(135deg,#7B2FBE,#E040FB);--gc:linear-gradient(135deg,#00E5FF,#7B2FBE);--fd:'Impact','Arial Narrow',sans-serif;--fb:system-ui,-apple-system,sans-serif;--fm:'Courier New',monospace;background:var(--ink);color:var(--w);font-family:var(--fb);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;background-image:radial-gradient(ellipse at 15% 30%,rgba(123,47,190,.15) 0%,transparent 55%),radial-gradient(ellipse at 85% 10%,rgba(0,229,255,.08) 0%,transparent 50%),radial-gradient(ellipse at 55% 90%,rgba(224,64,251,.07) 0%,transparent 45%);border-radius:20px;overflow:hidden;padding-bottom:100px;}
+#charte-gfx .wrap{max-width:1040px;margin:0 auto;padding:0 24px 100px;}
+#charte-gfx .hero{padding:72px 0 60px;border-bottom:1px solid var(--w10);margin-bottom:64px;position:relative;}
+#charte-gfx .hero-eyebrow{font-family:var(--fm);font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--v2);margin-bottom:14px;}
+#charte-gfx .hero-title{font-family:var(--fd);font-size:clamp(48px,9vw,100px);letter-spacing:.05em;text-transform:uppercase;line-height:.92;margin-bottom:24px;}
+#charte-gfx .hero-title span{background:var(--gn);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+#charte-gfx .hero-desc{font-size:16px;color:var(--w50);max-width:560px;line-height:1.75;margin-bottom:32px;}
+#charte-gfx .hero-pills{display:flex;flex-wrap:wrap;gap:8px;}
+#charte-gfx .hero-pill{font-family:var(--fm);font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:5px 14px;border:1px solid var(--w10);border-radius:999px;color:var(--w30);}
+#charte-gfx .sec{margin-bottom:80px;}
+#charte-gfx .sec-eye{font-family:var(--fm);font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--v2);margin-bottom:8px;}
+#charte-gfx .sec-title{font-family:var(--fd);font-size:38px;letter-spacing:.05em;text-transform:uppercase;color:var(--w);margin-bottom:6px;padding-bottom:16px;border-bottom:1px solid var(--w10);}
+#charte-gfx .sec-sub{font-size:13px;color:var(--w30);margin-bottom:32px;margin-top:4px;}
+#charte-gfx .divider{height:1px;background:linear-gradient(to right,transparent,rgba(123,47,190,.4),transparent);margin:0 0 80px;}
+#charte-gfx .palette-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px;}
+#charte-gfx .swatch{border-radius:16px;overflow:hidden;border:1px solid var(--w10);cursor:pointer;}
+#charte-gfx .swatch-blob{height:100px;display:flex;align-items:flex-end;justify-content:flex-end;padding:10px;}
+#charte-gfx .swatch-copy{font-family:var(--fm);font-size:9px;color:rgba(255,255,255,.5);background:rgba(0,0,0,.4);backdrop-filter:blur(4px);padding:3px 8px;border-radius:6px;cursor:pointer;user-select:all;}
+#charte-gfx .swatch-info{background:var(--card);padding:12px 14px;}
+#charte-gfx .swatch-name{font-size:13px;font-weight:700;color:var(--w70);display:block;margin-bottom:2px;}
+#charte-gfx .swatch-hex{font-family:var(--fm);font-size:12px;color:var(--c);display:block;margin-bottom:4px;letter-spacing:.04em;}
+#charte-gfx .swatch-role{font-size:11px;color:var(--w30);line-height:1.4;}
+#charte-gfx .canva-tip{background:rgba(0,229,255,.05);border:1px solid rgba(0,229,255,.2);border-radius:14px;padding:16px 20px;display:flex;gap:14px;align-items:flex-start;margin-top:4px;}
+#charte-gfx .canva-tip-icon{font-size:20px;flex-shrink:0;margin-top:2px;}
+#charte-gfx .canva-tip-text{font-size:13px;color:var(--w50);line-height:1.6;}
+#charte-gfx .canva-tip-text strong{color:var(--c);}
+#charte-gfx .font-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
+#charte-gfx .font-card{background:var(--card);border:1px solid var(--w10);border-radius:20px;padding:24px 28px;overflow:hidden;}
+#charte-gfx .font-tag{font-family:var(--fm);font-size:10px;color:var(--v2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;}
+#charte-gfx .font-name{font-size:14px;font-weight:700;color:var(--w70);margin-bottom:4px;}
+#charte-gfx .font-sample-bebas{font-family:var(--fd);font-size:52px;letter-spacing:.06em;text-transform:uppercase;background:var(--gn);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;margin-bottom:14px;}
+#charte-gfx .font-sample-sora{font-size:20px;font-weight:600;color:var(--w70);margin-bottom:14px;line-height:1.3;}
+#charte-gfx .font-sample-mono{font-family:var(--fm);font-size:22px;font-weight:700;color:var(--c);margin-bottom:14px;}
+#charte-gfx .font-specs{display:flex;flex-direction:column;gap:6px;}
+#charte-gfx .font-spec-row{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-top:1px solid var(--w05);}
+#charte-gfx .font-spec-label{font-size:11px;color:var(--w30);}
+#charte-gfx .font-spec-val{font-family:var(--fm);font-size:11px;color:var(--w50);}
+#charte-gfx .font-canva-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:600;color:#4ade80;margin-top:12px;}
+#charte-gfx .platform-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;}
+#charte-gfx .platform-card{background:var(--card);border:1px solid var(--w10);border-radius:20px;padding:22px 24px;}
+#charte-gfx .platform-icon-row{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
+#charte-gfx .platform-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+#charte-gfx .platform-name{font-size:15px;font-weight:700;color:var(--w);}
+#charte-gfx .platform-handle{font-size:11px;color:var(--w30);}
+#charte-gfx .format-list{display:flex;flex-direction:column;gap:8px;}
+#charte-gfx .format-item{display:flex;flex-direction:column;gap:3px;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid var(--w05);border-radius:10px;}
+#charte-gfx .format-label{font-size:12px;font-weight:600;color:var(--w70);}
+#charte-gfx .format-dim{font-family:var(--fm);font-size:11px;color:var(--c);letter-spacing:.03em;}
+#charte-gfx .format-note{font-size:10px;color:var(--w30);}
+#charte-gfx .mockup-section-intro{font-size:14px;color:var(--w50);margin-bottom:28px;line-height:1.7;}
+#charte-gfx .mockup-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:20px;align-items:end;}
+#charte-gfx .mock-sq{width:100%;aspect-ratio:1/1;border-radius:16px;overflow:hidden;position:relative;display:flex;flex-direction:column;}
+#charte-gfx .mock-pt{width:100%;aspect-ratio:4/5;border-radius:16px;overflow:hidden;position:relative;display:flex;flex-direction:column;}
+#charte-gfx .mock-st{width:100%;aspect-ratio:9/16;border-radius:16px;overflow:hidden;position:relative;display:flex;flex-direction:column;max-height:360px;}
+#charte-gfx .mock-ls{width:100%;aspect-ratio:16/9;border-radius:16px;overflow:hidden;position:relative;display:flex;flex-direction:column;}
+#charte-gfx .mock-bg-event{background:linear-gradient(160deg,#2D1060 0%,#0D0D1A 50%,#003060 100%);}
+#charte-gfx .mock-bg-promo{background:linear-gradient(145deg,#1a0230 0%,#0D0D1A 60%,#001a30 100%);}
+#charte-gfx .mock-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(13,13,26,.95) 0%,rgba(13,13,26,.3) 60%,transparent 100%);}
+#charte-gfx .mock-content{position:relative;z-index:2;margin-top:auto;padding:14px;}
+#charte-gfx .mock-content-top{position:relative;z-index:2;padding:12px;margin-bottom:auto;}
+#charte-gfx .mock-label{font-family:var(--fm);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--r);margin-bottom:4px;}
+#charte-gfx .mock-title{font-family:var(--fd);font-size:clamp(14px,3.5vw,22px);letter-spacing:.06em;text-transform:uppercase;color:var(--w);line-height:1.05;}
+#charte-gfx .mock-price{font-family:var(--fm);font-size:11px;font-weight:700;color:var(--c);margin-top:4px;}
+#charte-gfx .mock-date{font-size:9px;color:var(--w50);margin-top:2px;}
+#charte-gfx .mock-cta{display:inline-block;margin-top:8px;padding:5px 12px;background:var(--gn);border-radius:8px;font-size:9px;font-weight:700;color:var(--w);}
+#charte-gfx .mock-logo{font-family:var(--fd);font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--w50);}
+#charte-gfx .mock-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(224,64,251,.15);border:1px solid rgba(224,64,251,.4);border-radius:999px;padding:2px 8px;font-size:8px;font-weight:700;color:var(--r);margin-bottom:6px;}
+#charte-gfx .mock-badge-dot{width:5px;height:5px;border-radius:50%;background:var(--r);}
+#charte-gfx .mock-name-label{font-size:11px;font-weight:600;color:var(--w50);text-align:center;}
+#charte-gfx .mock-card-label{text-align:center;margin-top:10px;}
+#charte-gfx .mock-platform-tag{font-family:var(--fm);font-size:9px;color:var(--w30);letter-spacing:.05em;margin-top:4px;}
+#charte-gfx .mock-ls-inner{display:flex;height:100%;width:100%;}
+#charte-gfx .mock-ls-left{flex:1;display:flex;flex-direction:column;justify-content:flex-end;padding:16px;}
+#charte-gfx .mock-ls-right{width:40%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;padding:16px;}
+#charte-gfx .mock-ls-stat{text-align:center;}
+#charte-gfx .mock-ls-num{font-family:var(--fd);font-size:22px;letter-spacing:.05em;color:var(--c);}
+#charte-gfx .mock-ls-label{font-size:8px;color:var(--w30);text-transform:uppercase;letter-spacing:.06em;}
+#charte-gfx .mock-ls-div{width:1px;height:60%;background:var(--w10);}
+#charte-gfx .rules-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:600px){#charte-gfx .rules-grid{grid-template-columns:1fr;}}
+#charte-gfx .rules-col{background:var(--card);border:1px solid var(--w10);border-radius:20px;padding:22px 24px;}
+#charte-gfx .rules-col-title{font-size:13px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+#charte-gfx .rules-col.do .rules-col-title{color:#4ade80;}
+#charte-gfx .rules-col.dont .rules-col-title{color:var(--r);}
+#charte-gfx .rules-col.do{border-color:rgba(74,222,128,.2);}
+#charte-gfx .rules-col.dont{border-color:rgba(224,64,251,.2);}
+#charte-gfx .rule-row{display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;font-size:13px;color:var(--w70);}
+#charte-gfx .rule-row:last-child{margin-bottom:0;}
+#charte-gfx .rule-icon{flex-shrink:0;margin-top:2px;font-size:14px;}
+#charte-gfx .combo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;}
+#charte-gfx .combo-card{border-radius:14px;overflow:hidden;border:1px solid var(--w10);}
+#charte-gfx .combo-preview{height:70px;display:flex;align-items:center;justify-content:center;}
+#charte-gfx .combo-preview-text{font-family:var(--fd);font-size:20px;letter-spacing:.08em;text-transform:uppercase;}
+#charte-gfx .combo-info{background:var(--card);padding:12px 14px;}
+#charte-gfx .combo-name{font-size:12px;font-weight:600;color:var(--w70);margin-bottom:2px;}
+#charte-gfx .combo-desc{font-size:10px;color:var(--w30);}
+#charte-gfx .footer{margin-top:80px;padding-top:32px;border-top:1px solid var(--w10);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;}
+#charte-gfx .footer-brand{font-family:var(--fd);font-size:28px;letter-spacing:.08em;text-transform:uppercase;background:var(--gn);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+#charte-gfx .footer-meta{font-family:var(--fm);font-size:10px;color:var(--w30);text-align:right;line-height:1.8;}
+@media(max-width:640px){#charte-gfx .palette-grid{grid-template-columns:repeat(2,1fr);}#charte-gfx .font-grid{grid-template-columns:1fr;}#charte-gfx .platform-grid{grid-template-columns:1fr 1fr;}#charte-gfx .mockup-grid{grid-template-columns:1fr 1fr;}}
 `;
 
 const CHARTE_HTML = `
-<header class="site-header">
-  <div class="wrap">
-    <p class="header-label">Design System v1.5 — Confidentiel</p>
-    <h1 class="header-title">Charte<br>Graphique</h1>
-    <p class="header-sub">Référentiel complet de l'identité visuelle BilletGab — couleurs, typographie, composants et règles d'usage.</p>
-    <div class="header-meta">
-      <span>Dernière mise à jour : août 2026</span>
-      <span>·</span>
-      <span>Produit : BilletGab — billetterie Gabon</span>
-      <span>·</span>
-      <span>Stack : React · Tailwind · Framer Motion</span>
-    </div>
+<div class="wrap">
+
+<!-- ── HERO ── -->
+<header class="hero">
+  <p class="hero-eyebrow">Guide de marque · Réseaux Sociaux · Canva</p>
+  <h1 class="hero-title">BilletGab<br><span>Canva Kit</span></h1>
+  <p class="hero-desc">Tous les éléments pour créer des visuels cohérents sur Instagram, Facebook, TikTok et LinkedIn — couleurs, polices, formats et règles de mise en page, prêts à utiliser dans Canva.</p>
+  <div class="hero-pills">
+    <span class="hero-pill">Instagram</span>
+    <span class="hero-pill">Facebook</span>
+    <span class="hero-pill">TikTok</span>
+    <span class="hero-pill">LinkedIn</span>
+    <span class="hero-pill">Canva compatible</span>
+    <span class="hero-pill">Août 2026</span>
   </div>
 </header>
-<main class="wrap">
-  <nav class="toc">
-    <a href="#cg-couleurs">Couleurs</a>
-    <a href="#cg-degrades">Dégradés</a>
-    <a href="#cg-typo">Typographie</a>
-    <a href="#cg-boutons">Boutons</a>
-    <a href="#cg-badges">Badges & Pills</a>
-    <a href="#cg-cartes">Cartes</a>
-    <a href="#cg-ombres">Ombres & Lueurs</a>
-    <a href="#cg-animations">Animations</a>
-    <a href="#cg-layout">Layout</a>
-  </nav>
 
-  <section class="section" id="cg-couleurs">
-    <p class="section-label">01</p>
-    <h2 class="section-title">Couleurs</h2>
-    <p class="section-label" style="margin-bottom:12px">Fonds</p>
-    <div class="swatch-group" style="margin-bottom:28px">
-      <div class="swatch"><div class="swatch-color" style="background:#0D0D1A"></div><div class="swatch-info"><span class="swatch-name">bg</span><span class="swatch-hex">#0D0D1A</span><span class="swatch-use">Fond principal. Couleur de page, corps.</span></div></div>
-      <div class="swatch"><div class="swatch-color" style="background:#13132A"></div><div class="swatch-info"><span class="swatch-name">bg-secondary</span><span class="swatch-hex">#13132A</span><span class="swatch-use">Fond alternatif. Barres, sections.</span></div></div>
-      <div class="swatch"><div class="swatch-color" style="background:#1A1A35"></div><div class="swatch-info"><span class="swatch-name">bg-card</span><span class="swatch-hex">#1A1A35</span><span class="swatch-use">Fond des cartes et modales.</span></div></div>
-    </div>
-    <p class="section-label" style="margin-bottom:12px">Accent violet — primaire</p>
-    <div class="swatch-group" style="margin-bottom:28px">
-      <div class="swatch"><div class="swatch-color" style="background:#7B2FBE;box-shadow:0 0 24px rgba(123,47,190,.5)"></div><div class="swatch-info"><span class="swatch-name">violet-neon</span><span class="swatch-hex">#7B2FBE</span><span class="swatch-use">CTA, bordures actives, liens.</span></div></div>
-      <div class="swatch"><div class="swatch-color" style="background:#9B4FDE"></div><div class="swatch-info"><span class="swatch-name">violet-light</span><span class="swatch-hex">#9B4FDE</span><span class="swatch-use">Hover, textes accentués.</span></div></div>
-    </div>
-    <p class="section-label" style="margin-bottom:12px">Accent rose — secondaire</p>
-    <div class="swatch-group" style="margin-bottom:28px">
-      <div class="swatch"><div class="swatch-color" style="background:#E040FB;box-shadow:0 0 24px rgba(224,64,251,.5)"></div><div class="swatch-info"><span class="swatch-name">rose-neon</span><span class="swatch-hex">#E040FB</span><span class="swatch-use">Danger, live, hot, panier.</span></div></div>
-      <div class="swatch"><div class="swatch-color" style="background:#F060FF"></div><div class="swatch-info"><span class="swatch-name">rose-light</span><span class="swatch-hex">#F060FF</span><span class="swatch-use">Hover sur éléments rose.</span></div></div>
-    </div>
-    <p class="section-label" style="margin-bottom:12px">Accent cyan — données</p>
-    <div class="swatch-group" style="margin-bottom:28px">
-      <div class="swatch"><div class="swatch-color" style="background:#00E5FF;box-shadow:0 0 24px rgba(0,229,255,.5)"></div><div class="swatch-info"><span class="swatch-name">cyan-neon</span><span class="swatch-hex">#00E5FF</span><span class="swatch-use">Prix, chiffres, à venir.</span></div></div>
-      <div class="swatch"><div class="swatch-color" style="background:#40F0FF"></div><div class="swatch-info"><span class="swatch-name">cyan-light</span><span class="swatch-hex">#40F0FF</span><span class="swatch-use">Hover sur éléments cyan.</span></div></div>
-    </div>
-    <p class="section-label" style="margin-bottom:12px">Texte — échelle d'opacité sur blanc</p>
-    <div style="background:var(--bg-card);border:1px solid var(--white-08);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:10px">
-      <div style="display:flex;align-items:center;gap:16px"><div style="width:40px;height:20px;background:rgba(255,255,255,1);border-radius:4px"></div><span style="font-family:var(--font-mono);font-size:11px;color:var(--white-30)">white / white-100</span><span style="font-size:13px;color:rgba(255,255,255,1)">Titres principaux, labels actifs</span></div>
-      <div style="display:flex;align-items:center;gap:16px"><div style="width:40px;height:20px;background:rgba(255,255,255,.7);border-radius:4px"></div><span style="font-family:var(--font-mono);font-size:11px;color:var(--white-30)">white/70</span><span style="font-size:13px;color:rgba(255,255,255,.7)">Corps de texte, contenu principal</span></div>
-      <div style="display:flex;align-items:center;gap:16px"><div style="width:40px;height:20px;background:rgba(255,255,255,.5);border-radius:4px"></div><span style="font-family:var(--font-mono);font-size:11px;color:var(--white-30)">white/50</span><span style="font-size:13px;color:rgba(255,255,255,.5)">Méta, date, lieu, secondaire</span></div>
-      <div style="display:flex;align-items:center;gap:16px"><div style="width:40px;height:20px;background:rgba(255,255,255,.3);border-radius:4px"></div><span style="font-family:var(--font-mono);font-size:11px;color:var(--white-30)">white/30</span><span style="font-size:13px;color:rgba(255,255,255,.3)">Labels discrets, labels de champ</span></div>
-      <div style="display:flex;align-items:center;gap:16px"><div style="width:40px;height:20px;background:rgba(255,255,255,.1);border-radius:4px"></div><span style="font-family:var(--font-mono);font-size:11px;color:var(--white-30)">white/10</span><span style="font-size:13px;color:rgba(255,255,255,.4)">Séparateurs, bordures légères</span></div>
-      <div style="display:flex;align-items:center;gap:16px"><div style="width:40px;height:20px;background:rgba(255,255,255,.05);border-radius:4px;border:1px solid rgba(255,255,255,.1)"></div><span style="font-family:var(--font-mono);font-size:11px;color:var(--white-30)">white/05</span><span style="font-size:13px;color:rgba(255,255,255,.4)">Hover très discret sur éléments ghost</span></div>
-    </div>
-  </section>
+<!-- ─────── 01 · PALETTE ─────── -->
+<section class="sec" id="palette">
+  <p class="sec-eye">01</p>
+  <h2 class="sec-title">Palette de couleurs</h2>
+  <p class="sec-sub">Copie chaque code HEX dans Canva → Couleurs de la marque pour l’enregistrer une fois pour toutes.</p>
 
-  <div class="divider"></div>
-
-  <section class="section" id="cg-degrades">
-    <p class="section-label">02</p>
-    <h2 class="section-title">Dégradés</h2>
-    <div class="gradient-grid">
-      <div class="gradient-card"><div class="gradient-preview" style="background:linear-gradient(135deg,#7B2FBE,#E040FB)"></div><div class="gradient-info"><div class="gradient-name">neon-gradient</div><div class="gradient-code">135deg · #7B2FBE → #E040FB</div><div class="gradient-role">CTA principal, titres forts</div></div></div>
-      <div class="gradient-card"><div class="gradient-preview" style="background:linear-gradient(135deg,#00E5FF,#7B2FBE)"></div><div class="gradient-info"><div class="gradient-name">cyan-gradient</div><div class="gradient-code">135deg · #00E5FF → #7B2FBE</div><div class="gradient-role">Textes prix, section données</div></div></div>
-      <div class="gradient-card"><div class="gradient-preview" style="background:linear-gradient(135deg,#2D1060 0%,#0D0D1A 50%,#003060 100%)"></div><div class="gradient-info"><div class="gradient-name">dark-cover</div><div class="gradient-code">135deg · #2D1060 → #0D0D1A → #003060</div><div class="gradient-role">Placeholder couverture événement</div></div></div>
-      <div class="gradient-card"><div class="gradient-preview" style="background:linear-gradient(135deg,#1a0a2e 0%,#0D0D1A 50%,#0a1a2e 100%)"></div><div class="gradient-info"><div class="gradient-name">dark-card</div><div class="gradient-code">135deg · #1a0a2e → #0D0D1A → #0a1a2e</div><div class="gradient-role">Fond de cartes premium</div></div></div>
-    </div>
-    <div style="margin-top:20px;background:var(--bg-card);border:1px solid var(--white-08);border-radius:16px;padding:20px 24px">
-      <div style="font-family:var(--font-mono);font-size:10px;color:var(--white-30);letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px">Ambiance page (body background-image)</div>
-      <div style="height:80px;border-radius:10px;background:radial-gradient(ellipse at 20% 50%,rgba(123,47,190,.3) 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(0,229,255,.2) 0%,transparent 50%),radial-gradient(ellipse at 60% 90%,rgba(224,64,251,.15) 0%,transparent 40%),#0D0D1A"></div>
-      <div style="font-size:12px;color:var(--white-30);margin-top:12px;line-height:1.7;font-family:var(--font-mono)">
-        radial-gradient(ellipse at 20% 50%, rgba(123,47,190,.12) → transparent 60%)<br>
-        radial-gradient(ellipse at 80% 20%, rgba(0,229,255,.07) → transparent 50%)<br>
-        radial-gradient(ellipse at 60% 90%, rgba(224,64,251,.05) → transparent 40%)
+  <div class="palette-grid">
+    <div class="swatch">
+      <div class="swatch-blob" style="background:#7B2FBE;box-shadow:0 0 30px rgba(123,47,190,.6)">
+        <span class="swatch-copy">#7B2FBE</span>
+      </div>
+      <div class="swatch-info">
+        <span class="swatch-name">Violet Neon</span>
+        <span class="swatch-hex">#7B2FBE</span>
+        <span class="swatch-role">Couleur principale. Boutons, titres, cadres.</span>
       </div>
     </div>
-  </section>
-
-  <div class="divider"></div>
-
-  <section class="section" id="cg-typo">
-    <p class="section-label">03</p>
-    <h2 class="section-title">Typographie</h2>
-    <div class="type-samples">
-      <div class="type-block">
-        <div class="type-meta"><div class="type-meta-name">Bebas Neue</div><div class="type-meta-role">DISPLAY · TITRES</div><div class="type-meta-detail">font-family: bebas<br>Class Tailwind : font-bebas<br>Poids : Regular (400)<br>Usage : uppercase uniquement<br>letter-spacing : .05–.1em<br><br>Source : Google Fonts</div></div>
-        <div><div class="type-sample-display">BILLETGAB</div><div style="margin-top:16px;display:flex;flex-direction:column;gap:6px"><div style="font-family:var(--font-display);font-size:48px;letter-spacing:.05em;text-transform:uppercase;color:var(--white);line-height:1">Concert Live</div><div style="font-family:var(--font-display);font-size:32px;letter-spacing:.05em;text-transform:uppercase;color:var(--white-70);line-height:1">Festival Musique</div><div style="font-family:var(--font-display);font-size:20px;letter-spacing:.06em;text-transform:uppercase;color:var(--white-50);line-height:1">Soirée Gala · Libreville</div></div></div>
+    <div class="swatch">
+      <div class="swatch-blob" style="background:#E040FB;box-shadow:0 0 30px rgba(224,64,251,.6)">
+        <span class="swatch-copy">#E040FB</span>
       </div>
-      <div class="type-block">
-        <div class="type-meta"><div class="type-meta-name">Sora</div><div class="type-meta-role">BODY · UI</div><div class="type-meta-detail">font-family: sora<br>Class Tailwind : font-sora (défaut)<br>Poids : 400 (corps), 600 (labels),<br>700 (titres UI), 800 (accents)<br><br>Source : Google Fonts</div></div>
-        <div class="type-sample-body"><strong>Réservez vos billets en ligne.</strong><br>BilletGab est la première plateforme de billetterie événementielle au Gabon. Accédez à tous les concerts, festivals, et soirées depuis votre téléphone.</div>
-      </div>
-      <div class="type-block">
-        <div class="type-meta"><div class="type-meta-name">Space Mono</div><div class="type-meta-role">MONO · DONNÉES</div><div class="type-meta-detail">font-family: mono<br>Class Tailwind : font-mono<br>Poids : 400, 700<br>Usage : prix, codes, compteurs,<br>labels techniques<br><br>Source : Google Fonts</div></div>
-        <div><div class="type-sample-mono">5 000 XAF</div><div style="margin-top:12px;font-family:var(--font-mono);color:var(--white-50);font-size:14px;line-height:2"><span style="color:var(--cyan)">15 000 XAF</span> · Cat. VIP<br><span style="color:var(--white-30)">BLT-2026-08-A7F3</span><br><span style="color:var(--violet-lt)">04j 12h 38min</span></div></div>
+      <div class="swatch-info">
+        <span class="swatch-name">Rose Neon</span>
+        <span class="swatch-hex">#E040FB</span>
+        <span class="swatch-role">Accents chauds. Urgence, live, HOT.</span>
       </div>
     </div>
-    <div style="margin-top:24px;background:var(--bg-card);border:1px solid var(--white-08);border-radius:16px;padding:24px 28px">
-      <div style="font-family:var(--font-mono);font-size:10px;color:var(--white-30);letter-spacing:.08em;text-transform:uppercase;margin-bottom:20px">Échelle typographique — Tailwind classes</div>
-      <div class="type-scale">
-        <div class="type-scale-row"><span class="type-scale-label">text-8xl</span><span style="font-family:var(--font-display);font-size:36px;letter-spacing:.06em;text-transform:uppercase;color:var(--white)">Hero titre</span></div>
-        <div class="type-scale-row"><span class="type-scale-label">text-5xl</span><span style="font-family:var(--font-display);font-size:28px;letter-spacing:.06em;text-transform:uppercase;color:var(--white)">Section title</span></div>
-        <div class="type-scale-row"><span class="type-scale-label">text-xl</span><span style="font-family:var(--font-display);font-size:18px;letter-spacing:.05em;text-transform:uppercase;color:var(--white-70)">Card title</span></div>
-        <div class="type-scale-row"><span class="type-scale-label">text-base</span><span style="font-size:15px;color:var(--white-70)">Corps de texte standard — descriptions, contenu principal</span></div>
-        <div class="type-scale-row"><span class="type-scale-label">text-sm</span><span style="font-size:13px;color:var(--white-50)">Méta, labels UI, navigation, boutons secondaires</span></div>
-        <div class="type-scale-row"><span class="type-scale-label">text-xs</span><span style="font-size:11px;color:rgba(255,255,255,.4);letter-spacing:.05em;text-transform:uppercase">LABELS DISCRETS · SOUS-TITRES · TAGS</span></div>
+    <div class="swatch">
+      <div class="swatch-blob" style="background:#00E5FF;box-shadow:0 0 30px rgba(0,229,255,.6)">
+        <span class="swatch-copy">#00E5FF</span>
+      </div>
+      <div class="swatch-info">
+        <span class="swatch-name">Cyan Neon</span>
+        <span class="swatch-hex">#00E5FF</span>
+        <span class="swatch-role">Prix, données, informations clés.</span>
       </div>
     </div>
-  </section>
-
-  <div class="divider"></div>
-
-  <section class="section" id="cg-boutons">
-    <p class="section-label">04</p>
-    <h2 class="section-title">Boutons</h2>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">
-      <div class="comp-card"><div class="comp-card-label">Primary</div><div class="btn-row"><button class="btn btn-primary btn-sm">Petit</button><button class="btn btn-primary btn-md">Réserver</button><button class="btn btn-primary btn-lg">Publier un Event</button></div><div style="margin-top:16px;font-family:var(--font-mono);font-size:10px;color:var(--white-30);line-height:1.8">bg: neon-gradient<br>hover: shadow-neon-rose<br>scale: 1.02 hover · 0.97 tap</div></div>
-      <div class="comp-card"><div class="comp-card-label">Secondary</div><div class="btn-row"><button class="btn btn-secondary btn-sm">Petit</button><button class="btn btn-secondary btn-md">Voir plus</button><button class="btn btn-secondary btn-lg">Explorer</button></div><div style="margin-top:16px;font-family:var(--font-mono);font-size:10px;color:var(--white-30);line-height:1.8">bg: bg-card<br>border: violet-neon/40<br>hover border: violet-neon</div></div>
-      <div class="comp-card"><div class="comp-card-label">Ghost</div><div class="btn-row"><button class="btn btn-ghost btn-sm">Annuler</button><button class="btn btn-ghost btn-md">Connexion</button></div><div style="margin-top:16px;font-family:var(--font-mono);font-size:10px;color:var(--white-30);line-height:1.8">bg: transparent<br>hover: bg-white/5<br>Navbar, actions secondaires</div></div>
-      <div class="comp-card"><div class="comp-card-label">Danger</div><div class="btn-row"><button class="btn btn-danger btn-sm">Supprimer</button><button class="btn btn-danger btn-md">Annuler réservation</button></div><div style="margin-top:16px;font-family:var(--font-mono);font-size:10px;color:var(--white-30);line-height:1.8">bg: rose-neon/20<br>border: rose-neon/40<br>text: rose-neon</div></div>
+    <div class="swatch">
+      <div class="swatch-blob" style="background:#0D0D1A;border:1px solid rgba(255,255,255,.1)">
+        <span class="swatch-copy">#0D0D1A</span>
+      </div>
+      <div class="swatch-info">
+        <span class="swatch-name">Fond Nuit</span>
+        <span class="swatch-hex">#0D0D1A</span>
+        <span class="swatch-role">Fond principal de tous les visuels.</span>
+      </div>
     </div>
-    <div style="margin-top:16px;background:var(--bg-card);border:1px solid var(--white-08);border-radius:14px;padding:18px 22px">
-      <div class="comp-card-label" style="margin-bottom:12px">État disabled (toutes variantes)</div>
-      <div class="btn-row"><button class="btn btn-primary btn-md" disabled style="opacity:.5;cursor:not-allowed">Indisponible</button><button class="btn btn-secondary btn-md" disabled style="opacity:.5;cursor:not-allowed">Indisponible</button></div>
-      <div style="margin-top:12px;font-family:var(--font-mono);font-size:10px;color:var(--white-30)">opacity: 0.5 · cursor: not-allowed · pointer-events: none</div>
+    <div class="swatch">
+      <div class="swatch-blob" style="background:#1A1A35;border:1px solid rgba(255,255,255,.1)">
+        <span class="swatch-copy">#1A1A35</span>
+      </div>
+      <div class="swatch-info">
+        <span class="swatch-name">Fond Carte</span>
+        <span class="swatch-hex">#1A1A35</span>
+        <span class="swatch-role">Encadrés, sections, zones texte.</span>
+      </div>
     </div>
-  </section>
-
-  <div class="divider"></div>
-
-  <section class="section" id="cg-badges">
-    <p class="section-label">05</p>
-    <h2 class="section-title">Badges & Pills</h2>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">
-      <div class="comp-card"><div class="comp-card-label">Badges — composant Badge</div><div class="badge-row"><span class="badge badge-violet">Concert</span><span class="badge badge-rose">HOT</span><span class="badge badge-cyan">À VENIR</span><span class="badge badge-green">Certifié</span><span class="badge badge-gray">Festival</span></div><div style="margin-top:16px;font-family:var(--font-mono);font-size:10px;color:var(--white-30);line-height:1.8">px-3 py-1 · text-xs · rounded-full<br>border 1px · couleur/20 bg · couleur/30 border</div></div>
-      <div class="comp-card"><div class="comp-card-label">Status pills — live & à venir</div><div class="live-row"><div class="pill pill-live"><span class="pill-dot"></span>EN COURS</div><div class="pill pill-soon"><span class="pill-dot"></span>À VENIR</div></div><div style="margin-top:16px;font-family:var(--font-mono);font-size:10px;color:var(--white-30);line-height:1.8">Dot + animate-ping · backdrop-blur<br>LIVE = rose · SOON = cyan</div></div>
+    <div class="swatch">
+      <div class="swatch-blob" style="background:#FFFFFF">
+        <span class="swatch-copy" style="color:#0D0D1A;background:rgba(0,0,0,.1)">#FFFFFF</span>
+      </div>
+      <div class="swatch-info">
+        <span class="swatch-name">Blanc</span>
+        <span class="swatch-hex">#FFFFFF</span>
+        <span class="swatch-role">Texte principal sur fond sombre.</span>
+      </div>
     </div>
-  </section>
+  </div>
 
-  <div class="divider"></div>
+  <div class="canva-tip">
+    <span class="canva-tip-icon">🎨</span>
+    <div class="canva-tip-text">
+      <strong>Comment ajouter dans Canva :</strong> Ouvre un design → clique sur un élément → sélectionne une couleur → en bas de la palette, clique sur <strong>« + Ajouter une couleur de la marque »</strong> → colle le code HEX. Répète pour les 6 couleurs. Elles seront disponibles dans tous tes futurs designs.
+    </div>
+  </div>
 
-  <section class="section" id="cg-cartes">
-    <p class="section-label">06</p>
-    <h2 class="section-title">Cartes</h2>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:24px;align-items:start">
-      <div>
-        <div style="font-family:var(--font-mono);font-size:10px;color:var(--white-30);letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px">.glass-card → EventCard</div>
-        <div class="event-card-demo">
-          <div class="event-cover">
-            <div style="position:absolute;top:10px;left:10px"><div class="pill pill-live" style="font-size:10px;padding:4px 10px"><span class="pill-dot"></span>EN COURS</div></div>
-            <div style="position:absolute;top:10px;right:10px"><div style="background:rgba(0,0,0,.6);border-radius:999px;padding:4px 10px;display:flex;align-items:center;gap:4px"><span style="font-size:10px;color:rgba(255,255,255,.5)">♡</span><span style="font-family:var(--font-mono);font-size:10px;color:rgba(255,255,255,.6)">42</span></div></div>
-            <div class="event-cover-title">CONCERT<br>LIVE</div>
-            <div style="position:absolute;bottom:12px;right:12px"><span class="badge badge-violet" style="font-size:10px;padding:3px 10px">Musique</span></div>
+  <div style="margin-top:20px;">
+    <p style="font-family:var(--fm);font-size:10px;color:var(--w30);letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px">Dégradés — à reproduire dans Canva avec « Dégradé personnalisé »</p>
+    <div class="combo-grid">
+      <div class="combo-card">
+        <div class="combo-preview" style="background:linear-gradient(135deg,#7B2FBE,#E040FB)">
+          <span class="combo-preview-text" style="color:#fff">BILLETGAB</span>
+        </div>
+        <div class="combo-info">
+          <div class="combo-name">Dégradé Principal</div>
+          <div class="combo-desc">#7B2FBE → #E040FB · 135° · Titres, boutons CTA</div>
+        </div>
+      </div>
+      <div class="combo-card">
+        <div class="combo-preview" style="background:linear-gradient(135deg,#00E5FF,#7B2FBE)">
+          <span class="combo-preview-text" style="color:#fff">5 000 XAF</span>
+        </div>
+        <div class="combo-info">
+          <div class="combo-name">Dégradé Cyan</div>
+          <div class="combo-desc">#00E5FF → #7B2FBE · 135° · Prix, chiffres</div>
+        </div>
+      </div>
+      <div class="combo-card">
+        <div class="combo-preview" style="background:linear-gradient(135deg,#2D1060,#0D0D1A,#003060)">
+          <span class="combo-preview-text" style="color:rgba(255,255,255,.3)">ÉVÉNEMENT</span>
+        </div>
+        <div class="combo-info">
+          <div class="combo-name">Fond Événement</div>
+          <div class="combo-desc">#2D1060 → #0D0D1A → #003060 · Fond quand pas de photo</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ─────── 02 · POLICES ─────── -->
+<section class="sec" id="polices">
+  <p class="sec-eye">02</p>
+  <h2 class="sec-title">Polices</h2>
+  <p class="sec-sub">Les 3 polices disponibles directement dans Canva — recherche-les dans la barre de polices.</p>
+
+  <div class="font-grid">
+    <div class="font-card">
+      <div class="font-tag">Titres · Noms d’événements</div>
+      <div class="font-name">Bebas Neue</div>
+      <div class="font-sample-bebas">CONCERT</div>
+      <div class="font-specs">
+        <div class="font-spec-row"><span class="font-spec-label">Poids</span><span class="font-spec-val">Regular (le seul)</span></div>
+        <div class="font-spec-row"><span class="font-spec-label">Casse</span><span class="font-spec-val">MAJUSCULES uniquement</span></div>
+        <div class="font-spec-row"><span class="font-spec-label">Espacement</span><span class="font-spec-val">+50 à +100 dans Canva</span></div>
+        <div class="font-spec-row"><span class="font-spec-label">Usage</span><span class="font-spec-val">Nom d’événement, slogan, H1</span></div>
+      </div>
+      <div class="font-canva-badge">✓ Disponible dans Canva</div>
+    </div>
+
+    <div class="font-card">
+      <div class="font-tag">Corps · Descriptions · UI</div>
+      <div class="font-name">Sora</div>
+      <div class="font-sample-sora" style="color:rgba(255,255,255,.7)">Réservez en ligne, vite et simplement.</div>
+      <div class="font-specs">
+        <div class="font-spec-row"><span class="font-spec-label">Poids</span><span class="font-spec-val">Regular · SemiBold · Bold</span></div>
+        <div class="font-spec-row"><span class="font-spec-label">Casse</span><span class="font-spec-val">Normale ou Majuscules</span></div>
+        <div class="font-spec-row"><span class="font-spec-label">Espacement</span><span class="font-spec-val">0 à +20 dans Canva</span></div>
+        <div class="font-spec-row"><span class="font-spec-label">Usage</span><span class="font-spec-val">Descriptions, sous-titres, infos</span></div>
+      </div>
+      <div class="font-canva-badge">✓ Disponible dans Canva</div>
+    </div>
+
+    <div class="font-card">
+      <div class="font-tag">Prix · Codes · Données</div>
+      <div class="font-name">Space Mono</div>
+      <div class="font-sample-mono">15 000 XAF</div>
+      <div class="font-specs">
+        <div class="font-spec-row"><span class="font-spec-label">Poids</span><span class="font-spec-val">Regular · Bold</span></div>
+        <div class="font-spec-row"><span class="font-spec-label">Casse</span><span class="font-spec-val">Mixte</span></div>
+        <div class="font-spec-row"><span class="font-spec-label">Espacement</span><span class="font-spec-val">0 par défaut</span></div>
+        <div class="font-spec-row"><span class="font-spec-label">Usage</span><span class="font-spec-val">Prix, dates, codes billets</span></div>
+      </div>
+      <div class="font-canva-badge">✓ Disponible dans Canva</div>
+    </div>
+  </div>
+
+  <div class="canva-tip" style="margin-top:20px">
+    <span class="canva-tip-icon">✏️</span>
+    <div class="canva-tip-text">
+      <strong>Dans Canva :</strong> clique sur une zone de texte → barre d’outils → champ police → tape le nom (<em>Bebas Neue</em>, <em>Sora</em>, <em>Space Mono</em>) → sélectionne-la. Pour l’enregistrer comme police de marque : Paramètres → Kit de marque → Polices.
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ─────── 03 · FORMATS ─────── -->
+<section class="sec" id="formats">
+  <p class="sec-eye">03</p>
+  <h2 class="sec-title">Formats par réseau</h2>
+  <p class="sec-sub">Crée un design Canva séparé pour chaque format. Dans Canva : « Créer un design » → « Dimensions personnalisées » → entre les valeurs en px.</p>
+
+  <div class="platform-grid">
+
+    <div class="platform-card">
+      <div class="platform-icon-row">
+        <div class="platform-icon" style="background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)">📷</div>
+        <div><div class="platform-name">Instagram</div><div class="platform-handle">@billetgab</div></div>
+      </div>
+      <div class="format-list">
+        <div class="format-item">
+          <div class="format-label">Post carré</div>
+          <div class="format-dim">1080 × 1080 px</div>
+          <div class="format-note">Format principal · Feed · ratio 1:1</div>
+        </div>
+        <div class="format-item">
+          <div class="format-label">Post portrait</div>
+          <div class="format-dim">1080 × 1350 px</div>
+          <div class="format-note">Prend plus de place dans le feed · ratio 4:5</div>
+        </div>
+        <div class="format-item">
+          <div class="format-label">Story / Reels</div>
+          <div class="format-dim">1080 × 1920 px</div>
+          <div class="format-note">Plein écran vertical · ratio 9:16</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="platform-card">
+      <div class="platform-icon-row">
+        <div class="platform-icon" style="background:#1877F2">📘</div>
+        <div><div class="platform-name">Facebook</div><div class="platform-handle">BilletGab</div></div>
+      </div>
+      <div class="format-list">
+        <div class="format-item">
+          <div class="format-label">Post paysage</div>
+          <div class="format-dim">1200 × 630 px</div>
+          <div class="format-note">Format recommandé · ratio 1.91:1</div>
+        </div>
+        <div class="format-item">
+          <div class="format-label">Post carré</div>
+          <div class="format-dim">1080 × 1080 px</div>
+          <div class="format-note">Partageable · même que Instagram</div>
+        </div>
+        <div class="format-item">
+          <div class="format-label">Story</div>
+          <div class="format-dim">1080 × 1920 px</div>
+          <div class="format-note">Même que Instagram Story</div>
+        </div>
+        <div class="format-item">
+          <div class="format-label">Couverture page</div>
+          <div class="format-dim">851 × 315 px</div>
+          <div class="format-note">Photo de couverture de la page</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="platform-card">
+      <div class="platform-icon-row">
+        <div class="platform-icon" style="background:#000">🎵</div>
+        <div><div class="platform-name">TikTok</div><div class="platform-handle">@billetgab</div></div>
+      </div>
+      <div class="format-list">
+        <div class="format-item">
+          <div class="format-label">Vidéo / Photo</div>
+          <div class="format-dim">1080 × 1920 px</div>
+          <div class="format-note">Format unique · ratio 9:16 · même que Story</div>
+        </div>
+        <div class="format-item">
+          <div class="format-label">Miniature</div>
+          <div class="format-dim">1080 × 1920 px</div>
+          <div class="format-note">Visible sur le profil · zone centrale importante</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="platform-card">
+      <div class="platform-icon-row">
+        <div class="platform-icon" style="background:#0A66C2">💼</div>
+        <div><div class="platform-name">LinkedIn</div><div class="platform-handle">BilletGab</div></div>
+      </div>
+      <div class="format-list">
+        <div class="format-item">
+          <div class="format-label">Post paysage</div>
+          <div class="format-dim">1200 × 627 px</div>
+          <div class="format-note">Format principal · ratio ~1.91:1</div>
+        </div>
+        <div class="format-item">
+          <div class="format-label">Post portrait</div>
+          <div class="format-dim">1080 × 1350 px</div>
+          <div class="format-note">Occupe plus d’espace dans le feed</div>
+        </div>
+        <div class="format-item">
+          <div class="format-label">Bannière entreprise</div>
+          <div class="format-dim">1128 × 191 px</div>
+          <div class="format-note">En-tête de la page entreprise</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="canva-tip" style="margin-top:20px">
+    <span class="canva-tip-icon">💡</span>
+    <div class="canva-tip-text">
+      <strong>Astuce Canva :</strong> Une fois un design terminé, utilise <strong>« Redimensionner »</strong> (fonctionnalité Pro) pour adapter le même visuel à tous les formats. Sinon, duplique le design et ajuste manuellement à chaque format.
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ─────── 04 · MODÈLES VISUELS ─────── -->
+<section class="sec" id="modeles">
+  <p class="sec-eye">04</p>
+  <h2 class="sec-title">Modèles visuels</h2>
+  <p class="sec-sub">Ces maquettes illustrent la structure à reproduire dans Canva selon le type de post. La photo de l’événement remplace le fond coloré.</p>
+
+  <div class="mockup-grid" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:20px;align-items:end;">
+
+    <div>
+      <div class="mock-sq mock-bg-event" style="border:1px solid rgba(255,255,255,.08)">
+        <div class="mock-overlay"></div>
+        <div class="mock-content-top" style="z-index:2;position:relative">
+          <div class="mock-logo" style="font-family:var(--fd);font-size:9px;letter-spacing:.18em;color:rgba(255,255,255,.4)">BILLETGAB</div>
+        </div>
+        <div class="mock-content">
+          <div class="mock-badge"><span class="mock-badge-dot"></span>SAMEDI 23 AOÛT</div>
+          <div class="mock-title">Nuit Électro<br>Libreville</div>
+          <div class="mock-price">À partir de 5 000 XAF</div>
+          <div class="mock-cta">Réserver →</div>
+        </div>
+      </div>
+      <div class="mock-card-label">
+        <div class="mock-name-label">Annonce événement</div>
+        <div class="mock-platform-tag">Instagram 1080×1080</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="mock-st mock-bg-event" style="border:1px solid rgba(255,255,255,.08)">
+        <div class="mock-overlay"></div>
+        <div class="mock-content-top" style="z-index:2;position:relative;display:flex;justify-content:space-between;align-items:center">
+          <div style="font-family:var(--fd);font-size:8px;letter-spacing:.15em;color:rgba(255,255,255,.4)">BILLETGAB</div>
+          <div class="mock-badge" style="margin-bottom:0;font-size:7px;padding:2px 6px"><span class="mock-badge-dot" style="width:4px;height:4px"></span>LIVE</div>
+        </div>
+        <div class="mock-content">
+          <div class="mock-label" style="color:var(--r)">ÉVÉNEMENT</div>
+          <div class="mock-title" style="font-size:18px">Nuit Électro<br>Libreville</div>
+          <div class="mock-price">5 000 XAF — Cat. Standard</div>
+          <div class="mock-date">Sam 23 Août · Centre-ville LBV</div>
+          <div class="mock-cta" style="font-size:8px;display:block;text-align:center;margin-top:10px">billetgab.com</div>
+        </div>
+      </div>
+      <div class="mock-card-label">
+        <div class="mock-name-label">Story / TikTok</div>
+        <div class="mock-platform-tag">1080×1920 · 9:16</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="mock-pt mock-bg-promo" style="border:1px solid rgba(255,255,255,.08)">
+        <div class="mock-overlay"></div>
+        <div class="mock-content-top" style="z-index:2;position:relative">
+          <div style="font-family:var(--fd);font-size:8px;letter-spacing:.15em;color:rgba(255,255,255,.35)">BILLETGAB</div>
+        </div>
+        <div class="mock-content">
+          <div class="mock-label" style="font-size:7px">PROMO LIMITÉE</div>
+          <div class="mock-title" style="font-size:16px">–20% sur les<br>premières places</div>
+          <div class="mock-price" style="font-size:9px">Code : EARLY20</div>
+          <div class="mock-cta" style="font-size:8px;margin-top:6px">Profiter de l’offre →</div>
+        </div>
+      </div>
+      <div class="mock-card-label">
+        <div class="mock-name-label">Promo portrait</div>
+        <div class="mock-platform-tag">Instagram 1080×1350 · 4:5</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="mock-ls mock-bg-event" style="border:1px solid rgba(255,255,255,.08)">
+        <div style="position:absolute;inset:0;background:linear-gradient(to right,rgba(13,13,26,.95) 0%,rgba(13,13,26,.2) 60%,transparent 100%);z-index:1"></div>
+        <div class="mock-ls-inner" style="position:relative;z-index:2">
+          <div class="mock-ls-left">
+            <div style="font-family:var(--fd);font-size:7px;letter-spacing:.15em;color:rgba(255,255,255,.35);margin-bottom:6px">BILLETGAB</div>
+            <div class="mock-title" style="font-size:14px">Festival<br>Gabon 2026</div>
+            <div class="mock-price" style="font-size:9px;margin-top:4px">Dès 10 000 XAF</div>
+            <div class="mock-cta" style="font-size:7px;margin-top:6px;display:inline-block">Réserver →</div>
           </div>
-          <div class="event-body">
-            <div class="event-title">Nuit Électro Libreville</div>
-            <div style="display:flex;align-items:center;justify-content:space-between;margin:4px 0"><div class="event-price">5 000 XAF</div><span class="badge badge-cyan" style="font-size:10px;padding:2px 8px">✓ Certifié</span></div>
-            <div class="event-date">Sam 23 août 2026 · 21h00</div>
-            <div style="margin-top:8px;font-family:var(--font-mono);font-size:11px;color:var(--violet-lt)">Se termine dans 2h 15min</div>
-            <div style="height:1px;background:var(--white-05);margin:10px 0"></div>
-            <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;color:rgba(255,255,255,.4)">AfroPromo Gabon</span><span style="font-size:11px;color:var(--violet-lt);font-weight:600">+ Suivre</span></div>
+          <div class="mock-ls-div"></div>
+          <div class="mock-ls-right">
+            <div class="mock-ls-stat"><div class="mock-ls-num" style="font-size:16px">3</div><div class="mock-ls-label">Jours</div></div>
+            <div style="width:30px;height:1px;background:var(--w10);margin:4px 0"></div>
+            <div class="mock-ls-stat"><div class="mock-ls-num" style="font-size:16px">12</div><div class="mock-ls-label">Artistes</div></div>
           </div>
         </div>
       </div>
-      <div>
-        <div style="font-family:var(--font-mono);font-size:10px;color:var(--white-30);letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px">Règles de la glass-card</div>
-        <div class="cg-glass-card" style="margin-bottom:16px"><div style="font-size:13px;color:var(--white-70);margin-bottom:12px">Exemple de contenu dans une glass-card</div><div style="font-family:var(--font-mono);font-size:10px;color:var(--white-30);line-height:2">bg: rgba(26,26,53,.8)<br>backdrop-filter: blur(12px)<br>border: 1px rgba(255,255,255,.05)<br>border-radius: 20px<br>box-shadow: inset+drop</div></div>
-        <div class="neon-border-demo">Carte avec neon-border<br><span style="font-family:var(--font-mono);font-size:10px;color:var(--white-30)">border: violet-neon/30 · box-shadow: shadow-neon</span></div>
-        <div style="margin-top:16px;background:rgba(224,64,251,.07);border:1px solid rgba(224,64,251,.45);border-radius:16px;padding:16px;animation:cgLiveGlow 2.5s ease-in-out infinite"><div style="font-size:12px;color:var(--rose);font-weight:600;margin-bottom:4px">live-card</div><div style="font-family:var(--font-mono);font-size:10px;color:var(--white-30);line-height:1.8">border: rose-neon/45<br>animation: liveGlow 2.5s infinite</div></div>
+      <div class="mock-card-label">
+        <div class="mock-name-label">Post paysage</div>
+        <div class="mock-platform-tag">Facebook / LinkedIn · 1200×630</div>
       </div>
     </div>
-  </section>
 
-  <div class="divider"></div>
+  </div>
+</section>
 
-  <section class="section" id="cg-ombres">
-    <p class="section-label">07</p>
-    <h2 class="section-title">Ombres & Lueurs</h2>
-    <div class="shadow-grid">
-      <div class="shadow-card"><div class="shadow-demo" style="box-shadow:0 0 20px rgba(123,47,190,.5)"></div><div class="shadow-name">shadow-neon</div><div class="shadow-code">0 0 20px rgba(123,47,190,.5)<br>Violet — état normal</div></div>
-      <div class="shadow-card"><div class="shadow-demo" style="box-shadow:0 0 20px rgba(224,64,251,.5)"></div><div class="shadow-name">shadow-neon-rose</div><div class="shadow-code">0 0 20px rgba(224,64,251,.5)<br>Rose — hover CTA</div></div>
-      <div class="shadow-card"><div class="shadow-demo" style="box-shadow:0 0 20px rgba(0,229,255,.5)"></div><div class="shadow-name">shadow-neon-cyan</div><div class="shadow-code">0 0 20px rgba(0,229,255,.5)<br>Cyan — données actives</div></div>
-      <div class="shadow-card"><div class="shadow-demo" style="box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 4px 24px rgba(0,0,0,.25)"></div><div class="shadow-name">shadow-card</div><div class="shadow-code">inset 0 1px 0 rgba(255,255,255,.06)<br>+ 0 4px 24px rgba(0,0,0,.25)</div></div>
-      <div class="shadow-card"><div class="shadow-demo" style="animation:cgPulseNeon 2s ease-in-out infinite"></div><div class="shadow-name">pulse-neon</div><div class="shadow-code">Animation 2s infinite<br>Violet 0.3 → 0.8 opacity</div></div>
+<div class="divider"></div>
+
+<!-- ─────── 05 · RÈGLES ─────── -->
+<section class="sec" id="regles">
+  <p class="sec-eye">05</p>
+  <h2 class="sec-title">Règles de design</h2>
+  <p class="sec-sub">À respecter pour maintenir une identité cohérente sur tous les réseaux.</p>
+
+  <div class="rules-grid">
+    <div class="rules-col do">
+      <div class="rules-col-title"><span>✓</span> À faire</div>
+      <div class="rule-row"><span class="rule-icon">🎨</span><span>Utiliser toujours le fond noir <strong style="color:var(--c)">#0D0D1A</strong> ou une photo sombre comme base.</span></div>
+      <div class="rule-row"><span class="rule-icon">✏️</span><span>Écrire les noms d’événements en <strong>Bebas Neue, majuscules, espacées</strong>.</span></div>
+      <div class="rule-row"><span class="rule-icon">💰</span><span>Afficher le prix en <strong>Space Mono, couleur cyan</strong> — c’est l’information clé.</span></div>
+      <div class="rule-row"><span class="rule-icon">📐</span><span>Laisser des marges généreuses (minimum 60px sur chaque côté pour le carré).</span></div>
+      <div class="rule-row"><span class="rule-icon">🌟</span><span>Mettre le logo <strong>BilletGab</strong> en haut à gauche, petit, discret.</span></div>
+      <div class="rule-row"><span class="rule-icon">🔗</span><span>Inclure <strong>billetgab.com</strong> ou un lien court en bas de chaque visuel.</span></div>
+      <div class="rule-row"><span class="rule-icon">📸</span><span>Si photo : assombrir avec un calque noir à 50-70% pour que le texte reste lisible.</span></div>
     </div>
-  </section>
-
-  <div class="divider"></div>
-
-  <section class="section" id="cg-animations">
-    <p class="section-label">08</p>
-    <h2 class="section-title">Animations</h2>
-    <div style="background:var(--bg-card);border:1px solid var(--white-08);border-radius:16px;overflow:hidden">
-      <table class="anim-table">
-        <thead><tr><th>Nom</th><th>Description</th><th>Valeurs clés</th><th>Usage</th></tr></thead>
-        <tbody>
-          <tr><td>pulse-neon</td><td>Box-shadow violet qui pulse</td><td>2s · ease-in-out · infinite</td><td>Éléments mis en avant, badges actifs</td></tr>
-          <tr><td>liveGlow</td><td>Lueur rose respirante</td><td>2.5s · ease-in-out · infinite</td><td>live-card sur événement en cours</td></tr>
-          <tr><td>ticker</td><td>Défilement horizontal infini</td><td>30s · linear · infinite · translateX</td><td>Bande d'annonces TickerTape</td></tr>
-          <tr><td>fadeIn</td><td>Apparition + remontée</td><td>0.5s · opacity 0→1 · Y 10px→0</td><td>Entrée de page, cartes chargées</td></tr>
-          <tr><td>ping (Tailwind)</td><td>Expansion radiale d'un point</td><td>1.2s · scale 1→2 · opacity 0.7→0</td><td>Point LIVE, point À VENIR</td></tr>
-          <tr><td>framer — card hover</td><td>Remontée légère</td><td>whileHover: y -4px</td><td>EventCard, cartes cliquables</td></tr>
-          <tr><td>framer — button</td><td>Micro scale</td><td>hover: 1.02 · tap: 0.97</td><td>Tous les boutons Button.tsx</td></tr>
-          <tr><td>framer — hero</td><td>Entrée séquentielle</td><td>opacity 0→1 · Y 16–20px→0 · delay 0–0.45s</td><td>HeroSection — badges, titre, meta, CTA</td></tr>
-          <tr><td>framer — particles</td><td>Points flottants</td><td>y -10→10→-10 · opacity .3→.8 · 3–5.5s</td><td>HeroSection · désactivé si reduced-motion</td></tr>
-        </tbody>
-      </table>
+    <div class="rules-col dont">
+      <div class="rules-col-title"><span>✗</span> À éviter</div>
+      <div class="rule-row"><span class="rule-icon">⚪</span><span>Ne jamais utiliser un fond blanc ou gris clair — ça casse l’identité de marque.</span></div>
+      <div class="rule-row"><span class="rule-icon">🔡</span><span>Ne pas mélanger plusieurs polices différentes dans un même visuel.</span></div>
+      <div class="rule-row"><span class="rule-icon">🌈</span><span>Ne pas utiliser des couleurs qui ne sont pas dans la palette (rose bonbon, orange, jaune…).</span></div>
+      <div class="rule-row"><span class="rule-icon">📝</span><span>Ne pas surcharger : maximum 2-3 informations par visuel (événement, prix, date).</span></div>
+      <div class="rule-row"><span class="rule-icon">🔤</span><span>Ne pas écrire Bebas Neue en minuscules — cette police est conçue pour les majuscules.</span></div>
+      <div class="rule-row"><span class="rule-icon">📵</span><span>Ne pas recadrer les visuels autrement qu’aux formats prévus — les proportions doivent être respectées.</span></div>
+      <div class="rule-row"><span class="rule-icon">💧</span><span>Ne pas utiliser de watermarks ou filtres Instagram sur les visuels de marque.</span></div>
     </div>
-    <div style="margin-top:16px;background:rgba(123,47,190,.08);border:1px solid rgba(123,47,190,.2);border-radius:12px;padding:16px 20px;font-size:13px;color:var(--white-70)">
-      <strong style="color:var(--violet-lt)">prefers-reduced-motion</strong> — toutes les animations sont désactivées ou réduites à 0.01ms lorsque l'OS demande moins de mouvement. Respecté dans <code style="font-family:var(--font-mono);font-size:12px;color:var(--cyan);background:rgba(0,229,255,.08);padding:1px 6px;border-radius:4px">index.css</code>.
-    </div>
-  </section>
+  </div>
+</section>
 
-  <div class="divider"></div>
+<div class="divider"></div>
 
-  <section class="section" id="cg-layout">
-    <p class="section-label">09</p>
-    <h2 class="section-title">Layout & Règles</h2>
-    <div style="background:var(--bg-card);border:1px solid var(--white-08);border-radius:16px;padding:28px 32px">
-      <div class="rule-list">
-        <div class="rule-item"><span class="rule-num">01</span><span class="rule-text"><strong>Container max-width</strong> — <code>max-w-7xl mx-auto px-4 sm:px-6 lg:px-8</code>. Toutes les sections pleine largeur utilisent ce wrapper.</span></div>
-        <div class="rule-item"><span class="rule-num">02</span><span class="rule-text"><strong>Navbar</strong> — <code>fixed top-0 z-50</code>, hauteur <code>h-16</code>, fond <code>bg/95 backdrop-blur-md</code>, bordure bas <code>violet-neon/20</code>.</span></div>
-        <div class="rule-item"><span class="rule-num">03</span><span class="rule-text"><strong>Grille de cartes</strong> — <code>grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4</code>. Couverture toujours en ratio portrait 3/4.</span></div>
-        <div class="rule-item"><span class="rule-num">04</span><span class="rule-text"><strong>Bordures</strong> — <code>rounded-xl</code> (boutons, inputs), <code>rounded-2xl</code> (glass-cards), <code>rounded-full</code> (badges, pills). Ne pas mélanger dans un même composant.</span></div>
-        <div class="rule-item"><span class="rule-num">05</span><span class="rule-text"><strong>Séparateurs</strong> — <code>border-b border-white/5</code> ou <code>border-white/8</code>. Jamais de couleur pleine, toujours translucide sur fond sombre.</span></div>
-        <div class="rule-item"><span class="rule-num">06</span><span class="rule-text"><strong>Scrollbar</strong> — 6px, track <code>bg-secondary</code>, thumb <code>violet-neon/50</code> arrondi. Défini globalement dans <code>index.css</code>.</span></div>
-        <div class="rule-item"><span class="rule-num">07</span><span class="rule-text"><strong>dark mode</strong> — <code>darkMode: 'class'</code> dans Tailwind. L'UI est 100% dark, le mode light n'est pas implémenté. <code>color-scheme: dark</code> déclaré sur <code>:root</code>.</span></div>
-        <div class="rule-item"><span class="rule-num">08</span><span class="rule-text"><strong>Inputs mobile</strong> — <code>font-size: 16px !important</code> forcé sur <code>input, select, textarea</code> pour bloquer le zoom automatique sur iOS.</span></div>
-        <div class="rule-item"><span class="rule-num">09</span><span class="rule-text"><strong>Icons</strong> — Lucide React exclusivement. Tailles : <code>w-3 h-3</code> (badges), <code>w-4 h-4</code> (nav), <code>w-5 h-5</code> (UI), <code>w-8 h-8</code> (illustrations).</span></div>
-        <div class="rule-item"><span class="rule-num">10</span><span class="rule-text"><strong>Hiérarchie couleur</strong> — Prix en <code>cyan-neon font-mono</code>, actions en <code>neon-gradient</code>, dangers/live en <code>rose-neon</code>, liens actifs en <code>violet-neon</code>. Ne pas intervertir ces rôles.</span></div>
+<!-- ─────── 06 · RECAP CANVA ─────── -->
+<section class="sec" id="recap">
+  <p class="sec-eye">06</p>
+  <h2 class="sec-title">Récap Canva</h2>
+  <p class="sec-sub">Tout ce qu’il faut configurer dans ton kit de marque Canva une seule fois.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">
+
+    <div style="background:var(--card);border:1px solid var(--w10);border-radius:20px;padding:22px 24px">
+      <div style="font-family:var(--fm);font-size:10px;color:var(--v2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px">🎨 Couleurs de marque</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:8px;background:#7B2FBE;flex-shrink:0"></div><div><div style="font-size:12px;font-weight:600;color:var(--w70)">Violet Neon</div><div style="font-family:var(--fm);font-size:11px;color:var(--c)">#7B2FBE</div></div></div>
+        <div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:8px;background:#E040FB;flex-shrink:0"></div><div><div style="font-size:12px;font-weight:600;color:var(--w70)">Rose Neon</div><div style="font-family:var(--fm);font-size:11px;color:var(--c)">#E040FB</div></div></div>
+        <div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:8px;background:#00E5FF;flex-shrink:0"></div><div><div style="font-size:12px;font-weight:600;color:var(--w70)">Cyan Neon</div><div style="font-family:var(--fm);font-size:11px;color:var(--c)">#00E5FF</div></div></div>
+        <div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:8px;background:#0D0D1A;border:1px solid rgba(255,255,255,.15);flex-shrink:0"></div><div><div style="font-size:12px;font-weight:600;color:var(--w70)">Fond Nuit</div><div style="font-family:var(--fm);font-size:11px;color:var(--c)">#0D0D1A</div></div></div>
+        <div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:8px;background:#1A1A35;border:1px solid rgba(255,255,255,.15);flex-shrink:0"></div><div><div style="font-size:12px;font-weight:600;color:var(--w70)">Fond Carte</div><div style="font-family:var(--fm);font-size:11px;color:var(--c)">#1A1A35</div></div></div>
+        <div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:8px;background:#FFFFFF;flex-shrink:0"></div><div><div style="font-size:12px;font-weight:600;color:var(--w70)">Blanc</div><div style="font-family:var(--fm);font-size:11px;color:var(--c)">#FFFFFF</div></div></div>
       </div>
     </div>
-  </section>
 
-  <footer style="margin-top:80px;padding:32px 0;border-top:1px solid var(--white-08);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
-    <div style="font-family:var(--font-display);font-size:24px;letter-spacing:.08em;text-transform:uppercase;background:var(--g-neon);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">BilletGab</div>
-    <div style="font-family:var(--font-mono);font-size:10px;color:var(--white-30);text-align:right;line-height:1.8">Design System v1.5<br>Usage interne — confidentiel</div>
-  </footer>
-</main>
+    <div style="background:var(--card);border:1px solid var(--w10);border-radius:20px;padding:22px 24px">
+      <div style="font-family:var(--fm);font-size:10px;color:var(--v2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px">✏️ Polices de marque</div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="padding:12px;background:rgba(255,255,255,.03);border-radius:10px;border:1px solid var(--w05)"><div style="font-family:var(--fd);font-size:24px;letter-spacing:.06em;text-transform:uppercase;background:var(--gn);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px">Bebas Neue</div><div style="font-size:11px;color:var(--w30)">Titres · Majuscules · Espacé</div></div>
+        <div style="padding:12px;background:rgba(255,255,255,.03);border-radius:10px;border:1px solid var(--w05)"><div style="font-size:17px;font-weight:600;color:var(--w70);margin-bottom:4px">Sora SemiBold</div><div style="font-size:11px;color:var(--w30)">Corps · Descriptions · Infos</div></div>
+        <div style="padding:12px;background:rgba(255,255,255,.03);border-radius:10px;border:1px solid var(--w05)"><div style="font-family:var(--fm);font-size:16px;font-weight:700;color:var(--c);margin-bottom:4px">Space Mono</div><div style="font-size:11px;color:var(--w30)">Prix · Codes · Chiffres</div></div>
+      </div>
+    </div>
+
+    <div style="background:var(--card);border:1px solid var(--w10);border-radius:20px;padding:22px 24px">
+      <div style="font-family:var(--fm);font-size:10px;color:var(--v2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px">📐 Formats à créer</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--w05);font-size:12px"><span style="color:var(--w70)">Post carré</span><span style="font-family:var(--fm);color:var(--c);font-size:11px">1080 × 1080</span></div>
+        <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--w05);font-size:12px"><span style="color:var(--w70)">Post portrait 4:5</span><span style="font-family:var(--fm);color:var(--c);font-size:11px">1080 × 1350</span></div>
+        <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--w05);font-size:12px"><span style="color:var(--w70)">Story / Reels / TikTok</span><span style="font-family:var(--fm);color:var(--c);font-size:11px">1080 × 1920</span></div>
+        <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--w05);font-size:12px"><span style="color:var(--w70)">Facebook / LinkedIn</span><span style="font-family:var(--fm);color:var(--c);font-size:11px">1200 × 630</span></div>
+        <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--w05);font-size:12px"><span style="color:var(--w70)">Couverture Facebook</span><span style="font-family:var(--fm);color:var(--c);font-size:11px">851 × 315</span></div>
+        <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:12px"><span style="color:var(--w70)">Bannière LinkedIn</span><span style="font-family:var(--fm);color:var(--c);font-size:11px">1128 × 191</span></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer class="footer">
+  <div class="footer-brand">BilletGab</div>
+  <div class="footer-meta">Guide Canva Réseaux Sociaux · v1.5<br>Usage interne · Gabon · Août 2026</div>
+</footer>
+
+</div>
 `;
 
 function CharteGraphique() {
