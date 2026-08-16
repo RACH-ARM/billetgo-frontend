@@ -1850,7 +1850,7 @@ export default function AdminBackoffice() {
     async (posts: Array<{ date: string; platform: string; type: string; angle?: string; text: string }>) => {
       await api.post('/admin/communication/calendar-posts/batch', { posts });
     },
-    { onSuccess: () => { refetchCalPosts(); toast.success('Semaine sauvegardée dans le calendrier'); }, onError: () => { toast.error('Erreur lors de la sauvegarde'); } }
+    { onSuccess: () => { refetchCalPosts(); setComWeekPlan(null); toast.success('Semaine sauvegardée dans le calendrier'); }, onError: () => { toast.error('Erreur lors de la sauvegarde'); } }
   );
 
   const deleteCalPostMutation = useMutation(
