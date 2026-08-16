@@ -780,7 +780,10 @@ function ProspectionTab() {
   const [filterStatus, setFilterStatus] = useState<ProspectStatus | 'ALL'>('ALL');
   const [filterCategory, setFilterCategory] = useState('ALL');
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [scriptTab, setScriptTab] = useState<'pitchs' | 'whatsapp' | 'objections'>('pitchs');
+  const [scriptTab, setScriptTab] = useState<'pitchs' | 'whatsapp'>('pitchs');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [copyModal, setCopyModal] = useState<{ text: string; id: string } | null>(null);
+  const [copyModalPrenom, setCopyModalPrenom] = useState('');
 
   const emptyForm = { firstName: '', lastName: '', structure: '', phone: '', instagram: '', eventCategory: 'Miss / Beauté', currentPlatform: '', status: 'TO_CONTACT' as ProspectStatus, potential: 'MEDIUM' as ProspectPotential, notes: '', nextContactAt: '' };
   const [form, setForm] = useState(emptyForm);
@@ -823,13 +826,36 @@ function ProspectionTab() {
     { onSuccess: () => qc.invalidateQueries('admin-prospects') }
   );
 
+  const contactedMutation = useMutation(
+    (id: string) => api.patch(`/admin/prospects/${id}`, { status: 'CONTACTED', lastContactAt: new Date().toISOString() }),
+    { onSuccess: () => { qc.invalidateQueries('admin-prospects'); toast.success('Marqué comme contacté'); } }
+  );
+
   const today = new Date().toISOString().slice(0, 10);
   const todayReminders = prospects.filter(p => p.nextContactAt && p.nextContactAt.slice(0, 10) <= today && p.status !== 'SIGNED' && p.status !== 'LOST');
 
-  const filtered = prospects.filter(p =>
-    (filterStatus === 'ALL' || p.status === filterStatus) &&
-    (filterCategory === 'ALL' || p.eventCategory === filterCategory)
-  );
+  const filtered = prospects
+    .filter(p =>
+      (filterStatus === 'ALL' || p.status === filterStatus) &&
+      (filterCategory === 'ALL' || p.eventCategory === filterCategory) &&
+      (searchQuery === '' || `${p.firstName} ${p.lastName ?? ''} ${p.structure ?? ''}`.toLowerCase().includes(searchQuery.toLowerCase()))
+    )
+    .sort((a, b) => {
+      const aT = a.nextContactAt ? new Date(a.nextContactAt).getTime() : Infinity;
+      const bT = b.nextContactAt ? new Date(b.nextContactAt).getTime() : Infinity;
+      if (aT !== bT) return aT - bT;
+      const pot: Record<ProspectPotential, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 };
+      return pot[a.potential] - pot[b.potential];
+    });
+
+  const funnelStages: { label: string; statuses: ProspectStatus[]; color: string }[] = [
+    { label: 'À contacter', statuses: ['TO_CONTACT'],                                        color: 'bg-white/20' },
+    { label: 'Contacté',    statuses: ['CONTACTED', 'REPLIED'],                              color: 'bg-blue-400' },
+    { label: 'Avancement',  statuses: ['INFO_SENT', 'MEETING_PLANNED', 'DEMO_DONE'],         color: 'bg-violet-400' },
+    { label: 'Proposition', statuses: ['PROPOSAL_SENT', 'NEGOTIATION'],                      color: 'bg-orange-400' },
+    { label: 'Signé',       statuses: ['SIGNED'],                                            color: 'bg-green-400' },
+  ];
+  const funnelTotal = Math.max(prospects.filter(p => p.status !== 'LOST').length, 1);
 
   const getStatusMeta = (s: ProspectStatus) => PROSPECT_STATUSES.find(x => x.value === s) ?? PROSPECT_STATUSES[0];
 
@@ -838,6 +864,27 @@ function ProspectionTab() {
       setCopiedId(id);
       setTimeout(() => setCopiedId(null), 2000);
     });
+  };
+
+  const openCopyModal = (text: string, id: string) => {
+    setCopyModal({ text, id });
+    setCopyModalPrenom('');
+  };
+
+  const copyPersonalized = () => {
+    if (!copyModal) return;
+    const out = copyModal.text.replace(/\[Prénom\]/g, copyModalPrenom.trim() || '[Prénom]');
+    navigator.clipboard.writeText(out).then(() => {
+      setCopiedId(copyModal.id);
+      setTimeout(() => setCopiedId(null), 2000);
+      setCopyModal(null);
+    });
+  };
+
+  const waLink = (phone: string) => {
+    const digits = phone.replace(/\D/g, '');
+    const number = digits.startsWith('241') ? digits : `241${digits}`;
+    return `https://wa.me/${number}`;
   };
 
   const openEdit = (p: Prospect) => {
@@ -904,9 +951,37 @@ function ProspectionTab() {
             ))}
           </div>
 
-          {/* Filtres + bouton ajouter */}
+          {/* Funnel */}
+          {prospects.length > 0 && (
+            <div className="glass-card p-4">
+              <p className="text-xs text-white/30 uppercase tracking-wider mb-3">Pipeline de conversion</p>
+              <div className="space-y-2">
+                {funnelStages.map(stage => {
+                  const count = prospects.filter(p => (stage.statuses as string[]).includes(p.status)).length;
+                  const pct = Math.round((count / funnelTotal) * 100);
+                  return (
+                    <div key={stage.label} className="flex items-center gap-3">
+                      <p className="text-white/40 text-xs w-24 shrink-0">{stage.label}</p>
+                      <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full ${stage.color} transition-all`} style={{ width: `${pct}%` }} />
+                      </div>
+                      <p className="text-white/50 text-xs w-10 text-right">{count}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Recherche + filtres + bouton ajouter */}
           <div className="flex flex-wrap items-center gap-2 justify-between">
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
+                <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Rechercher..."
+                  className="bg-bg-card border border-white/10 rounded-xl pl-8 pr-3 py-2 text-white text-xs focus:outline-none focus:border-violet-neon w-40" />
+              </div>
               <select value={filterStatus} onChange={e => setFilterStatus(e.target.value as ProspectStatus | 'ALL')}
                 className="bg-bg-card border border-white/10 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-violet-neon">
                 <option value="ALL">Tous les statuts</option>
@@ -970,6 +1045,19 @@ function ProspectionTab() {
                           {PROSPECT_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                         </select>
                         <div className="flex gap-1 justify-end">
+                          {p.status !== 'CONTACTED' && p.status !== 'SIGNED' && p.status !== 'LOST' && (
+                            <button title="Marquer comme contacté aujourd'hui"
+                              onClick={() => contactedMutation.mutate(p.id)}
+                              className="p-1.5 rounded-lg hover:bg-blue-500/10 text-white/30 hover:text-blue-300 transition-colors">
+                              <UserCheck className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          {p.phone && (
+                            <a href={waLink(p.phone)} target="_blank" rel="noopener noreferrer" title="Ouvrir WhatsApp"
+                              className="p-1.5 rounded-lg hover:bg-[#25D366]/10 text-white/30 hover:text-[#25D366] transition-colors">
+                              <MessageSquare className="w-3.5 h-3.5" />
+                            </a>
+                          )}
                           <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg hover:bg-white/5 text-white/30 hover:text-white transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
                           <button onClick={() => { if (confirm('Supprimer ce prospect ?')) deleteMutation.mutate(p.id); }} className="p-1.5 rounded-lg hover:bg-rose-neon/10 text-white/30 hover:text-rose-neon transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                         </div>
@@ -1112,9 +1200,9 @@ function ProspectionTab() {
                       <div key={t.id} className="glass-card p-4 border border-[#25D366]/10">
                         <div className="flex items-center justify-between mb-2">
                           <p className="font-medium text-white text-sm">{t.title}</p>
-                          <button onClick={() => copyText(t.content, t.id)} className="flex items-center gap-1.5 text-xs text-[#25D366] hover:text-[#25D366]/70 transition-colors">
+                          <button onClick={() => openCopyModal(t.content, t.id)} className="flex items-center gap-1.5 text-xs text-[#25D366] hover:text-[#25D366]/70 transition-colors">
                             {copiedId === t.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                            {copiedId === t.id ? 'Copié !' : 'Copier'}
+                            {copiedId === t.id ? 'Copié !' : 'Personnaliser & copier'}
                           </button>
                         </div>
                         <pre className="text-white/50 text-xs leading-relaxed whitespace-pre-wrap font-sans">{t.content}</pre>
@@ -1141,6 +1229,36 @@ function ProspectionTab() {
               </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Modal personnalisation prénom */}
+      {copyModal && (
+        <div className="fixed inset-0 z-50 bg-bg/90 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-bg-card border border-[#25D366]/20 rounded-2xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-white">Personnaliser le message</h3>
+              <button onClick={() => setCopyModal(null)} className="text-white/40 hover:text-white"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="mb-4">
+              <label className="text-xs text-white/40 uppercase tracking-wider">Prénom du prospect</label>
+              <input autoFocus value={copyModalPrenom} onChange={e => setCopyModalPrenom(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') copyPersonalized(); }}
+                placeholder="Ex : Arouna"
+                className="w-full mt-1 bg-bg border border-white/10 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-[#25D366]" />
+            </div>
+            <div className="bg-bg rounded-xl p-3 mb-4 max-h-40 overflow-y-auto">
+              <pre className="text-white/40 text-xs whitespace-pre-wrap font-sans leading-relaxed">
+                {copyModalPrenom
+                  ? copyModal.text.replace(/\[Prénom\]/g, copyModalPrenom)
+                  : copyModal.text}
+              </pre>
+            </div>
+            <button onClick={copyPersonalized}
+              className="w-full py-3 rounded-xl bg-[#25D366]/20 border border-[#25D366]/30 text-[#25D366] font-semibold text-sm hover:bg-[#25D366]/30 transition-colors flex items-center justify-center gap-2">
+              <Copy className="w-4 h-4" /> Copier le message
+            </button>
+          </div>
         </div>
       )}
     </div>
