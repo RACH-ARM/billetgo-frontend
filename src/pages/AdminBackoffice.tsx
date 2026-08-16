@@ -5169,19 +5169,112 @@ Vous gérez l'événement. Nous gérons les billets.
                 <h2 className="font-bebas text-2xl tracking-wider text-white">CALENDRIER ÉDITORIAL</h2>
                 <p className="text-white/40 text-xs mt-0.5">Planification sur 2 ans · Août 2026 → Août 2028</p>
               </div>
-              <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1">
-                {(['standard', 'event'] as const).map(m => (
-                  <button
-                    key={m}
-                    onClick={() => setCalMode(m)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${calMode === m ? 'bg-violet-neon text-white shadow' : 'text-white/40 hover:text-white'}`}
-                  >
-                    {m === 'standard'
-                      ? <><CalendarDays className="w-3.5 h-3.5" /> Planning standard</>
-                      : <><Ticket className="w-3.5 h-3.5" /> Avec événement</>
-                    }
-                  </button>
-                ))}
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Export buttons */}
+                {(() => {
+                  const exportCSV = async () => {
+                    try {
+                      const { data } = await api.get('/admin/communication/calendar-posts');
+                      const posts: Array<{ date: string; platform: string; type: string; angle: string | null; text: string }> = data.data;
+                      if (!posts.length) { toast.error('Aucun post sauvegardé à exporter'); return; }
+                      const escape = (s: string) => `"${(s ?? '').replace(/"/g, '""')}"`;
+                      const header = 'Date,Jour,Plateforme,Type,Angle,Texte';
+                      const rows = posts.map(p => {
+                        const day = new Date(p.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long' });
+                        return [escape(p.date), escape(day), escape(p.platform), escape(p.type), escape(p.angle ?? ''), escape(p.text)].join(',');
+                      });
+                      const csv = '﻿' + [header, ...rows].join('\n');
+                      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url; a.download = `billetgab-calendrier-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+                      URL.revokeObjectURL(url);
+                    } catch { toast.error('Erreur lors de l\'export CSV'); }
+                  };
+
+                  const exportPDF = async () => {
+                    try {
+                      const { data } = await api.get('/admin/communication/calendar-posts');
+                      const posts: Array<{ date: string; platform: string; type: string; angle: string | null; text: string }> = data.data;
+                      if (!posts.length) { toast.error('Aucun post sauvegardé à exporter'); return; }
+
+                      const byMonth: Record<string, typeof posts> = {};
+                      posts.forEach(p => {
+                        const month = p.date.slice(0, 7);
+                        if (!byMonth[month]) byMonth[month] = [];
+                        byMonth[month].push(p);
+                      });
+
+                      const platColors: Record<string, string> = { Instagram: '#E1306C', Facebook: '#1877F2', TikTok: '#aaa', LinkedIn: '#0A66C2' };
+
+                      const monthSections = Object.entries(byMonth).sort(([a], [b]) => a.localeCompare(b)).map(([month, mPosts]) => {
+                        const byDay: Record<string, typeof posts> = {};
+                        mPosts.forEach(p => { if (!byDay[p.date]) byDay[p.date] = []; byDay[p.date].push(p); });
+                        const monthLabel = new Date(month + '-01T12:00:00').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+                        const daySections = Object.entries(byDay).sort(([a], [b]) => a.localeCompare(b)).map(([date, dPosts]) => {
+                          const dayLabel = new Date(date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+                          const postCards = dPosts.map(p => `
+                            <div style="margin-bottom:12px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+                              <div style="background:#f9fafb;padding:8px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #e5e7eb;">
+                                <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${platColors[p.platform] ?? '#888'};"></span>
+                                <strong style="color:${platColors[p.platform] ?? '#555'};font-size:12px;">${p.platform}</strong>
+                                <span style="color:#9ca3af;font-size:12px;">· ${p.type}</span>
+                                ${p.angle ? `<span style="margin-left:auto;color:#a78bfa;font-size:11px;font-style:italic;">${p.angle}</span>` : ''}
+                              </div>
+                              <div style="padding:10px 12px;white-space:pre-wrap;font-size:12px;line-height:1.6;color:#374151;">${p.text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+                            </div>`).join('');
+                          return `<div style="margin-bottom:20px;">
+                            <div style="font-weight:600;font-size:13px;color:#1f2937;border-left:3px solid #7c3aed;padding-left:10px;margin-bottom:8px;text-transform:capitalize;">${dayLabel}</div>
+                            ${postCards}
+                          </div>`;
+                        }).join('');
+                        return `<div style="page-break-inside:avoid;margin-bottom:32px;">
+                          <h2 style="font-size:18px;font-weight:800;color:#7c3aed;text-transform:uppercase;letter-spacing:1px;margin:0 0 16px;padding-bottom:8px;border-bottom:2px solid #ede9fe;text-transform:capitalize;">${monthLabel}</h2>
+                          ${daySections}
+                        </div>`;
+                      }).join('');
+
+                      const html = `<!doctype html><html><head><meta charset="utf-8"><title>Calendrier éditorial BilletGab</title>
+                        <style>*{box-sizing:border-box}body{font-family:system-ui,sans-serif;color:#111;padding:32px;max-width:900px;margin:0 auto}@media print{body{padding:16px}}</style>
+                      </head><body>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;padding-bottom:16px;border-bottom:3px solid #7c3aed;">
+                          <div><h1 style="font-size:28px;font-weight:900;color:#7c3aed;margin:0;letter-spacing:2px;">BILLETGAB</h1><p style="margin:4px 0 0;color:#6b7280;font-size:13px;">Calendrier éditorial — exporté le ${new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p></div>
+                          <div style="text-align:right;color:#9ca3af;font-size:12px;">${posts.length} posts sauvegardés<br/>${Object.keys(byMonth).length} mois planifiés</div>
+                        </div>
+                        ${monthSections}
+                      </body></html>`;
+
+                      const win = window.open('', '_blank');
+                      if (win) { win.document.write(html); win.document.close(); setTimeout(() => win.print(), 300); }
+                    } catch { toast.error('Erreur lors de l\'export PDF'); }
+                  };
+
+                  return (
+                    <div className="flex items-center gap-2">
+                      <button onClick={exportCSV} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-white/50 hover:text-white hover:bg-white/10 text-xs font-semibold transition-colors">
+                        <Download className="w-3.5 h-3.5" /> CSV
+                      </button>
+                      <button onClick={exportPDF} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-white/50 hover:text-white hover:bg-white/10 text-xs font-semibold transition-colors">
+                        <Download className="w-3.5 h-3.5" /> PDF
+                      </button>
+                    </div>
+                  );
+                })()}
+
+                <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1">
+                  {(['standard', 'event'] as const).map(m => (
+                    <button
+                      key={m}
+                      onClick={() => setCalMode(m)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${calMode === m ? 'bg-violet-neon text-white shadow' : 'text-white/40 hover:text-white'}`}
+                    >
+                      {m === 'standard'
+                        ? <><CalendarDays className="w-3.5 h-3.5" /> Planning standard</>
+                        : <><Ticket className="w-3.5 h-3.5" /> Avec événement</>
+                      }
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
