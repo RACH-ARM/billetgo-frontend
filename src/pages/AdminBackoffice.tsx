@@ -1833,6 +1833,31 @@ export default function AdminBackoffice() {
     return data.data?.events ?? [];
   });
 
+  type CalendarPostDB = { id: string; date: string; platform: string; type: string; angle: string | null; text: string; published: boolean };
+  const calMonthKey = `${calMonth.getFullYear()}-${String(calMonth.getMonth() + 1).padStart(2, '0')}`;
+  const { data: savedCalPosts = [], refetch: refetchCalPosts } = useQuery<CalendarPostDB[]>(
+    ['calendar-posts', calMonthKey],
+    async () => {
+      const yr = calMonth.getFullYear();
+      const mo = String(calMonth.getMonth() + 1).padStart(2, '0');
+      const { data } = await api.get(`/admin/communication/calendar-posts?from=${yr}-${mo}-01&to=${yr}-${mo}-31`);
+      return data.data;
+    },
+    { enabled: tab === 'communication', staleTime: 30000 }
+  );
+
+  const savePostsBatchMutation = useMutation(
+    async (posts: Array<{ date: string; platform: string; type: string; angle?: string; text: string }>) => {
+      await api.post('/admin/communication/calendar-posts/batch', { posts });
+    },
+    { onSuccess: () => { refetchCalPosts(); toast.success('Semaine sauvegardée dans le calendrier'); }, onError: () => { toast.error('Erreur lors de la sauvegarde'); } }
+  );
+
+  const deleteCalPostMutation = useMutation(
+    async (id: string) => { await api.delete(`/admin/communication/calendar-posts/${id}`); },
+    { onSuccess: () => { refetchCalPosts(); toast.success('Post supprimé'); } }
+  );
+
   const updateScannerMutation = useMutation(
     async ({ id, payload }: { id: string; payload: Record<string, unknown> }) => {
       await api.patch(`/admin/scanners/${id}`, payload);
@@ -5252,41 +5277,52 @@ Vous gérez l'événement. Nous gérons les billets.
                     const byDay = weekDays.map(d => ({
                       ...d,
                       aiPosts: comWeekPlan.filter(p => p.date === d.date),
-                    })).filter(d => d.aiPosts.length > 0 || d.posts.length > 0);
+                    })).filter(d => d.aiPosts.length > 0);
+
+                    const alreadySaved = byDay.every(d =>
+                      d.aiPosts.every(p => savedCalPosts.some(s => s.date === p.date && s.platform === p.platform && s.text === p.text))
+                    );
 
                     return (
                       <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-white/30">{comWeekPlan.length} posts générés pour cette semaine</p>
+                          <button
+                            onClick={() => savePostsBatchMutation.mutate(comWeekPlan.map(p => ({ date: p.date, platform: p.platform, type: p.type, angle: p.angle, text: p.text })))}
+                            disabled={savePostsBatchMutation.isLoading || alreadySaved}
+                            className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 text-xs font-bold hover:bg-emerald-500/25 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          >
+                            {alreadySaved ? <><Check className="w-3.5 h-3.5" /> Déjà sauvegardé</> : savePostsBatchMutation.isLoading ? 'Sauvegarde...' : <><CheckCircle className="w-3.5 h-3.5" /> Sauvegarder dans le calendrier</>}
+                          </button>
+                        </div>
                         {byDay.map(d => (
                           <div key={d.date} className="rounded-xl border border-white/8 overflow-hidden">
                             <div className="flex items-center gap-3 px-4 py-2.5 bg-white/3 border-b border-white/5">
                               <span className="font-bebas text-base tracking-wider text-white">{d.day}</span>
                               <span className="text-xs text-white/30">{new Date(d.date + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}</span>
-                              {d.aiPosts.length === 0 && <span className="text-xs text-white/20 ml-auto">Pas de post prévu</span>}
                             </div>
-                            {d.aiPosts.length > 0 && (
-                              <div className="divide-y divide-white/5">
-                                {d.aiPosts.map((p, pi) => {
-                                  const pid = `week-${d.date}-${pi}`;
-                                  return (
-                                    <div key={pi} className="p-4">
-                                      <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                        <span className={`w-2 h-2 rounded-full flex-shrink-0 ${PLAT[p.platform]?.dot ?? 'bg-white/30'}`} />
-                                        <span className={`text-xs font-bold ${PLAT[p.platform]?.color ?? 'text-white/50'}`}>{p.platform}</span>
-                                        <span className="text-white/20 text-xs">·</span>
-                                        <span className="text-xs text-white/40">{p.type}</span>
-                                        <span className="ml-auto text-[10px] text-violet-neon/60 italic">{p.angle}</span>
-                                      </div>
-                                      <div className="relative bg-white/3 rounded-lg p-3">
-                                        <pre className="text-xs text-white/75 whitespace-pre-wrap font-sans leading-relaxed pr-8">{p.text}</pre>
-                                        <button onClick={() => copyPost(p.text, pid)} className="absolute top-2 right-2 p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-white/40 hover:text-white">
-                                          {comCopiedId === pid ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                                        </button>
-                                      </div>
+                            <div className="divide-y divide-white/5">
+                              {d.aiPosts.map((p, pi) => {
+                                const pid = `week-${d.date}-${pi}`;
+                                return (
+                                  <div key={pi} className="p-4">
+                                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${PLAT[p.platform]?.dot ?? 'bg-white/30'}`} />
+                                      <span className={`text-xs font-bold ${PLAT[p.platform]?.color ?? 'text-white/50'}`}>{p.platform}</span>
+                                      <span className="text-white/20 text-xs">·</span>
+                                      <span className="text-xs text-white/40">{p.type}</span>
+                                      <span className="ml-auto text-[10px] text-violet-neon/60 italic">{p.angle}</span>
                                     </div>
-                                  );
-                                })}
-                              </div>
-                            )}
+                                    <div className="relative bg-white/3 rounded-lg p-3">
+                                      <pre className="text-xs text-white/75 whitespace-pre-wrap font-sans leading-relaxed pr-8">{p.text}</pre>
+                                      <button onClick={() => copyPost(p.text, pid)} className="absolute top-2 right-2 p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-white/40 hover:text-white">
+                                        {comCopiedId === pid ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -5522,6 +5558,8 @@ Vous gérez l'événement. Nous gérons les billets.
                 {gridDays.map((dateStr, idx) => {
                   if (!dateStr) return <div key={`e${idx}`} className="min-h-[76px] border-b border-r border-white/5 bg-white/1" />;
                   const { posts, eventDays } = getDayPosts(dateStr);
+                  const daysSaved = savedCalPosts.filter(s => s.date === dateStr);
+                  const hasSaved = daysSaved.length > 0;
                   const isSelected = calSelectedDay === dateStr;
                   const hasEvent = eventDays.length > 0;
                   const isWeekend = getDow(dateStr) >= 5;
@@ -5533,6 +5571,7 @@ Vous gérez l'événement. Nous gérons les billets.
                       onClick={() => { setCalSelectedDay(isSelected ? null : dateStr); if (!isSelected) { setCalAiPosts({}); setCalAiContext(''); } }}
                       className={`min-h-[76px] p-1.5 border-b border-r border-white/5 cursor-pointer transition-colors ${
                         isSelected ? 'bg-violet-neon/15 ring-1 ring-inset ring-violet-neon/40' :
+                        hasSaved ? 'bg-emerald-500/5 hover:bg-emerald-500/10' :
                         hasEvent ? 'bg-amber-400/8 hover:bg-amber-400/12' :
                         isWeekend ? 'bg-white/1 hover:bg-white/4' : 'hover:bg-white/3'
                       }`}
@@ -5542,16 +5581,33 @@ Vous gérez l'événement. Nous gérons les billets.
                           isToday ? 'bg-violet-neon text-white rounded-full w-[18px] h-[18px] flex items-center justify-center text-[9px]' :
                           isWeekend ? 'text-white/30' : 'text-white/50'
                         }`}>{dayNum}</span>
-                        {hasEvent && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />}
+                        <div className="flex items-center gap-0.5">
+                          {hasSaved && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" title="Posts sauvegardés" />}
+                          {hasEvent && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />}
+                        </div>
                       </div>
                       <div className="space-y-0.5">
-                        {posts.slice(0, 3).map((p, pi) => (
-                          <div key={pi} className="flex items-center gap-1">
-                            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${PLAT[p.platform]?.dot || 'bg-white/30'}`} />
-                            <span className="text-[9px] text-white/40 truncate leading-tight">{p.platform.slice(0, 2).toUpperCase()}</span>
-                          </div>
-                        ))}
-                        {posts.length > 3 && <span className="text-[9px] text-white/25">+{posts.length - 3}</span>}
+                        {hasSaved ? (
+                          <>
+                            {daysSaved.slice(0, 3).map((s, si) => (
+                              <div key={si} className="flex items-center gap-1">
+                                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${PLAT[s.platform]?.dot || 'bg-emerald-400'}`} />
+                                <span className="text-[9px] text-emerald-400/70 truncate leading-tight">{s.platform.slice(0, 2).toUpperCase()}</span>
+                              </div>
+                            ))}
+                            {daysSaved.length > 3 && <span className="text-[9px] text-emerald-400/40">+{daysSaved.length - 3}</span>}
+                          </>
+                        ) : (
+                          <>
+                            {posts.slice(0, 3).map((p, pi) => (
+                              <div key={pi} className="flex items-center gap-1">
+                                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${PLAT[p.platform]?.dot || 'bg-white/30'}`} />
+                                <span className="text-[9px] text-white/40 truncate leading-tight">{p.platform.slice(0, 2).toUpperCase()}</span>
+                              </div>
+                            ))}
+                            {posts.length > 3 && <span className="text-[9px] text-white/25">+{posts.length - 3}</span>}
+                          </>
+                        )}
                       </div>
                     </div>
                   );
@@ -5563,6 +5619,9 @@ Vous gérez l'événement. Nous gérons les billets.
                     <span className={`w-2 h-2 rounded-full ${dot}`} />{name}
                   </span>
                 ))}
+                <span className="flex items-center gap-1.5 text-[10px] text-emerald-400/70">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400" />Posts sauvegardés
+                </span>
                 {calMode === 'event' && (
                   <span className="flex items-center gap-1.5 text-[10px] text-amber-400/70">
                     <span className="w-2 h-2 rounded-full bg-amber-400" />Jour événement
@@ -5580,6 +5639,11 @@ Vous gérez l'événement. Nous gérons les billets.
                     <p className="font-semibold text-white text-sm">
                       {new Date(calSelectedDay + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                     </p>
+                    {(() => {
+                      const dayDbPosts = savedCalPosts.filter(s => s.date === calSelectedDay);
+                      if (dayDbPosts.length === 0) return null;
+                      return <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 mt-1"><CheckCircle className="w-3 h-3" />{dayDbPosts.length} post{dayDbPosts.length > 1 ? 's' : ''} sauvegardé{dayDbPosts.length > 1 ? 's' : ''}</span>;
+                    })()}
                     {selectedData.eventDays.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-1">
                         {selectedData.eventDays.map((ed, i) => (
@@ -5594,6 +5658,44 @@ Vous gérez l'événement. Nous gérons les billets.
                     <XCircle className="w-4 h-4" />
                   </button>
                 </div>
+
+                {/* Posts sauvegardés pour ce jour */}
+                {(() => {
+                  const dayDbPosts = savedCalPosts.filter(s => s.date === calSelectedDay);
+                  if (dayDbPosts.length === 0) return null;
+                  return (
+                    <div className="rounded-xl border border-emerald-500/20 overflow-hidden">
+                      <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500/5 border-b border-emerald-500/10">
+                        <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+                        <p className="text-xs font-semibold text-emerald-400">Posts sauvegardés ({dayDbPosts.length})</p>
+                      </div>
+                      <div className="divide-y divide-white/5">
+                        {dayDbPosts.map(s => (
+                          <div key={s.id} className="p-3 space-y-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className={`w-2 h-2 rounded-full ${PLAT[s.platform]?.dot ?? 'bg-white/30'}`} />
+                              <span className={`text-xs font-bold ${PLAT[s.platform]?.color ?? 'text-white/50'}`}>{s.platform}</span>
+                              <span className="text-white/20 text-xs">·</span>
+                              <span className="text-xs text-white/40">{s.type}</span>
+                              {s.angle && <span className="text-[10px] text-violet-neon/50 italic ml-auto">{s.angle}</span>}
+                            </div>
+                            <pre className="text-xs text-white/70 whitespace-pre-wrap font-sans leading-relaxed bg-white/3 rounded-lg p-3">{s.text}</pre>
+                            <div className="flex items-center gap-2">
+                              <button onClick={() => { navigator.clipboard.writeText(s.text); setComCopiedId(`db-${s.id}`); setTimeout(() => setComCopiedId(null), 2000); }}
+                                className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-white/40 hover:text-white transition-colors">
+                                {comCopiedId === `db-${s.id}` ? <><Check className="w-3 h-3 text-emerald-400" /> Copié</> : <><Copy className="w-3 h-3" /> Copier</>}
+                              </button>
+                              <button onClick={() => { if (confirm('Supprimer ce post ?')) deleteCalPostMutation.mutate(s.id); }}
+                                className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-lg bg-rose-neon/5 hover:bg-rose-neon/15 text-rose-neon/40 hover:text-rose-neon transition-colors ml-auto">
+                                <Trash2 className="w-3 h-3" /> Supprimer
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Contexte IA */}
                 <div className="rounded-xl border border-violet-neon/15 bg-violet-neon/3 p-3 space-y-2">
