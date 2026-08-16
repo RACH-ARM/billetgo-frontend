@@ -1595,7 +1595,7 @@ const CHARTE_CSS = `
 #charte-gfx .font-tag{font-family:var(--fm);font-size:10px;color:var(--v2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;}
 #charte-gfx .font-name{font-size:14px;font-weight:700;color:var(--w70);margin-bottom:4px;}
 #charte-gfx .font-sample-bebas{font-family:var(--fd);font-size:52px;letter-spacing:.06em;text-transform:uppercase;background:var(--gn);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;margin-bottom:14px;}
-#charte-gfx .font-sample-sora{font-size:20px;font-weight:600;color:var(--w70);margin-bottom:14px;line-height:1.3;}
+#charte-gfx .font-sample-sora{font-size:20px;font-weight:600;color:var(--w70);margin-bottom:14px;line-height:1.3;font-family:'Poppins',system-ui,sans-serif;}
 #charte-gfx .font-sample-mono{font-family:var(--fm);font-size:22px;font-weight:700;color:var(--c);margin-bottom:14px;}
 #charte-gfx .font-specs{display:flex;flex-direction:column;gap:6px;}
 #charte-gfx .font-spec-row{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-top:1px solid var(--w05);}
@@ -1818,7 +1818,7 @@ const CHARTE_HTML = `
 
     <div class="font-card">
       <div class="font-tag">Corps · Descriptions · UI</div>
-      <div class="font-name">Sora</div>
+      <div class="font-name">Poppins</div>
       <div class="font-sample-sora" style="color:rgba(255,255,255,.7)">Réservez en ligne, vite et simplement.</div>
       <div class="font-specs">
         <div class="font-spec-row"><span class="font-spec-label">Poids</span><span class="font-spec-val">Regular · SemiBold · Bold</span></div>
@@ -1846,7 +1846,7 @@ const CHARTE_HTML = `
   <div class="canva-tip" style="margin-top:20px">
     <span class="canva-tip-icon">✏️</span>
     <div class="canva-tip-text">
-      <strong>Dans Canva :</strong> clique sur une zone de texte → barre d’outils → champ police → tape le nom (<em>Bebas Neue</em>, <em>Sora</em>, <em>Space Mono</em>) → sélectionne-la. Pour l’enregistrer comme police de marque : Paramètres → Kit de marque → Polices.
+      <strong>Dans Canva :</strong> clique sur une zone de texte → barre d’outils → champ police → tape le nom (<em>Bebas Neue</em>, <em>Poppins</em>, <em>Space Mono</em>) → sélectionne-la. Pour l’enregistrer comme police de marque : Paramètres → Kit de marque → Polices.
     </div>
   </div>
 </section>
@@ -2121,7 +2121,7 @@ const CHARTE_HTML = `
       <div style="font-family:var(--fm);font-size:10px;color:var(--v2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px">✏️ Polices de marque</div>
       <div style="display:flex;flex-direction:column;gap:14px">
         <div style="padding:12px;background:rgba(255,255,255,.03);border-radius:10px;border:1px solid var(--w05)"><div style="font-family:var(--fd);font-size:24px;letter-spacing:.06em;text-transform:uppercase;background:var(--gn);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px">Bebas Neue</div><div style="font-size:11px;color:var(--w30)">Titres · Majuscules · Espacé</div></div>
-        <div style="padding:12px;background:rgba(255,255,255,.03);border-radius:10px;border:1px solid var(--w05)"><div style="font-size:17px;font-weight:600;color:var(--w70);margin-bottom:4px">Sora SemiBold</div><div style="font-size:11px;color:var(--w30)">Corps · Descriptions · Infos</div></div>
+        <div style="padding:12px;background:rgba(255,255,255,.03);border-radius:10px;border:1px solid var(--w05)"><div style="font-size:17px;font-weight:600;color:var(--w70);margin-bottom:4px">Poppins SemiBold</div><div style="font-size:11px;color:var(--w30)">Corps · Descriptions · Infos</div></div>
         <div style="padding:12px;background:rgba(255,255,255,.03);border-radius:10px;border:1px solid var(--w05)"><div style="font-family:var(--fm);font-size:16px;font-weight:700;color:var(--c);margin-bottom:4px">Space Mono</div><div style="font-size:11px;color:var(--w30)">Prix · Codes · Chiffres</div></div>
       </div>
     </div>
