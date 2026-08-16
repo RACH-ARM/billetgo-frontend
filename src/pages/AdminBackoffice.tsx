@@ -5787,35 +5787,8 @@ Vous gérez l'événement. Nous gérons les billets.
                   );
                 })()}
 
-                {selectedData.posts.length === 0 ? (
-                  <p className="text-white/30 text-xs">Pas de post prévu ce jour. Profite-en pour planifier ou te reposer.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {selectedData.posts.map((p, pi) => {
-                      const tpl = TEMPLATES.find(t => t.id === p.templateKey);
-                      const pid = `day-${calSelectedDay}-${pi}`;
-                      return (
-                        <div key={pi} className="border border-white/8 rounded-xl overflow-hidden">
-                          <div className="flex items-center gap-2 px-3 py-2 bg-white/3 border-b border-white/5 flex-wrap">
-                            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${PLAT[p.platform]?.dot}`} />
-                            <span className={`text-xs font-semibold ${PLAT[p.platform]?.color}`}>{p.platform}</span>
-                            <span className="text-white/20 text-xs">·</span>
-                            <span className="text-xs text-white/50">{p.type}</span>
-                            {p.eventLabel && <span className="text-[10px] text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full flex-shrink-0">{p.eventLabel}</span>}
-                          </div>
-                          {tpl && (
-                            <div className="relative p-3">
-                              <pre className="text-[11px] text-white/60 whitespace-pre-wrap font-sans leading-relaxed pr-8">{tpl.content}</pre>
-                              <button onClick={() => handleCopy(tpl.content, pid)} className="absolute top-3 right-2 p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-white/40 hover:text-white">
-                                {copiedId === pid ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                              </button>
-                              {tpl.tip && <p className="text-[10px] text-violet-neon/60 mt-2 bg-violet-neon/5 rounded px-2 py-1">💡 {tpl.tip}</p>}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                {savedCalPosts.filter(s => s.date === calSelectedDay).length === 0 && (
+                  <p className="text-white/30 text-xs">Aucun post IA sauvegardé pour ce jour. Génère et sauvegarde un planning semaine pour le remplir.</p>
                 )}
               </div>
             )}
