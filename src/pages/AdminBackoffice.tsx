@@ -8,7 +8,7 @@ import {
   Star, Flame, Ban, Sparkles, ScanLine, Plus, Eye, EyeOff, Pencil, MessageSquare, FileSearch, RotateCcw, ScrollText, Settings,
   Square, CheckSquare, BadgeCheck, MapPin, QrCode, Download, ShoppingCart, UserCheck,
   ChevronDown, ChevronLeft, ChevronRight, Search, AlertCircle, Heart, Ticket, Link2, ShoppingBag,
-  Megaphone, Copy, Check, Target, Phone, Instagram, Trash2, Bell,
+  Megaphone, Copy, Check, Target, Phone, Instagram, Trash2, Bell, Palette,
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -21,7 +21,7 @@ import { formatPrice } from '../utils/formatPrice';
 import { formatEventDate } from '../utils/formatDate';
 import toast from 'react-hot-toast';
 
-type TabType = 'dashboard' | 'events' | 'vitrine' | 'users' | 'retraits' | 'scanners' | 'agents' | 'refunds' | 'audit' | 'settings' | 'influenceurs' | 'communication' | 'prospection';
+type TabType = 'dashboard' | 'events' | 'vitrine' | 'users' | 'retraits' | 'scanners' | 'agents' | 'refunds' | 'audit' | 'settings' | 'influenceurs' | 'communication' | 'prospection' | 'charte';
 
 // ── Types ─────────────────────────────────────────────────────
 interface AuditLogEntry {
@@ -1562,6 +1562,373 @@ function ProspectionTab() {
 }
 
 // ── Main ──────────────────────────────────────────────────────
+const CHARTE_CSS = `
+  :root{--bg:#0D0D1A;--bg-sec:#13132A;--bg-card:#1A1A35;--violet:#7B2FBE;--violet-lt:#9B4FDE;--rose:#E040FB;--rose-lt:#F060FF;--cyan:#00E5FF;--cyan-lt:#40F0FF;--white:#FFFFFF;--white-70:rgba(255,255,255,.70);--white-50:rgba(255,255,255,.50);--white-30:rgba(255,255,255,.30);--white-15:rgba(255,255,255,.15);--white-08:rgba(255,255,255,.08);--white-05:rgba(255,255,255,.05);--g-neon:linear-gradient(135deg,#7B2FBE,#E040FB);--g-cyan:linear-gradient(135deg,#00E5FF,#7B2FBE);--g-cover:linear-gradient(135deg,#2D1060 0%,#0D0D1A 50%,#003060 100%);--s-violet:0 0 20px rgba(123,47,190,.5);--s-rose:0 0 20px rgba(224,64,251,.5);--s-cyan:0 0 20px rgba(0,229,255,.5);--s-card:inset 0 1px 0 rgba(255,255,255,.06),0 4px 24px rgba(0,0,0,.25);--font-display:'Impact','Arial Narrow',Arial,sans-serif;--font-body:system-ui,-apple-system,'Segoe UI',sans-serif;--font-mono:'Courier New','Lucida Console',monospace;}
+  #charte-gfx{background:var(--bg);background-image:radial-gradient(ellipse at 20% 40%,rgba(123,47,190,.12) 0%,transparent 55%),radial-gradient(ellipse at 80% 10%,rgba(0,229,255,.07) 0%,transparent 50%),radial-gradient(ellipse at 60% 85%,rgba(224,64,251,.06) 0%,transparent 40%);color:var(--white);font-family:var(--font-body);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;padding-bottom:80px;border-radius:20px;overflow:hidden;}
+  #charte-gfx *{box-sizing:border-box;margin:0;padding:0;}
+  #charte-gfx .wrap{max-width:960px;margin:0 auto;padding:0 24px;}
+  #charte-gfx .site-header{padding:64px 0 56px;border-bottom:1px solid var(--white-08);margin-bottom:64px;}
+  #charte-gfx .header-label{font-family:var(--font-mono);font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--violet-lt);margin-bottom:16px;}
+  #charte-gfx .header-title{font-family:var(--font-display);font-size:clamp(52px,10vw,96px);letter-spacing:.06em;text-transform:uppercase;line-height:.95;background:var(--g-neon);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  #charte-gfx .header-sub{margin-top:20px;font-size:15px;color:var(--white-50);max-width:520px;line-height:1.7;}
+  #charte-gfx .header-meta{display:flex;gap:24px;margin-top:28px;flex-wrap:wrap;}
+  #charte-gfx .header-meta span{font-family:var(--font-mono);font-size:11px;color:var(--white-30);letter-spacing:.05em;}
+  #charte-gfx .toc{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:64px;}
+  #charte-gfx .toc a{font-size:12px;font-weight:600;color:var(--white-50);text-decoration:none;padding:6px 14px;border:1px solid var(--white-15);border-radius:999px;transition:color .15s,border-color .15s;}
+  #charte-gfx .toc a:hover{color:var(--white);border-color:var(--violet-lt);}
+  #charte-gfx .section{margin-bottom:72px;}
+  #charte-gfx .section-label{font-family:var(--font-mono);font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--violet-lt);margin-bottom:8px;}
+  #charte-gfx .section-title{font-family:var(--font-display);font-size:36px;letter-spacing:.05em;text-transform:uppercase;color:var(--white);margin-bottom:32px;padding-bottom:16px;border-bottom:1px solid var(--white-08);}
+  #charte-gfx .swatch-group{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:24px;}
+  #charte-gfx .swatch{border-radius:12px;overflow:hidden;background:var(--bg-card);border:1px solid var(--white-08);}
+  #charte-gfx .swatch-color{height:80px;}
+  #charte-gfx .swatch-info{padding:10px 12px;}
+  #charte-gfx .swatch-name{font-size:12px;font-weight:600;color:var(--white-70);display:block;margin-bottom:3px;}
+  #charte-gfx .swatch-hex{font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,.4);}
+  #charte-gfx .swatch-use{font-size:10px;color:var(--white-30);margin-top:4px;display:block;line-height:1.4;}
+  #charte-gfx .gradient-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;}
+  #charte-gfx .gradient-card{border-radius:16px;overflow:hidden;background:var(--bg-card);border:1px solid var(--white-08);}
+  #charte-gfx .gradient-preview{height:120px;}
+  #charte-gfx .gradient-info{padding:14px 16px;}
+  #charte-gfx .gradient-name{font-size:13px;font-weight:600;color:var(--white-70);margin-bottom:4px;}
+  #charte-gfx .gradient-code{font-family:var(--font-mono);font-size:10px;color:var(--white-30);line-height:1.5;}
+  #charte-gfx .gradient-role{font-size:11px;color:var(--cyan);margin-top:6px;}
+  #charte-gfx .type-samples{display:flex;flex-direction:column;gap:32px;}
+  #charte-gfx .type-block{background:var(--bg-card);border:1px solid var(--white-08);border-radius:16px;padding:28px 32px;display:grid;grid-template-columns:200px 1fr;gap:24px;align-items:center;}
+  #charte-gfx .type-meta-name{font-size:13px;font-weight:700;color:var(--white-70);margin-bottom:4px;}
+  #charte-gfx .type-meta-role{font-size:11px;color:var(--violet-lt);margin-bottom:12px;font-family:var(--font-mono);letter-spacing:.05em;}
+  #charte-gfx .type-meta-detail{font-family:var(--font-mono);font-size:10px;color:var(--white-30);line-height:1.8;}
+  #charte-gfx .type-sample-display{font-family:var(--font-display);font-size:clamp(40px,7vw,72px);letter-spacing:.08em;text-transform:uppercase;line-height:1;background:var(--g-neon);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+  #charte-gfx .type-sample-body{font-family:var(--font-body);font-size:17px;line-height:1.7;color:var(--white-70);}
+  #charte-gfx .type-sample-body strong{color:var(--white);font-weight:700;}
+  #charte-gfx .type-sample-mono{font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--cyan);letter-spacing:.02em;}
+  #charte-gfx .type-scale{display:flex;flex-direction:column;gap:8px;}
+  #charte-gfx .type-scale-row{display:flex;align-items:baseline;gap:16px;}
+  #charte-gfx .type-scale-label{font-family:var(--font-mono);font-size:10px;color:var(--white-30);width:80px;flex-shrink:0;}
+  #charte-gfx .comp-card{background:var(--bg-card);border:1px solid var(--white-08);border-radius:16px;padding:24px;}
+  #charte-gfx .comp-card-label{font-size:11px;font-weight:600;color:var(--white-30);letter-spacing:.08em;text-transform:uppercase;margin-bottom:20px;font-family:var(--font-mono);}
+  #charte-gfx .btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;font-family:var(--font-body);font-weight:600;cursor:pointer;border:none;transition:all .2s;text-decoration:none;}
+  #charte-gfx .btn-md{padding:10px 20px;font-size:14px;}
+  #charte-gfx .btn-sm{padding:6px 12px;font-size:13px;}
+  #charte-gfx .btn-lg{padding:14px 32px;font-size:16px;}
+  #charte-gfx .btn-primary{background:var(--g-neon);color:#fff;}
+  #charte-gfx .btn-primary:hover{box-shadow:var(--s-rose);transform:scale(1.02);}
+  #charte-gfx .btn-secondary{background:var(--bg-card);border:1px solid rgba(123,47,190,.4);color:#fff;}
+  #charte-gfx .btn-secondary:hover{border-color:var(--violet-lt);}
+  #charte-gfx .btn-ghost{background:transparent;color:var(--white-70);}
+  #charte-gfx .btn-ghost:hover{color:#fff;background:var(--white-05);}
+  #charte-gfx .btn-danger{background:rgba(224,64,251,.15);border:1px solid rgba(224,64,251,.4);color:var(--rose);}
+  #charte-gfx .btn-danger:hover{background:rgba(224,64,251,.25);}
+  #charte-gfx .btn-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center;}
+  #charte-gfx .badge{display:inline-block;padding:4px 12px;font-size:12px;font-weight:600;border-radius:999px;border:1px solid;}
+  #charte-gfx .badge-violet{background:rgba(123,47,190,.2);color:var(--violet-lt);border-color:rgba(123,47,190,.3);}
+  #charte-gfx .badge-rose{background:rgba(224,64,251,.2);color:var(--rose-lt);border-color:rgba(224,64,251,.3);}
+  #charte-gfx .badge-cyan{background:rgba(0,229,255,.2);color:var(--cyan);border-color:rgba(0,229,255,.3);}
+  #charte-gfx .badge-green{background:rgba(74,222,128,.2);color:#4ade80;border-color:rgba(74,222,128,.3);}
+  #charte-gfx .badge-gray{background:rgba(255,255,255,.1);color:rgba(255,255,255,.6);border-color:rgba(255,255,255,.2);}
+  #charte-gfx .badge-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+  #charte-gfx .live-row{display:flex;flex-wrap:wrap;gap:16px;align-items:center;}
+  #charte-gfx .pill{display:inline-flex;align-items:center;gap:8px;padding:5px 14px;border-radius:999px;border:1px solid;font-size:12px;font-weight:700;letter-spacing:.08em;}
+  #charte-gfx .pill-dot{position:relative;width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  #charte-gfx .pill-dot::before{content:'';position:absolute;inset:0;border-radius:50%;animation:cgPing 1.2s ease-in-out infinite;}
+  #charte-gfx .pill-live{background:rgba(224,64,251,.12);border-color:rgba(224,64,251,.5);color:var(--rose);}
+  #charte-gfx .pill-live .pill-dot{background:var(--rose);}
+  #charte-gfx .pill-live .pill-dot::before{background:var(--rose);}
+  #charte-gfx .pill-soon{background:rgba(0,229,255,.1);border-color:rgba(0,229,255,.5);color:var(--cyan);}
+  #charte-gfx .pill-soon .pill-dot{background:var(--cyan);}
+  #charte-gfx .pill-soon .pill-dot::before{background:var(--cyan);}
+  #charte-gfx .cg-glass-card{background:rgba(26,26,53,.8);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.05);border-radius:20px;box-shadow:var(--s-card);padding:24px;}
+  #charte-gfx .neon-border-demo{border:1px solid rgba(123,47,190,.3);box-shadow:var(--s-violet);border-radius:12px;padding:16px 20px;color:var(--white-70);font-size:13px;}
+  #charte-gfx .event-card-demo{background:var(--bg-card);border:1px solid var(--white-08);border-radius:20px;box-shadow:var(--s-card);overflow:hidden;max-width:280px;transition:transform .2s;}
+  #charte-gfx .event-card-demo:hover{transform:translateY(-4px);}
+  #charte-gfx .event-cover{height:200px;background:var(--g-cover);position:relative;display:flex;align-items:flex-end;padding:12px;}
+  #charte-gfx .event-cover-title{font-family:var(--font-display);font-size:28px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.3);line-height:1;}
+  #charte-gfx .event-body{padding:14px 16px;}
+  #charte-gfx .event-title{font-family:var(--font-display);font-size:20px;letter-spacing:.05em;text-transform:uppercase;color:#fff;margin-bottom:4px;line-height:1.1;}
+  #charte-gfx .event-price{font-family:var(--font-mono);font-size:16px;font-weight:700;color:var(--cyan);margin-bottom:4px;}
+  #charte-gfx .event-date{font-size:11px;color:var(--white-50);}
+  #charte-gfx .shadow-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;}
+  #charte-gfx .shadow-card{background:var(--bg-card);border:1px solid var(--white-08);border-radius:16px;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:16px;}
+  #charte-gfx .shadow-demo{width:64px;height:64px;border-radius:14px;background:var(--bg-sec);}
+  #charte-gfx .shadow-name{font-size:12px;font-weight:600;color:var(--white-50);text-align:center;}
+  #charte-gfx .shadow-code{font-family:var(--font-mono);font-size:9px;color:var(--white-30);text-align:center;line-height:1.5;}
+  #charte-gfx .anim-table{width:100%;border-collapse:collapse;}
+  #charte-gfx .anim-table th{font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--white-30);text-align:left;padding:10px 16px;border-bottom:1px solid var(--white-08);font-weight:600;}
+  #charte-gfx .anim-table td{padding:14px 16px;border-bottom:1px solid var(--white-05);font-size:13px;color:var(--white-70);vertical-align:top;}
+  #charte-gfx .anim-table tr:last-child td{border-bottom:none;}
+  #charte-gfx .anim-table td:first-child{font-family:var(--font-mono);color:var(--violet-lt);font-size:12px;white-space:nowrap;}
+  #charte-gfx .anim-table td:nth-child(3){font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,.4);}
+  #charte-gfx .rule-list{display:flex;flex-direction:column;gap:0;}
+  #charte-gfx .rule-item{display:grid;grid-template-columns:32px 1fr;gap:16px;padding:16px 0;border-bottom:1px solid var(--white-05);align-items:start;}
+  #charte-gfx .rule-item:last-child{border-bottom:none;}
+  #charte-gfx .rule-num{font-family:var(--font-mono);font-size:11px;color:var(--violet-lt);padding-top:2px;}
+  #charte-gfx .rule-text{font-size:14px;color:var(--white-70);line-height:1.6;}
+  #charte-gfx .rule-text strong{color:var(--white);}
+  #charte-gfx .rule-text code{font-family:var(--font-mono);font-size:12px;color:var(--cyan);background:rgba(0,229,255,.08);padding:1px 6px;border-radius:4px;}
+  #charte-gfx .divider{height:1px;background:linear-gradient(to right,transparent,var(--violet),transparent);margin:48px 0;opacity:.4;}
+  @keyframes cgPing{0%,100%{transform:scale(1);opacity:.7}50%{transform:scale(2);opacity:0}}
+  @keyframes cgLiveGlow{0%,100%{box-shadow:0 0 10px rgba(224,64,251,.25),0 0 30px rgba(224,64,251,.08)}50%{box-shadow:0 0 20px rgba(224,64,251,.50),0 0 50px rgba(224,64,251,.18)}}
+  @keyframes cgPulseNeon{0%,100%{box-shadow:0 0 10px rgba(123,47,190,.3)}50%{box-shadow:0 0 30px rgba(123,47,190,.8)}}
+  @media(max-width:600px){#charte-gfx .type-block{grid-template-columns:1fr;padding:20px;}#charte-gfx .swatch-group{grid-template-columns:repeat(2,1fr);}#charte-gfx .comp-card{padding:20px;}}
+`;
+
+const CHARTE_HTML = `
+<header class="site-header">
+  <div class="wrap">
+    <p class="header-label">Design System v1.5 — Confidentiel</p>
+    <h1 class="header-title">Charte<br>Graphique</h1>
+    <p class="header-sub">Référentiel complet de l'identité visuelle BilletGab — couleurs, typographie, composants et règles d'usage.</p>
+    <div class="header-meta">
+      <span>Dernière mise à jour : août 2026</span>
+      <span>·</span>
+      <span>Produit : BilletGab — billetterie Gabon</span>
+      <span>·</span>
+      <span>Stack : React · Tailwind · Framer Motion</span>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <nav class="toc">
+    <a href="#cg-couleurs">Couleurs</a>
+    <a href="#cg-degrades">Dégradés</a>
+    <a href="#cg-typo">Typographie</a>
+    <a href="#cg-boutons">Boutons</a>
+    <a href="#cg-badges">Badges & Pills</a>
+    <a href="#cg-cartes">Cartes</a>
+    <a href="#cg-ombres">Ombres & Lueurs</a>
+    <a href="#cg-animations">Animations</a>
+    <a href="#cg-layout">Layout</a>
+  </nav>
+
+  <section class="section" id="cg-couleurs">
+    <p class="section-label">01</p>
+    <h2 class="section-title">Couleurs</h2>
+    <p class="section-label" style="margin-bottom:12px">Fonds</p>
+    <div class="swatch-group" style="margin-bottom:28px">
+      <div class="swatch"><div class="swatch-color" style="background:#0D0D1A"></div><div class="swatch-info"><span class="swatch-name">bg</span><span class="swatch-hex">#0D0D1A</span><span class="swatch-use">Fond principal. Couleur de page, corps.</span></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#13132A"></div><div class="swatch-info"><span class="swatch-name">bg-secondary</span><span class="swatch-hex">#13132A</span><span class="swatch-use">Fond alternatif. Barres, sections.</span></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#1A1A35"></div><div class="swatch-info"><span class="swatch-name">bg-card</span><span class="swatch-hex">#1A1A35</span><span class="swatch-use">Fond des cartes et modales.</span></div></div>
+    </div>
+    <p class="section-label" style="margin-bottom:12px">Accent violet — primaire</p>
+    <div class="swatch-group" style="margin-bottom:28px">
+      <div class="swatch"><div class="swatch-color" style="background:#7B2FBE;box-shadow:0 0 24px rgba(123,47,190,.5)"></div><div class="swatch-info"><span class="swatch-name">violet-neon</span><span class="swatch-hex">#7B2FBE</span><span class="swatch-use">CTA, bordures actives, liens.</span></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#9B4FDE"></div><div class="swatch-info"><span class="swatch-name">violet-light</span><span class="swatch-hex">#9B4FDE</span><span class="swatch-use">Hover, textes accentués.</span></div></div>
+    </div>
+    <p class="section-label" style="margin-bottom:12px">Accent rose — secondaire</p>
+    <div class="swatch-group" style="margin-bottom:28px">
+      <div class="swatch"><div class="swatch-color" style="background:#E040FB;box-shadow:0 0 24px rgba(224,64,251,.5)"></div><div class="swatch-info"><span class="swatch-name">rose-neon</span><span class="swatch-hex">#E040FB</span><span class="swatch-use">Danger, live, hot, panier.</span></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#F060FF"></div><div class="swatch-info"><span class="swatch-name">rose-light</span><span class="swatch-hex">#F060FF</span><span class="swatch-use">Hover sur éléments rose.</span></div></div>
+    </div>
+    <p class="section-label" style="margin-bottom:12px">Accent cyan — données</p>
+    <div class="swatch-group" style="margin-bottom:28px">
+      <div class="swatch"><div class="swatch-color" style="background:#00E5FF;box-shadow:0 0 24px rgba(0,229,255,.5)"></div><div class="swatch-info"><span class="swatch-name">cyan-neon</span><span class="swatch-hex">#00E5FF</span><span class="swatch-use">Prix, chiffres, à venir.</span></div></div>
+      <div class="swatch"><div class="swatch-color" style="background:#40F0FF"></div><div class="swatch-info"><span class="swatch-name">cyan-light</span><span class="swatch-hex">#40F0FF</span><span class="swatch-use">Hover sur éléments cyan.</span></div></div>
+    </div>
+    <p class="section-label" style="margin-bottom:12px">Texte — échelle d'opacité sur blanc</p>
+    <div style="background:var(--bg-card);border:1px solid var(--white-08);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:center;gap:16px"><div style="width:40px;height:20px;background:rgba(255,255,255,1);border-radius:4px"></div><span style="font-family:var(--font-mono);font-size:11px;color:var(--white-30)">white / white-100</span><span style="font-size:13px;color:rgba(255,255,255,1)">Titres principaux, labels actifs</span></div>
+      <div style="display:flex;align-items:center;gap:16px"><div style="width:40px;height:20px;background:rgba(255,255,255,.7);border-radius:4px"></div><span style="font-family:var(--font-mono);font-size:11px;color:var(--white-30)">white/70</span><span style="font-size:13px;color:rgba(255,255,255,.7)">Corps de texte, contenu principal</span></div>
+      <div style="display:flex;align-items:center;gap:16px"><div style="width:40px;height:20px;background:rgba(255,255,255,.5);border-radius:4px"></div><span style="font-family:var(--font-mono);font-size:11px;color:var(--white-30)">white/50</span><span style="font-size:13px;color:rgba(255,255,255,.5)">Méta, date, lieu, secondaire</span></div>
+      <div style="display:flex;align-items:center;gap:16px"><div style="width:40px;height:20px;background:rgba(255,255,255,.3);border-radius:4px"></div><span style="font-family:var(--font-mono);font-size:11px;color:var(--white-30)">white/30</span><span style="font-size:13px;color:rgba(255,255,255,.3)">Labels discrets, labels de champ</span></div>
+      <div style="display:flex;align-items:center;gap:16px"><div style="width:40px;height:20px;background:rgba(255,255,255,.1);border-radius:4px"></div><span style="font-family:var(--font-mono);font-size:11px;color:var(--white-30)">white/10</span><span style="font-size:13px;color:rgba(255,255,255,.4)">Séparateurs, bordures légères</span></div>
+      <div style="display:flex;align-items:center;gap:16px"><div style="width:40px;height:20px;background:rgba(255,255,255,.05);border-radius:4px;border:1px solid rgba(255,255,255,.1)"></div><span style="font-family:var(--font-mono);font-size:11px;color:var(--white-30)">white/05</span><span style="font-size:13px;color:rgba(255,255,255,.4)">Hover très discret sur éléments ghost</span></div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <section class="section" id="cg-degrades">
+    <p class="section-label">02</p>
+    <h2 class="section-title">Dégradés</h2>
+    <div class="gradient-grid">
+      <div class="gradient-card"><div class="gradient-preview" style="background:linear-gradient(135deg,#7B2FBE,#E040FB)"></div><div class="gradient-info"><div class="gradient-name">neon-gradient</div><div class="gradient-code">135deg · #7B2FBE → #E040FB</div><div class="gradient-role">CTA principal, titres forts</div></div></div>
+      <div class="gradient-card"><div class="gradient-preview" style="background:linear-gradient(135deg,#00E5FF,#7B2FBE)"></div><div class="gradient-info"><div class="gradient-name">cyan-gradient</div><div class="gradient-code">135deg · #00E5FF → #7B2FBE</div><div class="gradient-role">Textes prix, section données</div></div></div>
+      <div class="gradient-card"><div class="gradient-preview" style="background:linear-gradient(135deg,#2D1060 0%,#0D0D1A 50%,#003060 100%)"></div><div class="gradient-info"><div class="gradient-name">dark-cover</div><div class="gradient-code">135deg · #2D1060 → #0D0D1A → #003060</div><div class="gradient-role">Placeholder couverture événement</div></div></div>
+      <div class="gradient-card"><div class="gradient-preview" style="background:linear-gradient(135deg,#1a0a2e 0%,#0D0D1A 50%,#0a1a2e 100%)"></div><div class="gradient-info"><div class="gradient-name">dark-card</div><div class="gradient-code">135deg · #1a0a2e → #0D0D1A → #0a1a2e</div><div class="gradient-role">Fond de cartes premium</div></div></div>
+    </div>
+    <div style="margin-top:20px;background:var(--bg-card);border:1px solid var(--white-08);border-radius:16px;padding:20px 24px">
+      <div style="font-family:var(--font-mono);font-size:10px;color:var(--white-30);letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px">Ambiance page (body background-image)</div>
+      <div style="height:80px;border-radius:10px;background:radial-gradient(ellipse at 20% 50%,rgba(123,47,190,.3) 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(0,229,255,.2) 0%,transparent 50%),radial-gradient(ellipse at 60% 90%,rgba(224,64,251,.15) 0%,transparent 40%),#0D0D1A"></div>
+      <div style="font-size:12px;color:var(--white-30);margin-top:12px;line-height:1.7;font-family:var(--font-mono)">
+        radial-gradient(ellipse at 20% 50%, rgba(123,47,190,.12) → transparent 60%)<br>
+        radial-gradient(ellipse at 80% 20%, rgba(0,229,255,.07) → transparent 50%)<br>
+        radial-gradient(ellipse at 60% 90%, rgba(224,64,251,.05) → transparent 40%)
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <section class="section" id="cg-typo">
+    <p class="section-label">03</p>
+    <h2 class="section-title">Typographie</h2>
+    <div class="type-samples">
+      <div class="type-block">
+        <div class="type-meta"><div class="type-meta-name">Bebas Neue</div><div class="type-meta-role">DISPLAY · TITRES</div><div class="type-meta-detail">font-family: bebas<br>Class Tailwind : font-bebas<br>Poids : Regular (400)<br>Usage : uppercase uniquement<br>letter-spacing : .05–.1em<br><br>Source : Google Fonts</div></div>
+        <div><div class="type-sample-display">BILLETGAB</div><div style="margin-top:16px;display:flex;flex-direction:column;gap:6px"><div style="font-family:var(--font-display);font-size:48px;letter-spacing:.05em;text-transform:uppercase;color:var(--white);line-height:1">Concert Live</div><div style="font-family:var(--font-display);font-size:32px;letter-spacing:.05em;text-transform:uppercase;color:var(--white-70);line-height:1">Festival Musique</div><div style="font-family:var(--font-display);font-size:20px;letter-spacing:.06em;text-transform:uppercase;color:var(--white-50);line-height:1">Soirée Gala · Libreville</div></div></div>
+      </div>
+      <div class="type-block">
+        <div class="type-meta"><div class="type-meta-name">Sora</div><div class="type-meta-role">BODY · UI</div><div class="type-meta-detail">font-family: sora<br>Class Tailwind : font-sora (défaut)<br>Poids : 400 (corps), 600 (labels),<br>700 (titres UI), 800 (accents)<br><br>Source : Google Fonts</div></div>
+        <div class="type-sample-body"><strong>Réservez vos billets en ligne.</strong><br>BilletGab est la première plateforme de billetterie événementielle au Gabon. Accédez à tous les concerts, festivals, et soirées depuis votre téléphone.</div>
+      </div>
+      <div class="type-block">
+        <div class="type-meta"><div class="type-meta-name">Space Mono</div><div class="type-meta-role">MONO · DONNÉES</div><div class="type-meta-detail">font-family: mono<br>Class Tailwind : font-mono<br>Poids : 400, 700<br>Usage : prix, codes, compteurs,<br>labels techniques<br><br>Source : Google Fonts</div></div>
+        <div><div class="type-sample-mono">5 000 XAF</div><div style="margin-top:12px;font-family:var(--font-mono);color:var(--white-50);font-size:14px;line-height:2"><span style="color:var(--cyan)">15 000 XAF</span> · Cat. VIP<br><span style="color:var(--white-30)">BLT-2026-08-A7F3</span><br><span style="color:var(--violet-lt)">04j 12h 38min</span></div></div>
+      </div>
+    </div>
+    <div style="margin-top:24px;background:var(--bg-card);border:1px solid var(--white-08);border-radius:16px;padding:24px 28px">
+      <div style="font-family:var(--font-mono);font-size:10px;color:var(--white-30);letter-spacing:.08em;text-transform:uppercase;margin-bottom:20px">Échelle typographique — Tailwind classes</div>
+      <div class="type-scale">
+        <div class="type-scale-row"><span class="type-scale-label">text-8xl</span><span style="font-family:var(--font-display);font-size:36px;letter-spacing:.06em;text-transform:uppercase;color:var(--white)">Hero titre</span></div>
+        <div class="type-scale-row"><span class="type-scale-label">text-5xl</span><span style="font-family:var(--font-display);font-size:28px;letter-spacing:.06em;text-transform:uppercase;color:var(--white)">Section title</span></div>
+        <div class="type-scale-row"><span class="type-scale-label">text-xl</span><span style="font-family:var(--font-display);font-size:18px;letter-spacing:.05em;text-transform:uppercase;color:var(--white-70)">Card title</span></div>
+        <div class="type-scale-row"><span class="type-scale-label">text-base</span><span style="font-size:15px;color:var(--white-70)">Corps de texte standard — descriptions, contenu principal</span></div>
+        <div class="type-scale-row"><span class="type-scale-label">text-sm</span><span style="font-size:13px;color:var(--white-50)">Méta, labels UI, navigation, boutons secondaires</span></div>
+        <div class="type-scale-row"><span class="type-scale-label">text-xs</span><span style="font-size:11px;color:rgba(255,255,255,.4);letter-spacing:.05em;text-transform:uppercase">LABELS DISCRETS · SOUS-TITRES · TAGS</span></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <section class="section" id="cg-boutons">
+    <p class="section-label">04</p>
+    <h2 class="section-title">Boutons</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">
+      <div class="comp-card"><div class="comp-card-label">Primary</div><div class="btn-row"><button class="btn btn-primary btn-sm">Petit</button><button class="btn btn-primary btn-md">Réserver</button><button class="btn btn-primary btn-lg">Publier un Event</button></div><div style="margin-top:16px;font-family:var(--font-mono);font-size:10px;color:var(--white-30);line-height:1.8">bg: neon-gradient<br>hover: shadow-neon-rose<br>scale: 1.02 hover · 0.97 tap</div></div>
+      <div class="comp-card"><div class="comp-card-label">Secondary</div><div class="btn-row"><button class="btn btn-secondary btn-sm">Petit</button><button class="btn btn-secondary btn-md">Voir plus</button><button class="btn btn-secondary btn-lg">Explorer</button></div><div style="margin-top:16px;font-family:var(--font-mono);font-size:10px;color:var(--white-30);line-height:1.8">bg: bg-card<br>border: violet-neon/40<br>hover border: violet-neon</div></div>
+      <div class="comp-card"><div class="comp-card-label">Ghost</div><div class="btn-row"><button class="btn btn-ghost btn-sm">Annuler</button><button class="btn btn-ghost btn-md">Connexion</button></div><div style="margin-top:16px;font-family:var(--font-mono);font-size:10px;color:var(--white-30);line-height:1.8">bg: transparent<br>hover: bg-white/5<br>Navbar, actions secondaires</div></div>
+      <div class="comp-card"><div class="comp-card-label">Danger</div><div class="btn-row"><button class="btn btn-danger btn-sm">Supprimer</button><button class="btn btn-danger btn-md">Annuler réservation</button></div><div style="margin-top:16px;font-family:var(--font-mono);font-size:10px;color:var(--white-30);line-height:1.8">bg: rose-neon/20<br>border: rose-neon/40<br>text: rose-neon</div></div>
+    </div>
+    <div style="margin-top:16px;background:var(--bg-card);border:1px solid var(--white-08);border-radius:14px;padding:18px 22px">
+      <div class="comp-card-label" style="margin-bottom:12px">État disabled (toutes variantes)</div>
+      <div class="btn-row"><button class="btn btn-primary btn-md" disabled style="opacity:.5;cursor:not-allowed">Indisponible</button><button class="btn btn-secondary btn-md" disabled style="opacity:.5;cursor:not-allowed">Indisponible</button></div>
+      <div style="margin-top:12px;font-family:var(--font-mono);font-size:10px;color:var(--white-30)">opacity: 0.5 · cursor: not-allowed · pointer-events: none</div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <section class="section" id="cg-badges">
+    <p class="section-label">05</p>
+    <h2 class="section-title">Badges & Pills</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">
+      <div class="comp-card"><div class="comp-card-label">Badges — composant Badge</div><div class="badge-row"><span class="badge badge-violet">Concert</span><span class="badge badge-rose">HOT</span><span class="badge badge-cyan">À VENIR</span><span class="badge badge-green">Certifié</span><span class="badge badge-gray">Festival</span></div><div style="margin-top:16px;font-family:var(--font-mono);font-size:10px;color:var(--white-30);line-height:1.8">px-3 py-1 · text-xs · rounded-full<br>border 1px · couleur/20 bg · couleur/30 border</div></div>
+      <div class="comp-card"><div class="comp-card-label">Status pills — live & à venir</div><div class="live-row"><div class="pill pill-live"><span class="pill-dot"></span>EN COURS</div><div class="pill pill-soon"><span class="pill-dot"></span>À VENIR</div></div><div style="margin-top:16px;font-family:var(--font-mono);font-size:10px;color:var(--white-30);line-height:1.8">Dot + animate-ping · backdrop-blur<br>LIVE = rose · SOON = cyan</div></div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <section class="section" id="cg-cartes">
+    <p class="section-label">06</p>
+    <h2 class="section-title">Cartes</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:24px;align-items:start">
+      <div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--white-30);letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px">.glass-card → EventCard</div>
+        <div class="event-card-demo">
+          <div class="event-cover">
+            <div style="position:absolute;top:10px;left:10px"><div class="pill pill-live" style="font-size:10px;padding:4px 10px"><span class="pill-dot"></span>EN COURS</div></div>
+            <div style="position:absolute;top:10px;right:10px"><div style="background:rgba(0,0,0,.6);border-radius:999px;padding:4px 10px;display:flex;align-items:center;gap:4px"><span style="font-size:10px;color:rgba(255,255,255,.5)">♡</span><span style="font-family:var(--font-mono);font-size:10px;color:rgba(255,255,255,.6)">42</span></div></div>
+            <div class="event-cover-title">CONCERT<br>LIVE</div>
+            <div style="position:absolute;bottom:12px;right:12px"><span class="badge badge-violet" style="font-size:10px;padding:3px 10px">Musique</span></div>
+          </div>
+          <div class="event-body">
+            <div class="event-title">Nuit Électro Libreville</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin:4px 0"><div class="event-price">5 000 XAF</div><span class="badge badge-cyan" style="font-size:10px;padding:2px 8px">✓ Certifié</span></div>
+            <div class="event-date">Sam 23 août 2026 · 21h00</div>
+            <div style="margin-top:8px;font-family:var(--font-mono);font-size:11px;color:var(--violet-lt)">Se termine dans 2h 15min</div>
+            <div style="height:1px;background:var(--white-05);margin:10px 0"></div>
+            <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;color:rgba(255,255,255,.4)">AfroPromo Gabon</span><span style="font-size:11px;color:var(--violet-lt);font-weight:600">+ Suivre</span></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--white-30);letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px">Règles de la glass-card</div>
+        <div class="cg-glass-card" style="margin-bottom:16px"><div style="font-size:13px;color:var(--white-70);margin-bottom:12px">Exemple de contenu dans une glass-card</div><div style="font-family:var(--font-mono);font-size:10px;color:var(--white-30);line-height:2">bg: rgba(26,26,53,.8)<br>backdrop-filter: blur(12px)<br>border: 1px rgba(255,255,255,.05)<br>border-radius: 20px<br>box-shadow: inset+drop</div></div>
+        <div class="neon-border-demo">Carte avec neon-border<br><span style="font-family:var(--font-mono);font-size:10px;color:var(--white-30)">border: violet-neon/30 · box-shadow: shadow-neon</span></div>
+        <div style="margin-top:16px;background:rgba(224,64,251,.07);border:1px solid rgba(224,64,251,.45);border-radius:16px;padding:16px;animation:cgLiveGlow 2.5s ease-in-out infinite"><div style="font-size:12px;color:var(--rose);font-weight:600;margin-bottom:4px">live-card</div><div style="font-family:var(--font-mono);font-size:10px;color:var(--white-30);line-height:1.8">border: rose-neon/45<br>animation: liveGlow 2.5s infinite</div></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <section class="section" id="cg-ombres">
+    <p class="section-label">07</p>
+    <h2 class="section-title">Ombres & Lueurs</h2>
+    <div class="shadow-grid">
+      <div class="shadow-card"><div class="shadow-demo" style="box-shadow:0 0 20px rgba(123,47,190,.5)"></div><div class="shadow-name">shadow-neon</div><div class="shadow-code">0 0 20px rgba(123,47,190,.5)<br>Violet — état normal</div></div>
+      <div class="shadow-card"><div class="shadow-demo" style="box-shadow:0 0 20px rgba(224,64,251,.5)"></div><div class="shadow-name">shadow-neon-rose</div><div class="shadow-code">0 0 20px rgba(224,64,251,.5)<br>Rose — hover CTA</div></div>
+      <div class="shadow-card"><div class="shadow-demo" style="box-shadow:0 0 20px rgba(0,229,255,.5)"></div><div class="shadow-name">shadow-neon-cyan</div><div class="shadow-code">0 0 20px rgba(0,229,255,.5)<br>Cyan — données actives</div></div>
+      <div class="shadow-card"><div class="shadow-demo" style="box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 4px 24px rgba(0,0,0,.25)"></div><div class="shadow-name">shadow-card</div><div class="shadow-code">inset 0 1px 0 rgba(255,255,255,.06)<br>+ 0 4px 24px rgba(0,0,0,.25)</div></div>
+      <div class="shadow-card"><div class="shadow-demo" style="animation:cgPulseNeon 2s ease-in-out infinite"></div><div class="shadow-name">pulse-neon</div><div class="shadow-code">Animation 2s infinite<br>Violet 0.3 → 0.8 opacity</div></div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <section class="section" id="cg-animations">
+    <p class="section-label">08</p>
+    <h2 class="section-title">Animations</h2>
+    <div style="background:var(--bg-card);border:1px solid var(--white-08);border-radius:16px;overflow:hidden">
+      <table class="anim-table">
+        <thead><tr><th>Nom</th><th>Description</th><th>Valeurs clés</th><th>Usage</th></tr></thead>
+        <tbody>
+          <tr><td>pulse-neon</td><td>Box-shadow violet qui pulse</td><td>2s · ease-in-out · infinite</td><td>Éléments mis en avant, badges actifs</td></tr>
+          <tr><td>liveGlow</td><td>Lueur rose respirante</td><td>2.5s · ease-in-out · infinite</td><td>live-card sur événement en cours</td></tr>
+          <tr><td>ticker</td><td>Défilement horizontal infini</td><td>30s · linear · infinite · translateX</td><td>Bande d'annonces TickerTape</td></tr>
+          <tr><td>fadeIn</td><td>Apparition + remontée</td><td>0.5s · opacity 0→1 · Y 10px→0</td><td>Entrée de page, cartes chargées</td></tr>
+          <tr><td>ping (Tailwind)</td><td>Expansion radiale d'un point</td><td>1.2s · scale 1→2 · opacity 0.7→0</td><td>Point LIVE, point À VENIR</td></tr>
+          <tr><td>framer — card hover</td><td>Remontée légère</td><td>whileHover: y -4px</td><td>EventCard, cartes cliquables</td></tr>
+          <tr><td>framer — button</td><td>Micro scale</td><td>hover: 1.02 · tap: 0.97</td><td>Tous les boutons Button.tsx</td></tr>
+          <tr><td>framer — hero</td><td>Entrée séquentielle</td><td>opacity 0→1 · Y 16–20px→0 · delay 0–0.45s</td><td>HeroSection — badges, titre, meta, CTA</td></tr>
+          <tr><td>framer — particles</td><td>Points flottants</td><td>y -10→10→-10 · opacity .3→.8 · 3–5.5s</td><td>HeroSection · désactivé si reduced-motion</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:16px;background:rgba(123,47,190,.08);border:1px solid rgba(123,47,190,.2);border-radius:12px;padding:16px 20px;font-size:13px;color:var(--white-70)">
+      <strong style="color:var(--violet-lt)">prefers-reduced-motion</strong> — toutes les animations sont désactivées ou réduites à 0.01ms lorsque l'OS demande moins de mouvement. Respecté dans <code style="font-family:var(--font-mono);font-size:12px;color:var(--cyan);background:rgba(0,229,255,.08);padding:1px 6px;border-radius:4px">index.css</code>.
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <section class="section" id="cg-layout">
+    <p class="section-label">09</p>
+    <h2 class="section-title">Layout & Règles</h2>
+    <div style="background:var(--bg-card);border:1px solid var(--white-08);border-radius:16px;padding:28px 32px">
+      <div class="rule-list">
+        <div class="rule-item"><span class="rule-num">01</span><span class="rule-text"><strong>Container max-width</strong> — <code>max-w-7xl mx-auto px-4 sm:px-6 lg:px-8</code>. Toutes les sections pleine largeur utilisent ce wrapper.</span></div>
+        <div class="rule-item"><span class="rule-num">02</span><span class="rule-text"><strong>Navbar</strong> — <code>fixed top-0 z-50</code>, hauteur <code>h-16</code>, fond <code>bg/95 backdrop-blur-md</code>, bordure bas <code>violet-neon/20</code>.</span></div>
+        <div class="rule-item"><span class="rule-num">03</span><span class="rule-text"><strong>Grille de cartes</strong> — <code>grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4</code>. Couverture toujours en ratio portrait 3/4.</span></div>
+        <div class="rule-item"><span class="rule-num">04</span><span class="rule-text"><strong>Bordures</strong> — <code>rounded-xl</code> (boutons, inputs), <code>rounded-2xl</code> (glass-cards), <code>rounded-full</code> (badges, pills). Ne pas mélanger dans un même composant.</span></div>
+        <div class="rule-item"><span class="rule-num">05</span><span class="rule-text"><strong>Séparateurs</strong> — <code>border-b border-white/5</code> ou <code>border-white/8</code>. Jamais de couleur pleine, toujours translucide sur fond sombre.</span></div>
+        <div class="rule-item"><span class="rule-num">06</span><span class="rule-text"><strong>Scrollbar</strong> — 6px, track <code>bg-secondary</code>, thumb <code>violet-neon/50</code> arrondi. Défini globalement dans <code>index.css</code>.</span></div>
+        <div class="rule-item"><span class="rule-num">07</span><span class="rule-text"><strong>dark mode</strong> — <code>darkMode: 'class'</code> dans Tailwind. L'UI est 100% dark, le mode light n'est pas implémenté. <code>color-scheme: dark</code> déclaré sur <code>:root</code>.</span></div>
+        <div class="rule-item"><span class="rule-num">08</span><span class="rule-text"><strong>Inputs mobile</strong> — <code>font-size: 16px !important</code> forcé sur <code>input, select, textarea</code> pour bloquer le zoom automatique sur iOS.</span></div>
+        <div class="rule-item"><span class="rule-num">09</span><span class="rule-text"><strong>Icons</strong> — Lucide React exclusivement. Tailles : <code>w-3 h-3</code> (badges), <code>w-4 h-4</code> (nav), <code>w-5 h-5</code> (UI), <code>w-8 h-8</code> (illustrations).</span></div>
+        <div class="rule-item"><span class="rule-num">10</span><span class="rule-text"><strong>Hiérarchie couleur</strong> — Prix en <code>cyan-neon font-mono</code>, actions en <code>neon-gradient</code>, dangers/live en <code>rose-neon</code>, liens actifs en <code>violet-neon</code>. Ne pas intervertir ces rôles.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <footer style="margin-top:80px;padding:32px 0;border-top:1px solid var(--white-08);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
+    <div style="font-family:var(--font-display);font-size:24px;letter-spacing:.08em;text-transform:uppercase;background:var(--g-neon);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">BilletGab</div>
+    <div style="font-family:var(--font-mono);font-size:10px;color:var(--white-30);text-align:right;line-height:1.8">Design System v1.5<br>Usage interne — confidentiel</div>
+  </footer>
+</main>
+`;
+
+function CharteGraphique() {
+  return (
+    <>
+      <style dangerouslySetInnerHTML={{ __html: CHARTE_CSS }} />
+      <div id="charte-gfx" dangerouslySetInnerHTML={{ __html: CHARTE_HTML }} />
+    </>
+  );
+}
+
 export default function AdminBackoffice() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
@@ -2203,6 +2570,7 @@ export default function AdminBackoffice() {
     { key: 'settings' as TabType, label: 'Paramètres', Icon: Settings },
     { key: 'communication' as TabType, label: 'Communication', Icon: Megaphone },
     { key: 'prospection' as TabType, label: 'Prospection', Icon: Target },
+    { key: 'charte' as TabType, label: 'Charte', Icon: Palette },
   ];
 
   return (
@@ -5916,6 +6284,9 @@ Vous gérez l'événement. Nous gérons les billets.
 
       {/* ══ ONGLET : Prospection CRM ══ */}
       {tab === 'prospection' && <ProspectionTab />}
+
+      {/* ══ ONGLET : Charte Graphique ══ */}
+      {tab === 'charte' && <CharteGraphique />}
 
       {/* Preview modal */}
       <AnimatePresence>
