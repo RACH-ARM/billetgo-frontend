@@ -1579,9 +1579,6 @@ export default function AdminBackoffice() {
   const [calSelectedDay, setCalSelectedDay] = useState<string | null>(null);
   const [calShowAdd, setCalShowAdd] = useState(false);
   const [calNewEvent, setCalNewEvent] = useState({ name: '', date: '' });
-  const [calAiPosts, setCalAiPosts] = useState<Record<string, string>>({});
-  const [calAiLoading, setCalAiLoading] = useState<string | null>(null);
-  const [calAiContext, setCalAiContext] = useState('');
   type StrategyMonth = { month: string; label: string; theme: string; formats: string[]; pillar: string };
   type WeekPost = { date: string; day: string; platform: string; type: string; angle: string; text: string };
   const [comStrategy, setComStrategy] = useState<StrategyMonth[] | null>(null);
@@ -5568,7 +5565,7 @@ Vous gérez l'événement. Nous gérons les billets.
                   return (
                     <div
                       key={dateStr}
-                      onClick={() => { setCalSelectedDay(isSelected ? null : dateStr); if (!isSelected) { setCalAiPosts({}); setCalAiContext(''); } }}
+                      onClick={() => setCalSelectedDay(isSelected ? null : dateStr)}
                       className={`min-h-[76px] p-1.5 border-b border-r border-white/5 cursor-pointer transition-colors ${
                         isSelected ? 'bg-violet-neon/15 ring-1 ring-inset ring-violet-neon/40' :
                         hasSaved ? 'bg-emerald-500/5 hover:bg-emerald-500/10' :
@@ -5697,21 +5694,6 @@ Vous gérez l'événement. Nous gérons les billets.
                   );
                 })()}
 
-                {/* Contexte IA */}
-                <div className="rounded-xl border border-violet-neon/15 bg-violet-neon/3 p-3 space-y-2">
-                  <p className="text-[10px] text-violet-neon/70 uppercase tracking-widest font-semibold flex items-center gap-1.5">
-                    <Sparkles className="w-3 h-3" /> Contexte pour l'IA (optionnel)
-                  </p>
-                  <textarea
-                    value={calAiContext}
-                    onChange={e => setCalAiContext(e.target.value)}
-                    placeholder="Ex : Concert de Sidiki Diabaté · 5 000 FCFA · Palais des Sports · 23 août 2026"
-                    rows={2}
-                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-white/20 focus:outline-none focus:border-violet-neon/50 resize-none"
-                  />
-                  <p className="text-[10px] text-white/25">Claude utilisera ces infos pour personnaliser chaque post généré ci-dessous.</p>
-                </div>
-
                 {selectedData.posts.length === 0 ? (
                   <p className="text-white/30 text-xs">Pas de post prévu ce jour. Profite-en pour planifier ou te reposer.</p>
                 ) : (
@@ -5719,26 +5701,6 @@ Vous gérez l'événement. Nous gérons les billets.
                     {selectedData.posts.map((p, pi) => {
                       const tpl = TEMPLATES.find(t => t.id === p.templateKey);
                       const pid = `day-${calSelectedDay}-${pi}`;
-                      const aiPost = calAiPosts[pid];
-                      const isGenerating = calAiLoading === pid;
-
-                      const generatePost = async () => {
-                        setCalAiLoading(pid);
-                        try {
-                          const { data } = await api.post('/admin/communication/generate-post', {
-                            platform: p.platform,
-                            postType: p.type,
-                            context: calAiContext,
-                            date: calSelectedDay,
-                          });
-                          setCalAiPosts(prev => ({ ...prev, [pid]: data.data.message }));
-                        } catch {
-                          toast.error('Erreur lors de la génération du post');
-                        } finally {
-                          setCalAiLoading(null);
-                        }
-                      };
-
                       return (
                         <div key={pi} className="border border-white/8 rounded-xl overflow-hidden">
                           <div className="flex items-center gap-2 px-3 py-2 bg-white/3 border-b border-white/5 flex-wrap">
@@ -5747,50 +5709,14 @@ Vous gérez l'événement. Nous gérons les billets.
                             <span className="text-white/20 text-xs">·</span>
                             <span className="text-xs text-white/50">{p.type}</span>
                             {p.eventLabel && <span className="text-[10px] text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full flex-shrink-0">{p.eventLabel}</span>}
-                            <button
-                              onClick={generatePost}
-                              disabled={!!calAiLoading}
-                              className="ml-auto flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-lg bg-violet-neon/10 text-violet-neon hover:bg-violet-neon/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-semibold flex-shrink-0"
-                            >
-                              <Sparkles className={`w-3 h-3 ${isGenerating ? 'animate-pulse' : ''}`} />
-                              {isGenerating ? 'Génération...' : aiPost ? 'Regénérer' : '✦ Générer'}
-                            </button>
                           </div>
-
-                          {/* Post IA généré */}
-                          {isGenerating && (
-                            <div className="p-3 text-center text-white/30 text-xs">
-                              <div className="inline-block w-3.5 h-3.5 border-2 border-violet-neon/30 border-t-violet-neon rounded-full animate-spin mr-2" />
-                              Claude rédige le post {p.platform}...
-                            </div>
-                          )}
-                          {!isGenerating && aiPost && (
-                            <div className="p-3 bg-violet-neon/3 border-b border-violet-neon/10">
-                              <p className="text-[9px] text-violet-neon/50 uppercase tracking-widest mb-1.5">Post généré par l'IA</p>
-                              <div className="relative">
-                                <pre className="text-[11px] text-white/80 whitespace-pre-wrap font-sans leading-relaxed pr-8">{aiPost}</pre>
-                                <button onClick={() => handleCopy(aiPost, `ai-${pid}`)} className="absolute top-0 right-0 p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-white/40 hover:text-white">
-                                  {copiedId === `ai-${pid}` ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                                </button>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Template de base */}
-                          {tpl && !aiPost && !isGenerating && (
+                          {tpl && (
                             <div className="relative p-3">
-                              <p className="text-[9px] text-white/25 uppercase tracking-widest mb-1.5">Template de base</p>
-                              <pre className="text-[11px] text-white/50 whitespace-pre-wrap font-sans leading-relaxed pr-8">{tpl.content}</pre>
+                              <pre className="text-[11px] text-white/60 whitespace-pre-wrap font-sans leading-relaxed pr-8">{tpl.content}</pre>
                               <button onClick={() => handleCopy(tpl.content, pid)} className="absolute top-3 right-2 p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-white/40 hover:text-white">
                                 {copiedId === pid ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
                               </button>
                               {tpl.tip && <p className="text-[10px] text-violet-neon/60 mt-2 bg-violet-neon/5 rounded px-2 py-1">💡 {tpl.tip}</p>}
-                            </div>
-                          )}
-                          {tpl && aiPost && !isGenerating && (
-                            <div className="relative p-3 opacity-40">
-                              <p className="text-[9px] text-white/25 uppercase tracking-widest mb-1.5">Template de base</p>
-                              <pre className="text-[11px] text-white/40 whitespace-pre-wrap font-sans leading-relaxed pr-8">{tpl.content}</pre>
                             </div>
                           )}
                         </div>
