@@ -785,6 +785,9 @@ function ProspectionTab() {
   const [copyModal, setCopyModal] = useState<{ text: string; id: string } | null>(null);
   const [copyModalPrenom, setCopyModalPrenom] = useState('');
   const [planProspect, setPlanProspect] = useState<Prospect | null>(null);
+  const [aiMessage, setAiMessage] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiCopied, setAiCopied] = useState(false);
 
   const emptyForm = { firstName: '', lastName: '', structure: '', phone: '', instagram: '', eventCategory: 'Miss / Beauté', currentPlatform: '', status: 'TO_CONTACT' as ProspectStatus, potential: 'MEDIUM' as ProspectPotential, notes: '', nextContactAt: '' };
   const [form, setForm] = useState(emptyForm);
@@ -1174,7 +1177,7 @@ function ProspectionTab() {
                               <MessageSquare className="w-3.5 h-3.5" />
                             </a>
                           )}
-                          <button onClick={() => setPlanProspect(p)} title="Plan de prospection"
+                          <button onClick={() => { setPlanProspect(p); setAiMessage(null); setAiCopied(false); }} title="Plan de prospection"
                             className="p-1.5 rounded-lg hover:bg-violet-neon/10 text-white/30 hover:text-violet-neon transition-colors"><Sparkles className="w-3.5 h-3.5" /></button>
                           <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg hover:bg-white/5 text-white/30 hover:text-white transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
                           <button onClick={() => { if (confirm('Supprimer ce prospect ?')) deleteMutation.mutate(p.id); }} className="p-1.5 rounded-lg hover:bg-rose-neon/10 text-white/30 hover:text-rose-neon transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
@@ -1392,6 +1395,79 @@ function ProspectionTab() {
                     <pre className="text-white/30 text-xs leading-relaxed whitespace-pre-wrap font-sans p-4 max-h-36 overflow-y-auto">{suggestedTemplate.content}</pre>
                   </div>
                 )}
+
+                {/* Générer un message IA */}
+                {(() => {
+                  const statusToMsgType: Record<string, string> = {
+                    TO_CONTACT: 'premier_contact',
+                    CONTACTED: 'relance',
+                    TO_FOLLOW_UP: 'relance',
+                    REPLIED: 'relance',
+                    INFO_SENT: 'relance',
+                    MEETING_PLANNED: 'relance',
+                    DEMO_DONE: 'apres_demo',
+                    PROPOSAL_SENT: 'apres_demo',
+                    NEGOTIATION: 'cloture',
+                  };
+                  const msgType = statusToMsgType[planProspect.status] ?? 'premier_contact';
+                  const msgTypeLabel: Record<string, string> = {
+                    premier_contact: 'Premier contact',
+                    relance: 'Relance',
+                    apres_demo: 'Après démo',
+                    cloture: 'Clôture',
+                  };
+                  const generateAI = async () => {
+                    setAiLoading(true);
+                    setAiMessage(null);
+                    setAiCopied(false);
+                    try {
+                      const { data } = await api.post(`/admin/prospects/${planProspect.id}/generate-message`, { messageType: msgType });
+                      setAiMessage(data.data.message);
+                    } catch {
+                      toast.error('Erreur lors de la génération du message IA');
+                    } finally {
+                      setAiLoading(false);
+                    }
+                  };
+                  return (
+                    <div className="rounded-xl border border-violet-neon/15 overflow-hidden">
+                      <div className="flex items-center justify-between px-4 py-2.5 bg-violet-neon/5 border-b border-violet-neon/10">
+                        <div>
+                          <p className="text-xs text-white/30 uppercase tracking-wider">Message IA personnalisé</p>
+                          <p className="text-violet-neon text-sm font-medium">{msgTypeLabel[msgType]}</p>
+                        </div>
+                        <button onClick={generateAI} disabled={aiLoading}
+                          className="flex items-center gap-1.5 text-xs text-violet-neon hover:text-violet-neon/70 disabled:opacity-50 disabled:cursor-not-allowed transition-colors px-3 py-1.5 rounded-lg bg-violet-neon/10 font-semibold">
+                          <Sparkles className={`w-3.5 h-3.5 ${aiLoading ? 'animate-pulse' : ''}`} />
+                          {aiLoading ? 'Génération...' : aiMessage ? 'Regénérer' : 'Générer'}
+                        </button>
+                      </div>
+                      {aiLoading && (
+                        <div className="p-4 text-center text-white/30 text-sm">
+                          <div className="inline-block w-4 h-4 border-2 border-violet-neon/30 border-t-violet-neon rounded-full animate-spin mr-2" />
+                          Claude rédige votre message...
+                        </div>
+                      )}
+                      {!aiLoading && aiMessage && (
+                        <div className="p-4">
+                          <pre className="text-white/70 text-xs leading-relaxed whitespace-pre-wrap font-sans mb-3 max-h-40 overflow-y-auto">{aiMessage}</pre>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(aiMessage);
+                              setAiCopied(true);
+                              setTimeout(() => setAiCopied(false), 2000);
+                            }}
+                            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 transition-colors font-semibold w-full justify-center">
+                            {aiCopied ? <><Check className="w-3.5 h-3.5" /> Copié !</> : <><Copy className="w-3.5 h-3.5" /> Copier le message</>}
+                          </button>
+                        </div>
+                      )}
+                      {!aiLoading && !aiMessage && (
+                        <p className="p-4 text-white/20 text-xs text-center">Cliquez sur "Générer" pour créer un message personnalisé avec l'IA</p>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Étapes */}
                 {plan.steps.length > 0 && (
