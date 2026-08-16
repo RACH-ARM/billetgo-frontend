@@ -5234,18 +5234,30 @@ Vous gérez l'événement. Nous gérons les billets.
                         </div>`;
                       }).join('');
 
-                      const html = `<!doctype html><html><head><meta charset="utf-8"><title>Calendrier éditorial BilletGab</title>
-                        <style>*{box-sizing:border-box}body{font-family:system-ui,sans-serif;color:#111;padding:32px;max-width:900px;margin:0 auto}@media print{body{padding:16px}}</style>
-                      </head><body>
+                      const printContent = `
                         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;padding-bottom:16px;border-bottom:3px solid #7c3aed;">
                           <div><h1 style="font-size:28px;font-weight:900;color:#7c3aed;margin:0;letter-spacing:2px;">BILLETGAB</h1><p style="margin:4px 0 0;color:#6b7280;font-size:13px;">Calendrier éditorial — exporté le ${new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p></div>
                           <div style="text-align:right;color:#9ca3af;font-size:12px;">${posts.length} posts sauvegardés<br/>${Object.keys(byMonth).length} mois planifiés</div>
                         </div>
-                        ${monthSections}
-                      </body></html>`;
+                        ${monthSections}`;
 
-                      const win = window.open('', '_blank');
-                      if (win) { win.document.write(html); win.document.close(); setTimeout(() => win.print(), 300); }
+                      const printDiv = document.createElement('div');
+                      printDiv.id = '__cal-print__';
+                      printDiv.style.cssText = 'display:none;font-family:system-ui,sans-serif;color:#111;padding:32px;max-width:900px;margin:0 auto;box-sizing:border-box;';
+                      printDiv.innerHTML = printContent;
+                      document.body.appendChild(printDiv);
+
+                      const style = document.createElement('style');
+                      style.id = '__cal-print-style__';
+                      style.innerHTML = '@media print{body>*:not(#__cal-print__){display:none!important}#__cal-print__{display:block!important}}';
+                      document.head.appendChild(style);
+
+                      window.print();
+
+                      setTimeout(() => {
+                        document.getElementById('__cal-print__')?.remove();
+                        document.getElementById('__cal-print-style__')?.remove();
+                      }, 1500);
                     } catch { toast.error('Erreur lors de l\'export PDF'); }
                   };
 
