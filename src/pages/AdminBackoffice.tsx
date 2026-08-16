@@ -784,6 +784,7 @@ function ProspectionTab() {
   const [searchQuery, setSearchQuery] = useState('');
   const [copyModal, setCopyModal] = useState<{ text: string; id: string } | null>(null);
   const [copyModalPrenom, setCopyModalPrenom] = useState('');
+  const [planProspect, setPlanProspect] = useState<Prospect | null>(null);
 
   const emptyForm = { firstName: '', lastName: '', structure: '', phone: '', instagram: '', eventCategory: 'Miss / Beauté', currentPlatform: '', status: 'TO_CONTACT' as ProspectStatus, potential: 'MEDIUM' as ProspectPotential, notes: '', nextContactAt: '' };
   const [form, setForm] = useState(emptyForm);
@@ -885,6 +886,121 @@ function ProspectionTab() {
     const digits = phone.replace(/\D/g, '');
     const number = digits.startsWith('241') ? digits : `241${digits}`;
     return `https://wa.me/${number}`;
+  };
+
+  const addDaysLabel = (days: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    return d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  };
+  const addDaysISO = (days: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    return d.toISOString().slice(0, 10);
+  };
+
+  type Plan = {
+    urgency: 'critical' | 'normal' | 'wait';
+    badge: string; badgeColor: string;
+    actionTitle: string; actionDescription: string;
+    templateId?: string; templateLabel?: string;
+    steps: string[];
+    nextStatus: ProspectStatus; nextStatusLabel: string;
+    suggestedDays: number;
+  };
+
+  const generatePlan = (p: Prospect): Plan => {
+    const daysSince = p.lastContactAt
+      ? Math.floor((Date.now() - new Date(p.lastContactAt).getTime()) / 86400000)
+      : 999;
+    const catTpl: Record<string, string> = {
+      'Miss / Beauté': 'miss', 'Concert / DJ': 'concert',
+      'Mode / Fashion': 'mode', 'Religieux': 'religieux',
+    };
+    const segTpl = catTpl[p.eventCategory] ?? 'principal';
+    const segLabel = WHATSAPP_TEMPLATES.find(t => t.id === segTpl)?.title ?? 'Message principal';
+
+    switch (p.status) {
+      case 'TO_CONTACT': return {
+        urgency: 'normal', badge: 'Premier contact', badgeColor: 'text-white/60 bg-white/10',
+        actionTitle: "Envoyer le premier message WhatsApp",
+        actionDescription: `C'est le premier contact avec ${p.firstName}. Utilise le message d'accroche adapté à la catégorie ${p.eventCategory}.`,
+        templateId: segTpl, templateLabel: segLabel,
+        steps: ["Envoyer le message WhatsApp ci-dessous", "Attendre 3 jours — si pas de réponse → Relance 1", "Si réponse → passer à 'A répondu' et envoyer les infos"],
+        nextStatus: 'CONTACTED', nextStatusLabel: 'Contacté', suggestedDays: 3,
+      };
+      case 'CONTACTED': return daysSince < 3 ? {
+        urgency: 'wait', badge: 'En attente', badgeColor: 'text-blue-300 bg-blue-500/10',
+        actionTitle: `Patienter encore ${3 - daysSince} jour${3 - daysSince > 1 ? 's' : ''}`,
+        actionDescription: `Tu as contacté ${p.firstName} il y a ${daysSince} jour${daysSince > 1 ? 's' : ''}. Attends 3 jours avant de relancer pour ne pas paraître insistant.`,
+        steps: [`Patienter jusqu'au ${addDaysLabel(3 - daysSince)}`, "Si toujours pas de réponse → envoyer Relance 1", "Si réponse → passer à 'A répondu'"],
+        nextStatus: 'CONTACTED', nextStatusLabel: 'Relance 1 dans quelques jours', suggestedDays: 3 - daysSince,
+      } : {
+        urgency: 'normal', badge: 'Relance 1', badgeColor: 'text-cyan-300 bg-cyan-500/10',
+        actionTitle: "Envoyer la Relance 1",
+        actionDescription: `${p.firstName} n'a pas répondu depuis ${daysSince} jours. Une relance légère et amicale est le bon geste maintenant.`,
+        templateId: 'relance1', templateLabel: 'Relance 1 (2-3 jours)',
+        steps: ["Envoyer le message de relance 1", "Si réponse → passer à 'A répondu'", "Toujours rien dans 5 jours → Relance finale, puis Perdu"],
+        nextStatus: 'REPLIED', nextStatusLabel: 'A répondu', suggestedDays: 5,
+      };
+      case 'REPLIED': return {
+        urgency: 'normal', badge: 'Envoyer les infos', badgeColor: 'text-violet-300 bg-violet-500/10',
+        actionTitle: "Envoyer la présentation complète",
+        actionDescription: `${p.firstName} a répondu — c'est le bon moment d'envoyer les informations complètes sur BilletGab et de proposer un échange.`,
+        templateId: 'principal', templateLabel: 'Message principal (complet)',
+        steps: ["Envoyer le message principal complet", "Proposer un appel court ou une démo en direct", "Passer à 'Infos envoyées' + programmer la relance"],
+        nextStatus: 'INFO_SENT', nextStatusLabel: 'Infos envoyées', suggestedDays: 3,
+      };
+      case 'INFO_SENT': return {
+        urgency: daysSince > 5 ? 'critical' : 'normal', badge: 'Proposer une démo', badgeColor: 'text-orange-300 bg-orange-500/10',
+        actionTitle: "Proposer un appel ou une démonstration",
+        actionDescription: "Les infos ont été envoyées. L'étape suivante : un appel de 10 min pour montrer la plateforme en direct et répondre aux questions.",
+        steps: ["Appeler ou envoyer un message vocal", "Proposer une date précise ('Tu es disponible jeudi ?')", "Montrer le dashboard et le QR code en direct", "Après l'échange → passer à 'RDV planifié'"],
+        nextStatus: 'MEETING_PLANNED', nextStatusLabel: 'RDV planifié', suggestedDays: 3,
+      };
+      case 'MEETING_PLANNED': return {
+        urgency: 'normal', badge: 'Préparer le RDV', badgeColor: 'text-yellow-300 bg-yellow-500/10',
+        actionTitle: "Confirmer et préparer le rendez-vous",
+        actionDescription: `Un RDV est planifié avec ${p.firstName}. Confirme 24h avant, prépare le pitch ${p.eventCategory} et anticipe les objections.`,
+        steps: ["Confirmer la date/heure 24h avant par message", `Préparer le pitch adapté à ${p.eventCategory}`, "Avoir les réponses aux objections courantes prêtes", "Après le RDV → passer à 'Démo effectuée'"],
+        nextStatus: 'DEMO_DONE', nextStatusLabel: 'Démo effectuée', suggestedDays: 1,
+      };
+      case 'DEMO_DONE': return {
+        urgency: 'critical', badge: 'Envoyer la proposition', badgeColor: 'text-pink-300 bg-pink-500/10',
+        actionTitle: "Envoyer la proposition commerciale",
+        actionDescription: `La démo est faite — agis vite pendant que l'intérêt est maximal. Envoie une proposition claire et concrète avec les conditions.`,
+        steps: ["Envoyer un message récapitulatif : 7% de commission, Mobile Money, QR codes, dashboard temps réel", "Proposer de commencer avec un premier événement test", "Préciser que l'inscription est gratuite et sans engagement", "Relancer dans 2 jours si pas de retour"],
+        nextStatus: 'PROPOSAL_SENT', nextStatusLabel: 'Proposition envoyée', suggestedDays: 2,
+      };
+      case 'PROPOSAL_SENT': return {
+        urgency: daysSince > 3 ? 'critical' : 'normal', badge: 'Suivi proposition', badgeColor: 'text-amber-300 bg-amber-500/10',
+        actionTitle: "Relancer sur la proposition",
+        actionDescription: `La proposition est envoyée${daysSince < 999 ? ` depuis ${daysSince} jour${daysSince > 1 ? 's' : ''}` : ''}. Demande un retour et réponds aux objections éventuelles.`,
+        steps: ["Demander un retour ('Tu as pu regarder ma proposition ?')", "Répondre aux objections — voir section Objections", "Proposer de commencer par un petit événement pour tester", "Si accord → Négociation puis Signé"],
+        nextStatus: 'NEGOTIATION', nextStatusLabel: 'Négociation', suggestedDays: 2,
+      };
+      case 'NEGOTIATION': return {
+        urgency: 'critical', badge: 'Conclure maintenant', badgeColor: 'text-green-300 bg-green-500/10',
+        actionTitle: "Conclure le partenariat",
+        actionDescription: `Tu es en phase finale avec ${p.firstName}. Propose un démarrage concret et rapide pour transformer l'intérêt en signature.`,
+        steps: ["Proposer une date de début concrète ('On peut commencer lundi ?')", "Offrir un accompagnement renforcé pour le premier événement", "Faire créer le compte organisateur maintenant : billetgab.com/register", "Passer à 'Signé' dès confirmation"],
+        nextStatus: 'SIGNED', nextStatusLabel: 'Signé ✓', suggestedDays: 1,
+      };
+      case 'TO_FOLLOW_UP': return {
+        urgency: 'normal', badge: 'Relance finale', badgeColor: 'text-teal-300 bg-teal-500/10',
+        actionTitle: "Envoyer la relance finale",
+        actionDescription: `${p.firstName} doit être relancé une dernière fois. Si pas de réponse après ça, passe à 'Perdu' et concentre-toi ailleurs.`,
+        templateId: 'relance2', templateLabel: 'Relance finale',
+        steps: ["Envoyer le message de relance finale", "Attendre 5 à 7 jours", "Toujours rien → passer à 'Perdu'", "Si réponse → reprendre depuis 'A répondu'"],
+        nextStatus: 'REPLIED', nextStatusLabel: 'A répondu', suggestedDays: 7,
+      };
+      default: return {
+        urgency: 'wait', badge: 'Terminé', badgeColor: 'text-white/30 bg-white/5',
+        actionTitle: "Aucune action requise",
+        actionDescription: "Ce prospect est signé ou perdu.",
+        steps: [], nextStatus: p.status, nextStatusLabel: p.status, suggestedDays: 0,
+      };
+    }
   };
 
   const openEdit = (p: Prospect) => {
@@ -1058,6 +1174,8 @@ function ProspectionTab() {
                               <MessageSquare className="w-3.5 h-3.5" />
                             </a>
                           )}
+                          <button onClick={() => setPlanProspect(p)} title="Plan de prospection"
+                            className="p-1.5 rounded-lg hover:bg-violet-neon/10 text-white/30 hover:text-violet-neon transition-colors"><Sparkles className="w-3.5 h-3.5" /></button>
                           <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg hover:bg-white/5 text-white/30 hover:text-white transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
                           <button onClick={() => { if (confirm('Supprimer ce prospect ?')) deleteMutation.mutate(p.id); }} className="p-1.5 rounded-lg hover:bg-rose-neon/10 text-white/30 hover:text-rose-neon transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                         </div>
@@ -1231,6 +1349,108 @@ function ProspectionTab() {
           ))}
         </div>
       )}
+
+      {/* Modal plan de prospection */}
+      {planProspect && (() => {
+        const plan = generatePlan(planProspect);
+        const suggestedTemplate = plan.templateId ? WHATSAPP_TEMPLATES.find(t => t.id === plan.templateId) : null;
+        const urgencyBorder = plan.urgency === 'critical' ? 'border-rose-neon/30' : plan.urgency === 'wait' ? 'border-white/10' : 'border-violet-neon/20';
+        return (
+          <div className="fixed inset-0 z-50 bg-bg/90 backdrop-blur-md flex items-center justify-center p-4">
+            <div className={`bg-bg-card border ${urgencyBorder} rounded-2xl w-full max-w-lg overflow-y-auto max-h-[90vh]`}>
+              {/* Header */}
+              <div className="flex items-center justify-between p-5 border-b border-white/5">
+                <div>
+                  <p className="text-xs text-white/30 uppercase tracking-wider mb-1">Plan de prospection</p>
+                  <p className="font-bebas text-lg tracking-wider text-white">{planProspect.firstName} {planProspect.lastName ?? ''}</p>
+                  <p className="text-white/30 text-xs">{planProspect.eventCategory}{planProspect.structure ? ` · ${planProspect.structure}` : ''}</p>
+                </div>
+                <button onClick={() => setPlanProspect(null)} className="text-white/40 hover:text-white p-1"><X className="w-5 h-5" /></button>
+              </div>
+
+              <div className="p-5 space-y-4">
+                {/* Action principale */}
+                <div className={`rounded-xl p-4 ${plan.urgency === 'critical' ? 'bg-rose-neon/5 border border-rose-neon/20' : plan.urgency === 'wait' ? 'bg-white/5 border border-white/10' : 'bg-violet-neon/5 border border-violet-neon/15'}`}>
+                  <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${plan.badgeColor} mb-2 inline-block`}>{plan.badge}</span>
+                  <p className="font-semibold text-white text-sm mb-1">{plan.actionTitle}</p>
+                  <p className="text-white/50 text-xs leading-relaxed">{plan.actionDescription}</p>
+                </div>
+
+                {/* Message recommandé */}
+                {suggestedTemplate && (
+                  <div className="rounded-xl border border-[#25D366]/15 overflow-hidden">
+                    <div className="flex items-center justify-between px-4 py-2.5 bg-[#25D366]/5 border-b border-[#25D366]/10">
+                      <div>
+                        <p className="text-xs text-white/30 uppercase tracking-wider">Message recommandé</p>
+                        <p className="text-[#25D366] text-sm font-medium">{suggestedTemplate.title}</p>
+                      </div>
+                      <button onClick={() => { setPlanProspect(null); openCopyModal(suggestedTemplate.content, suggestedTemplate.id); }}
+                        className="flex items-center gap-1.5 text-xs text-[#25D366] hover:text-[#25D366]/70 transition-colors px-3 py-1.5 rounded-lg bg-[#25D366]/10">
+                        <Copy className="w-3.5 h-3.5" /> Personnaliser & copier
+                      </button>
+                    </div>
+                    <pre className="text-white/30 text-xs leading-relaxed whitespace-pre-wrap font-sans p-4 max-h-36 overflow-y-auto">{suggestedTemplate.content}</pre>
+                  </div>
+                )}
+
+                {/* Étapes */}
+                {plan.steps.length > 0 && (
+                  <div>
+                    <p className="text-xs text-white/30 uppercase tracking-wider mb-2">Étapes à suivre</p>
+                    <div className="space-y-2">
+                      {plan.steps.map((step, i) => (
+                        <div key={i} className="flex items-start gap-3">
+                          <span className="flex-shrink-0 w-5 h-5 rounded-full bg-violet-neon/20 text-violet-neon text-[10px] font-bold flex items-center justify-center mt-0.5">{i + 1}</span>
+                          <p className="text-white/60 text-sm leading-relaxed">{step}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Actions rapides */}
+                {plan.suggestedDays > 0 && (
+                  <div className="flex flex-col gap-2 pt-2 border-t border-white/5">
+                    <p className="text-xs text-white/30 uppercase tracking-wider">Actions rapides</p>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => {
+                          statusMutation.mutate({ id: planProspect.id, status: plan.nextStatus });
+                          setPlanProspect(null);
+                          toast.success(`Statut → ${plan.nextStatusLabel}`);
+                        }}
+                        className="flex-1 py-2 px-3 rounded-xl bg-violet-neon/10 border border-violet-neon/20 text-violet-neon text-xs font-semibold hover:bg-violet-neon/20 transition-colors">
+                        Passer à "{plan.nextStatusLabel}"
+                      </button>
+                      <button
+                        onClick={() => {
+                          saveMutation.mutate({
+                            firstName: planProspect.firstName,
+                            lastName: planProspect.lastName ?? '',
+                            structure: planProspect.structure ?? '',
+                            phone: planProspect.phone ?? '',
+                            instagram: planProspect.instagram ?? '',
+                            eventCategory: planProspect.eventCategory,
+                            currentPlatform: planProspect.currentPlatform ?? '',
+                            status: planProspect.status,
+                            potential: planProspect.potential,
+                            notes: planProspect.notes ?? '',
+                            nextContactAt: addDaysISO(plan.suggestedDays),
+                            id: planProspect.id,
+                          });
+                          setPlanProspect(null);
+                        }}
+                        className="flex-1 py-2 px-3 rounded-xl bg-white/5 border border-white/10 text-white/60 text-xs font-semibold hover:bg-white/10 transition-colors">
+                        Relance dans {plan.suggestedDays}j ({addDaysLabel(plan.suggestedDays)})
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Modal personnalisation prénom */}
       {copyModal && (
