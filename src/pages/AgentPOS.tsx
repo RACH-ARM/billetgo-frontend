@@ -414,11 +414,9 @@ export default function AgentPOS() {
         </div>
       </div>
 
-      {/* ── Contenu principal ── */}
-      <div className="max-w-xl mx-auto w-full px-4 py-4 flex flex-col gap-5 pb-36">
-
-        {/* ══ HISTORIQUE ══ */}
-        {activeTab === 'history' && (
+      {/* ── Contenu principal — Historique ── */}
+      {activeTab === 'history' && (
+        <div className="max-w-xl mx-auto w-full px-4 py-4 flex flex-col gap-3 pb-10">
           <div className="flex flex-col gap-3">
             {/* Barre de recherche */}
             <div className="relative">
@@ -493,9 +491,12 @@ export default function AgentPOS() {
               </div>
             )}
           </div>
-        )}
+        </div>
+      )}
 
-        {activeTab === 'sale' && <>
+      {/* ── Contenu principal — Vente ── */}
+      {activeTab === 'sale' && (
+        <div className="max-w-xl mx-auto w-full px-4 py-4 flex flex-col gap-5 pb-36">
         {eventsLoading && <div className="text-center py-16 text-white/30">Chargement...</div>}
 
         {!eventsLoading && (!events || events.length === 0) && (
@@ -648,10 +649,11 @@ export default function AgentPOS() {
             )}
           </>
         )}
-      </div>
+        </div>
+      )}
 
       {/* ── Barre de validation fixe ── */}
-      {selectedEvent && (
+      {activeTab === 'sale' && selectedEvent && (
         <div className="fixed bottom-0 left-0 right-0 bg-bg/95 backdrop-blur-md border-t border-violet-neon/20 px-4 py-4 z-40">
           <div className="max-w-xl mx-auto">
             <div className="flex items-center justify-between mb-3">
@@ -674,8 +676,6 @@ export default function AgentPOS() {
           </div>
         </div>
       )}
-
-      </>}
 
       {/* ══ OVERLAY : En attente de paiement ══ */}
       {showWaiting && (
