@@ -816,44 +816,6 @@ export default function AgentPOS() {
 
             </div>
 
-            {/* ── Envoi Email ── */}
-            <div className="w-full glass-card p-4">
-              <p className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">Envoyer le billet par email</p>
-
-              {emailSentList.map(e => (
-                <div key={e} className="flex items-center gap-2 mb-2 bg-violet-neon/10 border border-violet-neon/20 rounded-lg px-3 py-1.5">
-                  <Mail className="w-3 h-3 text-violet-neon" />
-                  <span className="text-violet-neon text-xs font-medium flex-1 truncate">{e}</span>
-                  <span className="text-violet-neon/60 text-xs">✓ Envoyé</span>
-                </div>
-              ))}
-
-              <div className="flex gap-2 mt-2">
-                <div className="relative flex-1">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-violet-neon/60" />
-                  <input
-                    type="email"
-                    placeholder="Email du client"
-                    value={emailResend}
-                    onChange={e => setEmailResend(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleEmailResend()}
-                    className="w-full bg-bg border border-violet-neon/30 rounded-xl pl-9 pr-3 py-2.5 text-white placeholder:text-white/25 focus:border-violet-neon/70 focus:outline-none text-sm transition-colors"
-                  />
-                </div>
-                <button
-                  onClick={handleEmailResend}
-                  disabled={!emailResend.trim() || emailResendSending}
-                  className="px-4 py-2.5 rounded-xl bg-violet-neon text-white text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 shrink-0"
-                >
-                  {emailResendSending
-                    ? <Loader2 className="w-4 h-4 animate-spin" />
-                    : <Send className="w-4 h-4" />
-                  }
-                  Envoyer
-                </button>
-              </div>
-            </div>
-
             {/* ── Envoi WhatsApp ── */}
             <div className="w-full glass-card p-4">
               <p className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">Envoyer le billet sur WhatsApp</p>
@@ -893,6 +855,44 @@ export default function AgentPOS() {
                   className="px-4 py-2.5 rounded-xl bg-[#25D366] text-white text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 shrink-0"
                 >
                   {waResendSending
+                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                    : <Send className="w-4 h-4" />
+                  }
+                  Envoyer
+                </button>
+              </div>
+            </div>
+
+            {/* ── Envoi Email ── */}
+            <div className="w-full glass-card p-4">
+              <p className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">Envoyer le billet par email</p>
+
+              {emailSentList.map(e => (
+                <div key={e} className="flex items-center gap-2 mb-2 bg-violet-neon/10 border border-violet-neon/20 rounded-lg px-3 py-1.5">
+                  <Mail className="w-3 h-3 text-violet-neon" />
+                  <span className="text-violet-neon text-xs font-medium flex-1 truncate">{e}</span>
+                  <span className="text-violet-neon/60 text-xs">✓ Envoyé</span>
+                </div>
+              ))}
+
+              <div className="flex gap-2 mt-2">
+                <div className="relative flex-1">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-violet-neon/60" />
+                  <input
+                    type="email"
+                    placeholder="Email du client"
+                    value={emailResend}
+                    onChange={e => setEmailResend(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleEmailResend()}
+                    className="w-full bg-bg border border-violet-neon/30 rounded-xl pl-9 pr-3 py-2.5 text-white placeholder:text-white/25 focus:border-violet-neon/70 focus:outline-none text-sm transition-colors"
+                  />
+                </div>
+                <button
+                  onClick={handleEmailResend}
+                  disabled={!emailResend.trim() || emailResendSending}
+                  className="px-4 py-2.5 rounded-xl bg-violet-neon text-white text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 shrink-0"
+                >
+                  {emailResendSending
                     ? <Loader2 className="w-4 h-4 animate-spin" />
                     : <Send className="w-4 h-4" />
                   }
@@ -946,31 +946,6 @@ export default function AgentPOS() {
               )}
             </div>
 
-            {/* Email */}
-            <div className="glass-card p-4 flex flex-col gap-3">
-              <p className="text-xs font-semibold text-white/40 uppercase tracking-wider">Envoyer par Email</p>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                  <input
-                    type="email"
-                    placeholder="Adresse email"
-                    value={resendEmail}
-                    onChange={(e) => setResendEmail(e.target.value)}
-                    className="w-full bg-bg border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-white text-sm placeholder:text-white/25 focus:border-violet-neon/50 focus:outline-none"
-                  />
-                </div>
-                <button
-                  onClick={handleResendEmail}
-                  disabled={!resendEmail.trim() || resendSending !== null}
-                  className="px-4 py-2.5 rounded-xl bg-violet-neon/20 text-violet-neon font-semibold text-sm hover:bg-violet-neon/30 disabled:opacity-30 transition-colors flex items-center gap-1.5"
-                >
-                  {resendSending === 'email' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  Envoyer
-                </button>
-              </div>
-            </div>
-
             {/* WhatsApp */}
             <div className="glass-card p-4 flex flex-col gap-3">
               <p className="text-xs font-semibold text-white/40 uppercase tracking-wider">Envoyer sur WhatsApp</p>
@@ -991,6 +966,31 @@ export default function AgentPOS() {
                   className="px-4 py-2.5 rounded-xl bg-[#25D366]/20 text-[#25D366] font-semibold text-sm hover:bg-[#25D366]/30 disabled:opacity-30 transition-colors flex items-center gap-1.5"
                 >
                   {resendSending === 'whatsapp' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  Envoyer
+                </button>
+              </div>
+            </div>
+
+            {/* Email */}
+            <div className="glass-card p-4 flex flex-col gap-3">
+              <p className="text-xs font-semibold text-white/40 uppercase tracking-wider">Envoyer par Email</p>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                  <input
+                    type="email"
+                    placeholder="Adresse email"
+                    value={resendEmail}
+                    onChange={(e) => setResendEmail(e.target.value)}
+                    className="w-full bg-bg border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-white text-sm placeholder:text-white/25 focus:border-violet-neon/50 focus:outline-none"
+                  />
+                </div>
+                <button
+                  onClick={handleResendEmail}
+                  disabled={!resendEmail.trim() || resendSending !== null}
+                  className="px-4 py-2.5 rounded-xl bg-violet-neon/20 text-violet-neon font-semibold text-sm hover:bg-violet-neon/30 disabled:opacity-30 transition-colors flex items-center gap-1.5"
+                >
+                  {resendSending === 'email' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                   Envoyer
                 </button>
               </div>
