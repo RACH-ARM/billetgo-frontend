@@ -4,7 +4,7 @@ import {
   ShoppingBag, Minus, Plus, User, Phone, Mail, CheckCircle,
   QrCode, LogOut, BarChart3, Ticket, RefreshCw,
   Banknote, Smartphone, Loader2, XCircle, ChevronDown,
-  AlertCircle, Send,
+  AlertCircle, Send, Search, History, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
@@ -54,6 +54,18 @@ interface AgentStats {
 
 type PaymentMethod = 'CASH' | 'MOOV_MONEY' | 'AIRTEL_MONEY';
 
+interface HistoryOrder {
+  id: string;
+  buyerName: string;
+  buyerEmail: string | null;
+  totalAmount: number;
+  paymentMethod: PaymentMethod | null;
+  createdAt: string;
+  ticketCount: number;
+  event: { id: string; title: string; eventDate: string };
+  orderItems: { quantity: number; category: { name: string } }[];
+}
+
 const API_URL = import.meta.env.VITE_API_URL || '/api/v1';
 function getQRImageUrl(orderId: string, qrToken: string) {
   return `${API_URL}/orders/${orderId}/qr-public?token=${qrToken}`;
@@ -64,6 +76,17 @@ function getQRImageUrl(orderId: string, qrToken: string) {
 export default function AgentPOS() {
   const { logout, user } = useAuthStore();
   const navigate = useNavigate();
+
+  // ── Tab ────────────────────────────────────────────────────────────────────
+  const [activeTab, setActiveTab] = useState<'sale' | 'history'>('sale');
+
+  // ── Historique state ───────────────────────────────────────────────────────
+  const [historySearch, setHistorySearch] = useState('');
+  const [historyPage, setHistoryPage]     = useState(1);
+  const [resendOrder, setResendOrder]     = useState<HistoryOrder | null>(null);
+  const [resendEmail, setResendEmail]     = useState('');
+  const [resendPhone, setResendPhone]     = useState('');
+  const [resendSending, setResendSending] = useState<'email' | 'whatsapp' | null>(null);
 
   // ── Form state ─────────────────────────────────────────────────────────────
   const [selectedEvent, setSelectedEvent] = useState<AgentEvent | null>(null);
@@ -165,6 +188,18 @@ export default function AgentPOS() {
     'agent-stats',
     async () => { const res = await api.get('/agent/stats'); return res.data.data; },
     { enabled: showStats, refetchOnWindowFocus: false }
+  );
+
+  const { data: historyData, isLoading: historyLoading } = useQuery<{
+    data: HistoryOrder[];
+    pagination: { total: number; page: number; limit: number; totalPages: number };
+  }>(
+    ['agent-history', historySearch, historyPage],
+    async () => {
+      const res = await api.get('/agent/history', { params: { search: historySearch, page: historyPage, limit: 20 } });
+      return res.data;
+    },
+    { enabled: activeTab === 'history', keepPreviousData: true, refetchOnWindowFocus: false }
   );
 
   // Auto-sélectionner si un seul événement
@@ -278,6 +313,40 @@ export default function AgentPOS() {
     else mobileMoneyMutation.mutate();
   };
 
+  const openResend = (order: HistoryOrder) => {
+    setResendOrder(order);
+    setResendEmail(order.buyerEmail ?? '');
+    setResendPhone('');
+  };
+
+  const handleResendEmail = async () => {
+    if (!resendOrder || !resendEmail.trim()) return;
+    setResendSending('email');
+    try {
+      await api.post(`/agent/orders/${resendOrder.id}/send-email`, { email: resendEmail.trim() });
+      toast.success(`Billet envoyé à ${resendEmail.trim()}`);
+      setResendOrder(null);
+    } catch {
+      toast.error('Échec de l\'envoi email');
+    } finally {
+      setResendSending(null);
+    }
+  };
+
+  const handleResendWhatsApp = async () => {
+    if (!resendOrder || !resendPhone.trim()) return;
+    setResendSending('whatsapp');
+    try {
+      await api.post(`/agent/orders/${resendOrder.id}/send-whatsapp`, { phone: resendPhone.trim() });
+      toast.success(`Billet envoyé sur WhatsApp · ${resendPhone.trim()}`);
+      setResendOrder(null);
+    } catch {
+      toast.error('Échec de l\'envoi WhatsApp');
+    } finally {
+      setResendSending(null);
+    }
+  };
+
   const handleRetry = () => {
     if (pollRef.current) clearInterval(pollRef.current);
     setPendingOrderId(null);
@@ -326,9 +395,107 @@ export default function AgentPOS() {
         </div>
       </div>
 
+      {/* ── Tabs ── */}
+      <div className="sticky top-[61px] z-40 bg-bg/95 backdrop-blur-md border-b border-white/5 px-4">
+        <div className="max-w-xl mx-auto flex">
+          {(['sale', 'history'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-semibold border-b-2 transition-colors ${
+                activeTab === tab
+                  ? 'border-violet-neon text-violet-neon'
+                  : 'border-transparent text-white/40 hover:text-white/70'
+              }`}
+            >
+              {tab === 'sale' ? <><ShoppingBag className="w-4 h-4" />Vente</> : <><History className="w-4 h-4" />Historique</>}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* ── Contenu principal ── */}
       <div className="max-w-xl mx-auto w-full px-4 py-4 flex flex-col gap-5 pb-36">
 
+        {/* ══ HISTORIQUE ══ */}
+        {activeTab === 'history' && (
+          <div className="flex flex-col gap-3">
+            {/* Barre de recherche */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+              <input
+                type="text"
+                placeholder="Rechercher par nom..."
+                value={historySearch}
+                onChange={(e) => { setHistorySearch(e.target.value); setHistoryPage(1); }}
+                className="w-full bg-bg-card border border-white/10 rounded-xl pl-9 pr-4 py-3 text-white placeholder:text-white/25 focus:border-violet-neon/50 focus:outline-none transition-colors"
+              />
+            </div>
+
+            {historyLoading && <div className="text-center py-12 text-white/30">Chargement...</div>}
+
+            {!historyLoading && historyData?.data.length === 0 && (
+              <div className="glass-card p-8 text-center">
+                <History className="w-10 h-10 text-white/15 mx-auto mb-3" />
+                <p className="text-white/40 text-sm">Aucune vente trouvée</p>
+              </div>
+            )}
+
+            {historyData?.data.map((order) => {
+              const pmLabel = order.paymentMethod === 'CASH' ? 'Espèces' : order.paymentMethod === 'AIRTEL_MONEY' ? 'Airtel Money' : order.paymentMethod === 'MOOV_MONEY' ? 'Moov Money' : '—';
+              const pmColor = order.paymentMethod === 'CASH' ? 'text-amber-400' : order.paymentMethod === 'AIRTEL_MONEY' ? 'text-rose-400' : 'text-blue-400';
+              return (
+                <div key={order.id} className="glass-card p-4 flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold truncate">{order.buyerName}</p>
+                    <p className="text-white/40 text-xs truncate">{order.event.title}</p>
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                      <span className={`text-xs font-semibold ${pmColor}`}>{pmLabel}</span>
+                      <span className="text-white/20 text-xs">{order.ticketCount} billet{order.ticketCount > 1 ? 's' : ''}</span>
+                      <span className="text-white/20 text-xs">{new Date(order.createdAt).toLocaleDateString('fr-FR')}</span>
+                    </div>
+                    {order.buyerEmail && (
+                      <p className="text-white/25 text-xs truncate mt-0.5">{order.buyerEmail}</p>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                    <p className="font-semibold text-violet-neon text-sm">{formatPrice(order.totalAmount)}</p>
+                    <button
+                      onClick={() => openResend(order)}
+                      className="flex items-center gap-1.5 text-xs font-semibold text-white/60 hover:text-violet-neon border border-white/10 hover:border-violet-neon/40 rounded-lg px-2.5 py-1.5 transition-colors"
+                    >
+                      <Send className="w-3 h-3" />
+                      Renvoyer
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Pagination */}
+            {historyData && historyData.pagination.totalPages > 1 && (
+              <div className="flex items-center justify-between px-1 py-2">
+                <button
+                  onClick={() => setHistoryPage((p) => Math.max(1, p - 1))}
+                  disabled={historyPage === 1}
+                  className="flex items-center gap-1 text-sm text-white/40 hover:text-white disabled:opacity-20 transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" /> Précédent
+                </button>
+                <span className="text-xs text-white/30">{historyPage} / {historyData.pagination.totalPages}</span>
+                <button
+                  onClick={() => setHistoryPage((p) => Math.min(historyData.pagination.totalPages, p + 1))}
+                  disabled={historyPage === historyData.pagination.totalPages}
+                  className="flex items-center gap-1 text-sm text-white/40 hover:text-white disabled:opacity-20 transition-colors"
+                >
+                  Suivant <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'sale' && <>
         {eventsLoading && <div className="text-center py-16 text-white/30">Chargement...</div>}
 
         {!eventsLoading && (!events || events.length === 0) && (
@@ -507,6 +674,8 @@ export default function AgentPOS() {
           </div>
         </div>
       )}
+
+      </>}
 
       {/* ══ OVERLAY : En attente de paiement ══ */}
       {showWaiting && (
@@ -726,6 +895,73 @@ export default function AgentPOS() {
             >
               Nouvelle vente
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ══ OVERLAY : Renvoyer un billet ══ */}
+      {resendOrder && (
+        <div className="fixed inset-0 z-50 bg-bg/98 backdrop-blur-md flex flex-col justify-end">
+          <div className="max-w-xl mx-auto w-full px-4 pb-8 pt-4 flex flex-col gap-4">
+            <div className="flex items-center justify-between mb-1">
+              <div>
+                <p className="font-semibold">{resendOrder.buyerName}</p>
+                <p className="text-white/40 text-xs">{resendOrder.event.title} · {resendOrder.ticketCount} billet{resendOrder.ticketCount > 1 ? 's' : ''}</p>
+              </div>
+              <button onClick={() => setResendOrder(null)} className="p-1.5 rounded-lg hover:bg-white/5">
+                <XCircle className="w-5 h-5 text-white/40" />
+              </button>
+            </div>
+
+            {/* Email */}
+            <div className="glass-card p-4 flex flex-col gap-3">
+              <p className="text-xs font-semibold text-white/40 uppercase tracking-wider">Envoyer par Email</p>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                  <input
+                    type="email"
+                    placeholder="Adresse email"
+                    value={resendEmail}
+                    onChange={(e) => setResendEmail(e.target.value)}
+                    className="w-full bg-bg border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-white text-sm placeholder:text-white/25 focus:border-violet-neon/50 focus:outline-none"
+                  />
+                </div>
+                <button
+                  onClick={handleResendEmail}
+                  disabled={!resendEmail.trim() || resendSending !== null}
+                  className="px-4 py-2.5 rounded-xl bg-violet-neon/20 text-violet-neon font-semibold text-sm hover:bg-violet-neon/30 disabled:opacity-30 transition-colors flex items-center gap-1.5"
+                >
+                  {resendSending === 'email' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  Envoyer
+                </button>
+              </div>
+            </div>
+
+            {/* WhatsApp */}
+            <div className="glass-card p-4 flex flex-col gap-3">
+              <p className="text-xs font-semibold text-white/40 uppercase tracking-wider">Envoyer sur WhatsApp</p>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#25D366]" />
+                  <input
+                    type="tel"
+                    placeholder="Numéro WhatsApp (ex: 074000000)"
+                    value={resendPhone}
+                    onChange={(e) => setResendPhone(e.target.value)}
+                    className="w-full bg-bg border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-white text-sm placeholder:text-white/25 focus:border-[#25D366]/50 focus:outline-none"
+                  />
+                </div>
+                <button
+                  onClick={handleResendWhatsApp}
+                  disabled={!resendPhone.trim() || resendSending !== null}
+                  className="px-4 py-2.5 rounded-xl bg-[#25D366]/20 text-[#25D366] font-semibold text-sm hover:bg-[#25D366]/30 disabled:opacity-30 transition-colors flex items-center gap-1.5"
+                >
+                  {resendSending === 'whatsapp' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  Envoyer
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
