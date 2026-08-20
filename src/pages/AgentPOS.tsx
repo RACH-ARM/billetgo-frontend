@@ -83,10 +83,12 @@ export default function AgentPOS() {
   // ── Historique state ───────────────────────────────────────────────────────
   const [historySearch, setHistorySearch] = useState('');
   const [historyPage, setHistoryPage]     = useState(1);
-  const [resendOrder, setResendOrder]     = useState<HistoryOrder | null>(null);
-  const [resendEmail, setResendEmail]     = useState('');
-  const [resendPhone, setResendPhone]     = useState('');
-  const [resendSending, setResendSending] = useState<'email' | 'whatsapp' | null>(null);
+  const [resendOrder, setResendOrder]           = useState<HistoryOrder | null>(null);
+  const [resendEmail, setResendEmail]           = useState('');
+  const [resendPhone, setResendPhone]           = useState('');
+  const [resendSending, setResendSending]       = useState<'email' | 'whatsapp' | null>(null);
+  const [resendTicketSrc, setResendTicketSrc]   = useState<string | null>(null);
+  const [resendTicketLoading, setResendTicketLoading] = useState(false);
 
   // ── Form state ─────────────────────────────────────────────────────────────
   const [selectedEvent, setSelectedEvent] = useState<AgentEvent | null>(null);
@@ -313,6 +315,18 @@ export default function AgentPOS() {
     else mobileMoneyMutation.mutate();
   };
 
+  // Charger l'image billet quand la modal de renvoi s'ouvre
+  useEffect(() => {
+    if (!resendOrder) { setResendTicketSrc(null); return; }
+    let objectUrl: string | null = null;
+    setResendTicketLoading(true);
+    api.get(`/agent/orders/${resendOrder.id}/ticket-image`, { responseType: 'blob' })
+      .then(res => { objectUrl = URL.createObjectURL(res.data); setResendTicketSrc(objectUrl); })
+      .catch(() => setResendTicketSrc(null))
+      .finally(() => setResendTicketLoading(false));
+    return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
+  }, [resendOrder?.id]);
+
   const openResend = (order: HistoryOrder) => {
     setResendOrder(order);
     setResendEmail(order.buyerEmail ?? '');
@@ -326,6 +340,7 @@ export default function AgentPOS() {
       await api.post(`/agent/orders/${resendOrder.id}/send-email`, { email: resendEmail.trim() });
       toast.success(`Billet envoyé à ${resendEmail.trim()}`);
       setResendOrder(null);
+      setResendTicketSrc(null);
     } catch {
       toast.error('Échec de l\'envoi email');
     } finally {
@@ -340,6 +355,7 @@ export default function AgentPOS() {
       await api.post(`/agent/orders/${resendOrder.id}/send-whatsapp`, { phone: resendPhone.trim() });
       toast.success(`Billet envoyé sur WhatsApp · ${resendPhone.trim()}`);
       setResendOrder(null);
+      setResendTicketSrc(null);
     } catch {
       toast.error('Échec de l\'envoi WhatsApp');
     } finally {
@@ -800,6 +816,44 @@ export default function AgentPOS() {
 
             </div>
 
+            {/* ── Envoi Email ── */}
+            <div className="w-full glass-card p-4">
+              <p className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">Envoyer le billet par email</p>
+
+              {emailSentList.map(e => (
+                <div key={e} className="flex items-center gap-2 mb-2 bg-violet-neon/10 border border-violet-neon/20 rounded-lg px-3 py-1.5">
+                  <Mail className="w-3 h-3 text-violet-neon" />
+                  <span className="text-violet-neon text-xs font-medium flex-1 truncate">{e}</span>
+                  <span className="text-violet-neon/60 text-xs">✓ Envoyé</span>
+                </div>
+              ))}
+
+              <div className="flex gap-2 mt-2">
+                <div className="relative flex-1">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-violet-neon/60" />
+                  <input
+                    type="email"
+                    placeholder="Email du client"
+                    value={emailResend}
+                    onChange={e => setEmailResend(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleEmailResend()}
+                    className="w-full bg-bg border border-violet-neon/30 rounded-xl pl-9 pr-3 py-2.5 text-white placeholder:text-white/25 focus:border-violet-neon/70 focus:outline-none text-sm transition-colors"
+                  />
+                </div>
+                <button
+                  onClick={handleEmailResend}
+                  disabled={!emailResend.trim() || emailResendSending}
+                  className="px-4 py-2.5 rounded-xl bg-violet-neon text-white text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 shrink-0"
+                >
+                  {emailResendSending
+                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                    : <Send className="w-4 h-4" />
+                  }
+                  Envoyer
+                </button>
+              </div>
+            </div>
+
             {/* ── Envoi WhatsApp ── */}
             <div className="w-full glass-card p-4">
               <p className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">Envoyer le billet sur WhatsApp</p>
@@ -847,44 +901,6 @@ export default function AgentPOS() {
               </div>
             </div>
 
-            {/* ── Envoi Email ── */}
-            <div className="w-full glass-card p-4">
-              <p className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">Envoyer le billet par email</p>
-
-              {emailSentList.map(e => (
-                <div key={e} className="flex items-center gap-2 mb-2 bg-violet-neon/10 border border-violet-neon/20 rounded-lg px-3 py-1.5">
-                  <Mail className="w-3 h-3 text-violet-neon" />
-                  <span className="text-violet-neon text-xs font-medium flex-1 truncate">{e}</span>
-                  <span className="text-violet-neon/60 text-xs">✓ Envoyé</span>
-                </div>
-              ))}
-
-              <div className="flex gap-2 mt-2">
-                <div className="relative flex-1">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-violet-neon/60" />
-                  <input
-                    type="email"
-                    placeholder="Email du client"
-                    value={emailResend}
-                    onChange={e => setEmailResend(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleEmailResend()}
-                    className="w-full bg-bg border border-violet-neon/30 rounded-xl pl-9 pr-3 py-2.5 text-white placeholder:text-white/25 focus:border-violet-neon/70 focus:outline-none text-sm transition-colors"
-                  />
-                </div>
-                <button
-                  onClick={handleEmailResend}
-                  disabled={!emailResend.trim() || emailResendSending}
-                  className="px-4 py-2.5 rounded-xl bg-violet-neon text-white text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 shrink-0"
-                >
-                  {emailResendSending
-                    ? <Loader2 className="w-4 h-4 animate-spin" />
-                    : <Send className="w-4 h-4" />
-                  }
-                  Envoyer
-                </button>
-              </div>
-            </div>
-
             <button
               onClick={() => {
                 setSaleResult(null); setSaleWhatsApp(''); setShowQR(false);
@@ -902,15 +918,32 @@ export default function AgentPOS() {
       {/* ══ OVERLAY : Renvoyer un billet ══ */}
       {resendOrder && (
         <div className="fixed inset-0 z-50 bg-bg/98 backdrop-blur-md flex flex-col justify-end">
-          <div className="max-w-xl mx-auto w-full px-4 pb-8 pt-4 flex flex-col gap-4">
+          <div className="max-w-xl mx-auto w-full px-4 pb-8 pt-4 flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-1">
               <div>
                 <p className="font-semibold">{resendOrder.buyerName}</p>
                 <p className="text-white/40 text-xs">{resendOrder.event.title} · {resendOrder.ticketCount} billet{resendOrder.ticketCount > 1 ? 's' : ''}</p>
               </div>
-              <button onClick={() => setResendOrder(null)} className="p-1.5 rounded-lg hover:bg-white/5">
+              <button onClick={() => { setResendOrder(null); setResendTicketSrc(null); }} className="p-1.5 rounded-lg hover:bg-white/5">
                 <XCircle className="w-5 h-5 text-white/40" />
               </button>
+            </div>
+
+            {/* Aperçu du billet */}
+            <div className="glass-card p-3 w-full">
+              {resendTicketLoading ? (
+                <div className="flex items-center justify-center gap-3 py-6 text-white/40">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-xs">Chargement du billet…</span>
+                </div>
+              ) : resendTicketSrc ? (
+                <img src={resendTicketSrc} alt="Billet" className="w-full rounded-lg" style={{ aspectRatio: '900/380' }} />
+              ) : (
+                <div className="flex items-center justify-center gap-2 py-4 text-white/25">
+                  <Ticket className="w-4 h-4" />
+                  <span className="text-xs">Aperçu indisponible</span>
+                </div>
+              )}
             </div>
 
             {/* Email */}
