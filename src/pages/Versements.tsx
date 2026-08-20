@@ -71,7 +71,7 @@ function PayoutRow({ payout }: { payout: OrganizerPayout }) {
 function SaleRow({ sale }: { sale: SaleTransaction }) {
   const date     = new Date(sale.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
   const time     = new Date(sale.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  const pm = sale.paymentMethod;
+  const pm = sale.paymentMethod ?? sale.provider;
   const opLabel = pm === 'CASH' ? 'Espèces' : pm === 'AIRTEL_MONEY' ? 'Airtel Money' : pm === 'MOOV_MONEY' ? 'Moov Money' : null;
   const opColor = pm === 'CASH' ? 'text-amber-400' : pm === 'AIRTEL_MONEY' ? 'text-rose-neon' : 'text-cyan-neon';
   const channelLabel = sale.saleChannel === 'POS' ? '· Agent' : null;
