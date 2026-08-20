@@ -231,14 +231,24 @@ function BuyersPanel({ event, onBack }: { event: OrganizerEventStat; onBack: () 
                       {formatPrice(order.totalAmount)}
                     </td>
                     <td className="px-5 py-4">
-                      {order.payments[0] && (
-                        <span className={`flex items-center gap-1 text-xs font-semibold ${
-                          order.payments[0].provider === 'AIRTEL_MONEY' ? 'text-rose-neon' : 'text-cyan-neon'
-                        }`}>
-                          <CreditCard className="w-3 h-3" />
-                          {order.payments[0].provider === 'AIRTEL_MONEY' ? 'Airtel' : 'Moov'}
-                        </span>
-                      )}
+                      {(() => {
+                        const pm = (order as any).paymentMethod;
+                        const ch = (order as any).saleChannel;
+                        if (pm === 'CASH') return (
+                          <span className="flex items-center gap-1 text-xs font-semibold text-amber-400">
+                            <CreditCard className="w-3 h-3" />Espèces
+                          </span>
+                        );
+                        const provider = pm || order.payments[0]?.provider;
+                        if (!provider) return null;
+                        const isAirtel = provider === 'AIRTEL_MONEY';
+                        return (
+                          <span className={`flex items-center gap-1 text-xs font-semibold ${isAirtel ? 'text-rose-neon' : 'text-cyan-neon'}`}>
+                            <CreditCard className="w-3 h-3" />
+                            {isAirtel ? 'Airtel' : 'Moov'}{ch === 'POS' ? ' (Agent)' : ''}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-5 py-4 text-white/40 text-xs">
                       {new Date(order.createdAt).toLocaleDateString('fr-FR')}

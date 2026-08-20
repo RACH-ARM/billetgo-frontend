@@ -71,8 +71,10 @@ function PayoutRow({ payout }: { payout: OrganizerPayout }) {
 function SaleRow({ sale }: { sale: SaleTransaction }) {
   const date     = new Date(sale.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
   const time     = new Date(sale.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  const opLabel  = sale.provider === 'AIRTEL_MONEY' ? 'Airtel Money' : sale.provider === 'MOOV_MONEY' ? 'Moov Money' : null;
-  const opColor  = sale.provider === 'AIRTEL_MONEY' ? 'text-rose-neon' : 'text-cyan-neon';
+  const pm = sale.paymentMethod;
+  const opLabel = pm === 'CASH' ? 'Espèces' : pm === 'AIRTEL_MONEY' ? 'Airtel Money' : pm === 'MOOV_MONEY' ? 'Moov Money' : null;
+  const opColor = pm === 'CASH' ? 'text-amber-400' : pm === 'AIRTEL_MONEY' ? 'text-rose-neon' : 'text-cyan-neon';
+  const channelLabel = sale.saleChannel === 'POS' ? '· Agent' : null;
 
   return (
     <div className="flex items-center gap-3 px-4 py-3.5">
@@ -92,6 +94,7 @@ function SaleRow({ sale }: { sale: SaleTransaction }) {
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           <span className="text-[11px] text-white/25 truncate max-w-[140px]">{sale.eventTitle}</span>
           {opLabel && <span className={`text-[11px] ${opColor} flex-shrink-0`}>{opLabel}</span>}
+          {channelLabel && <span className="text-[11px] text-white/20 flex-shrink-0">{channelLabel}</span>}
           <span className="text-[11px] text-white/20 flex-shrink-0 flex items-center gap-0.5">
             <Ticket className="w-2.5 h-2.5" />
             {sale.ticketCount}

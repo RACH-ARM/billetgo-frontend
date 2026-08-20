@@ -163,6 +163,8 @@ export interface SaleTransaction {
   organizerAmount: number;
   platformFee: number;
   serviceFee: number;
+  saleChannel: 'ONLINE' | 'POS';
+  paymentMethod: 'CASH' | 'AIRTEL_MONEY' | 'MOOV_MONEY' | null;
   provider: string | null;
   ticketCount: number;
   createdAt: string;

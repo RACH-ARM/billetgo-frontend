@@ -2,6 +2,8 @@ export type TicketStatus = 'UNUSED' | 'USED' | 'CANCELLED' | 'REFUNDED';
 export type OrderStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | 'REFUNDED';
 export type PaymentProvider = 'AIRTEL_MONEY' | 'MOOV_MONEY';
 export type PaymentStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'CANCELLED' | 'REFUNDED';
+export type PaymentMethod = 'CASH' | 'AIRTEL_MONEY' | 'MOOV_MONEY';
+export type SaleChannel = 'ONLINE' | 'POS';
 
 export interface Ticket {
   id: string;
@@ -58,6 +60,8 @@ export interface Order {
     coverImageUrl: string | null;
     venueName: string;
   };
+  saleChannel?: SaleChannel;
+  paymentMethod?: PaymentMethod | null;
   orderItems: OrderItem[];
   payments: { status: PaymentStatus; provider: PaymentProvider }[];
 }
