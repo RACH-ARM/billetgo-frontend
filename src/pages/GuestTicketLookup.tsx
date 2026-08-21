@@ -1,10 +1,32 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, Ticket } from 'lucide-react';
+import { ChevronLeft, Ticket, Phone, Send, CheckCircle } from 'lucide-react';
+import api from '../services/api';
 
 export default function GuestTicketLookup() {
   const backendBase = import.meta.env.VITE_BACKEND_URL ?? import.meta.env.VITE_API_URL ?? '';
   const googleUrl = `${backendBase}/api/v1/auth/google?origin=${encodeURIComponent(window.location.origin)}`;
+
+  const [phone, setPhone] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleResend = async () => {
+    if (!phone.trim()) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await api.post('/orders/resend-by-whatsapp', { phone: phone.trim() });
+      setSent(true);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg ?? 'Erreur réseau. Réessayez.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-20">
@@ -29,8 +51,61 @@ export default function GuestTicketLookup() {
         </div>
 
         <p className="text-white/50 text-sm mb-8 leading-relaxed">
-          Connectez-vous avec l'adresse email utilisée lors de votre achat. Si vous n'avez pas encore de compte, il sera créé automatiquement.
+          Connectez-vous avec l'adresse email utilisée lors de votre achat, ou renseignez votre numéro WhatsApp pour recevoir vos billets à nouveau.
         </p>
+
+        {/* ── WhatsApp ── */}
+        <div className="mb-6 p-4 rounded-xl bg-[#25D366]/8 border border-[#25D366]/25">
+          <p className="text-xs font-semibold text-[#25D366]/80 uppercase tracking-wider mb-3">
+            Recevoir mes billets sur WhatsApp
+          </p>
+
+          {sent ? (
+            <div className="flex items-center gap-3 py-2">
+              <CheckCircle className="w-5 h-5 text-[#25D366] flex-shrink-0" />
+              <p className="text-sm text-white/70">
+                Si des billets sont liés à ce numéro, vous allez les recevoir sur WhatsApp dans quelques instants.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#25D366]/60" />
+                  <input
+                    type="tel"
+                    placeholder="074000000"
+                    value={phone}
+                    onChange={(e) => { setPhone(e.target.value); setError(null); }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleResend()}
+                    className="w-full bg-bg border border-[#25D366]/30 rounded-xl pl-9 pr-4 py-2.5 text-white placeholder-white/20 focus:outline-none focus:border-[#25D366]/60 transition-colors text-sm"
+                  />
+                </div>
+                <button
+                  onClick={handleResend}
+                  disabled={!phone.trim() || loading}
+                  className="px-4 py-2.5 rounded-xl bg-[#25D366] text-white text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 shrink-0"
+                >
+                  {loading
+                    ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    : <Send className="w-4 h-4" />
+                  }
+                  Envoyer
+                </button>
+              </div>
+              {error && <p className="text-rose-400 text-xs mt-2">{error}</p>}
+              <p className="text-white/25 text-xs mt-2">
+                Entrez le numéro WhatsApp utilisé lors de votre achat.
+              </p>
+            </>
+          )}
+        </div>
+
+        <div className="relative flex items-center gap-3 mb-4">
+          <div className="flex-1 h-px bg-white/10" />
+          <span className="text-white/20 text-xs">ou connectez-vous</span>
+          <div className="flex-1 h-px bg-white/10" />
+        </div>
 
         <button
           onClick={() => {
@@ -47,12 +122,6 @@ export default function GuestTicketLookup() {
           </svg>
           Continuer avec Google
         </button>
-
-        <div className="relative flex items-center gap-3 mb-4">
-          <div className="flex-1 h-px bg-white/10" />
-          <span className="text-white/20 text-xs">ou</span>
-          <div className="flex-1 h-px bg-white/10" />
-        </div>
 
         <Link
           to="/login"
