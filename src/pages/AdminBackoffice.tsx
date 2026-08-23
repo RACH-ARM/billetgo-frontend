@@ -2276,7 +2276,7 @@ export default function AdminBackoffice() {
   const { data: completedEventsData, isLoading: completedEventsLoading } = useQuery('admin-events-completed', async () => {
     const { data } = await api.get('/admin/events?status=COMPLETED&limit=50');
     return data.data;
-  }, { enabled: tab === 'events', staleTime: 0 });
+  }, { enabled: tab === 'events' || tab === 'vitrine', staleTime: 0 });
 
   const approveEventChanges = useMutation(
     async (eventId: string) => { await api.patch(`/admin/events/${eventId}/approve-changes`); },
@@ -3780,6 +3780,112 @@ export default function AdminBackoffice() {
               </motion.div>
             );
           })}
+
+          {/* ── Événements terminés ── */}
+          {(completedEventsData?.events?.length ?? 0) > 0 && (
+            <div className="mt-6">
+              <h2 className="font-bebas text-xl tracking-wider text-white/50 mb-4 flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-white/20" />
+                Événements terminés
+                <span className="min-w-5 h-5 px-1 bg-white/10 text-white/40 rounded-full text-xs flex items-center justify-center font-bold border border-white/10">
+                  {completedEventsData.events.length}
+                </span>
+              </h2>
+              {completedEventsLoading ? (
+                <div className="space-y-3">{[1,2].map((i) => <SkeletonCard key={i} lines={3} />)}</div>
+              ) : (
+                <div className="space-y-3">
+                  {completedEventsData.events.map((ev: Record<string, unknown>) => {
+                    const org = ev.organizer as Record<string, unknown>;
+                    const cats = (ev.ticketCategories as Array<{ name: string; price: number; quantityTotal: number; quantitySold: number }>) ?? [];
+                    const totalSold = cats.reduce((s, c) => s + c.quantitySold, 0);
+                    const totalCap  = cats.reduce((s, c) => s + c.quantityTotal, 0);
+                    const grossRevenue = cats.reduce((s, c) => s + Number(c.price) * c.quantitySold, 0);
+                    const netRevenue = Math.floor(grossRevenue / 1.025);
+                    const commRate = Number(ev.commissionRate ?? 0.07);
+                    const platformCommission = Math.round(netRevenue * commRate);
+                    const organizerAmt = netRevenue - platformCommission;
+                    const soldPct = totalCap > 0 ? Math.round((totalSold / totalCap) * 100) : 0;
+                    return (
+                      <motion.div
+                        key={ev.id as string}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="glass-card p-4 flex flex-col gap-3 border border-white/5 opacity-80"
+                      >
+                        {/* Header */}
+                        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                          <div className="w-full sm:w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden">
+                            {(ev.coverImageUrl as string) ? (
+                              <img src={ev.coverImageUrl as string} alt="" className="w-full h-full object-cover grayscale opacity-60" />
+                            ) : (
+                              <div className="w-full h-full bg-white/5 flex items-center justify-center">
+                                <span className="text-white/20 text-xs">—</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 mb-1">
+                              <h3 className="font-bebas text-lg tracking-wide text-white/70 truncate">{ev.title as string}</h3>
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-white/40">TERMINÉ</span>
+                            </div>
+                            <p className="text-white/30 text-xs">{org?.companyName as string} · {formatEventDate(ev.eventDate as string)}</p>
+                            <p className="text-white/20 text-xs font-mono mt-0.5">({Math.round(Number(ev.commissionRate) * 100)}% commission)</p>
+                          </div>
+                        </div>
+
+                        {/* Rapport toujours visible */}
+                        <div className="pt-3 border-t border-white/10 space-y-3">
+                          <div>
+                            <div className="flex justify-between text-xs text-white/50 mb-1.5">
+                              <span>Billets vendus</span>
+                              <span><span className="text-white font-semibold">{totalSold}</span> / {totalCap} places — <span className="text-violet-neon font-semibold">{soldPct}%</span></span>
+                            </div>
+                            <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                              <div className="h-full bg-violet-neon/50 rounded-full" style={{ width: `${soldPct}%` }} />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div className="bg-white/5 rounded-xl p-2.5 text-center">
+                              <p className="text-white/40 text-xs mb-1">Revenus bruts</p>
+                              <p className="text-white text-sm font-bold">{formatPrice(grossRevenue)}</p>
+                            </div>
+                            <div className="bg-rose-neon/5 rounded-xl p-2.5 text-center border border-rose-neon/10">
+                              <p className="text-white/40 text-xs mb-1">Commission ({Math.round(commRate * 100)}%)</p>
+                              <p className="text-rose-neon text-sm font-bold">{formatPrice(platformCommission)}</p>
+                            </div>
+                            <div className="bg-cyan-neon/5 rounded-xl p-2.5 text-center border border-cyan-neon/10">
+                              <p className="text-white/40 text-xs mb-1">Organisateur</p>
+                              <p className="text-cyan-neon text-sm font-bold">{formatPrice(organizerAmt)}</p>
+                            </div>
+                          </div>
+                          {cats.length > 0 && (
+                            <div className="space-y-2">
+                              <p className="text-white/30 text-xs uppercase tracking-widest font-semibold">Par catégorie</p>
+                              {cats.map((cat, i) => {
+                                const catPct = cat.quantityTotal > 0 ? Math.round((cat.quantitySold / cat.quantityTotal) * 100) : 0;
+                                return (
+                                  <div key={i} className="flex items-center gap-2 text-xs">
+                                    <span className="text-white/70 flex-1 truncate">{cat.name}</span>
+                                    <span className="text-white/40 whitespace-nowrap">{cat.quantitySold} / {cat.quantityTotal}</span>
+                                    <div className="w-20 h-1.5 bg-white/10 rounded-full overflow-hidden flex-shrink-0">
+                                      <div className="h-full bg-violet-neon/60 rounded-full" style={{ width: `${catPct}%` }} />
+                                    </div>
+                                    <span className="text-white/60 w-20 text-right flex-shrink-0">{formatPrice(Number(cat.price) * cat.quantitySold)}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                          <p className="text-white/20 text-xs">* Estimations calculées sur montant net après frais opérateur (2,5%)</p>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
