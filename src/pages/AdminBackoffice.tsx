@@ -55,6 +55,12 @@ interface AdminPayoutOrganizer {
   moovNumber: string | null;
   airtelBalance: number;
   moovBalance: number;
+  airtelNet: number;
+  moovNet: number;
+  cashNet: number;
+  airtelCount: number;
+  moovCount: number;
+  cashCount: number;
   user: { firstName: string; lastName: string; email: string; phone: string };
   events: { id: string; title: string; eventDate: string }[];
   totalCollected: number;
@@ -5121,6 +5127,36 @@ export default function AdminBackoffice() {
                                 {org.moovNumber   && <span className="text-cyan-neon/60">Moov : {org.moovNumber}</span>}
                               </div>
                             </div>
+
+                            {/* Répartition des paiements par opérateur */}
+                            {(org.airtelCount > 0 || org.moovCount > 0 || org.cashCount > 0) && (
+                              <div>
+                                <p className="text-[10px] text-white/25 uppercase tracking-widest mb-2">Paiements reçus par opérateur</p>
+                                <div className="grid grid-cols-3 gap-2">
+                                  {org.airtelCount > 0 && (
+                                    <div className="bg-rose-neon/5 border border-rose-neon/15 rounded-xl px-3 py-2.5 text-center">
+                                      <p className="text-[10px] text-rose-neon/60 font-semibold uppercase tracking-wider mb-1">Airtel Money</p>
+                                      <p className="font-mono text-sm font-bold text-rose-neon">{formatPrice(org.airtelNet, 'FCFA', '0')}</p>
+                                      <p className="text-[10px] text-white/25 mt-0.5">{org.airtelCount} commande{org.airtelCount > 1 ? 's' : ''}</p>
+                                    </div>
+                                  )}
+                                  {org.moovCount > 0 && (
+                                    <div className="bg-cyan-neon/5 border border-cyan-neon/15 rounded-xl px-3 py-2.5 text-center">
+                                      <p className="text-[10px] text-cyan-neon/60 font-semibold uppercase tracking-wider mb-1">Moov Money</p>
+                                      <p className="font-mono text-sm font-bold text-cyan-neon">{formatPrice(org.moovNet, 'FCFA', '0')}</p>
+                                      <p className="text-[10px] text-white/25 mt-0.5">{org.moovCount} commande{org.moovCount > 1 ? 's' : ''}</p>
+                                    </div>
+                                  )}
+                                  {org.cashCount > 0 && (
+                                    <div className="bg-white/[0.04] border border-white/10 rounded-xl px-3 py-2.5 text-center">
+                                      <p className="text-[10px] text-white/40 font-semibold uppercase tracking-wider mb-1">Espèces POS</p>
+                                      <p className="font-mono text-sm font-bold text-white/60">{formatPrice(org.cashNet, 'FCFA', '0')}</p>
+                                      <p className="text-[10px] text-white/25 mt-0.5">{org.cashCount} commande{org.cashCount > 1 ? 's' : ''}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
 
                             {/* Événements */}
                             {org.events.length > 0 && (
