@@ -3,10 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import {
   Check, ChevronLeft, Ticket, Smartphone, CreditCard,
-  ArrowRight, Trash2, CalendarDays, MapPin, X, Info, Clock, Lock, Mail, AlertTriangle, Phone,
+  ArrowRight, Trash2, CalendarDays, MapPin, X, Info, Clock, Lock, AlertTriangle, Phone,
 } from 'lucide-react';
 import { useCartStore } from '../stores/cartStore';
-import { useAuthStore } from '../stores/authStore';
+
 import { useCreateOrder, useInitiatePayment } from '../hooks/usePayment';
 import { useEvent } from '../hooks/useEvents';
 import { formatPrice } from '../utils/formatPrice';
@@ -44,28 +44,10 @@ const PROVIDERS = [
 export default function Checkout() {
   const [step, setStep] = useState<Step>(1);
   const { event, items, getTotalAmount, removeItem, clearCart } = useCartStore();
-  const { user } = useAuthStore();
+
   const navigate = useNavigate();
 
-  const [buyerInfo, setBuyerInfo] = useState({
-    name: `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim(),
-    email: user?.email ?? '',
-    phone: '',
-    whatsapp: '',
-  });
-  const [guestInfo, setGuestInfo] = useState({ firstName: '', lastName: '', email: '', whatsapp: '' });
-
-  // Sync avec le store si Zustand hydrate après le premier rendu
-  useEffect(() => {
-    if (user && !buyerInfo.name) {
-      setBuyerInfo(prev => ({
-        ...prev,
-        name: `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim(),
-        email: prev.email || user.email || '',
-      }));
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  const [whatsapp, setWhatsapp] = useState('');
   const [provider, setProvider] = useState<'AIRTEL_MONEY' | 'MOOV_MONEY' | null>(null);
   const [cgvAccepted, setCgvAccepted] = useState(false);
   const [paymentPhone, setPaymentPhone] = useState('');
@@ -256,13 +238,7 @@ export default function Checkout() {
   const hasStockIssue = soldOutItems.length > 0 || exceedsMaxPerOrder;
 
   const paymentPhoneValid = provider !== null && isValidGabonPhone(paymentPhone) && isPhoneMatchingProvider(paymentPhone, provider);
-  const guestContactValid = guestInfo.whatsapp.trim().length >= 6 || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestInfo.email);
-  const guestInfoValid = guestInfo.firstName.trim().length >= 2
-    && guestInfo.lastName.trim().length >= 2
-    && guestContactValid
-    && (!guestInfo.email.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestInfo.email));
-  const loggedInContactValid = !!(buyerInfo.whatsapp.trim() || buyerInfo.email.trim() || user?.email);
-  const canPay = (user ? buyerInfo.name.trim().length >= 2 && loggedInContactValid : guestInfoValid) && provider !== null && paymentPhoneValid && cgvAccepted;
+  const canPay = whatsapp.trim().length >= 6 && provider !== null && paymentPhoneValid && cgvAccepted;
 
   const handlePayment = async () => {
     unlockAudio(); // débloque AudioContext pendant l'interaction utilisateur
@@ -274,19 +250,7 @@ export default function Checkout() {
       const order = await createOrder.mutateAsync({
         eventId: event.id,
         items: items.map((i) => ({ categoryId: i.category.id, quantity: i.quantity })),
-        ...(user
-          ? {
-              buyerName: buyerInfo.name,
-              buyerEmail: buyerInfo.email || undefined,
-              buyerWhatsApp: buyerInfo.whatsapp.trim() || undefined,
-            }
-          : {
-              guestFirstName: guestInfo.firstName,
-              guestLastName: guestInfo.lastName,
-              guestEmail: guestInfo.email.trim() || undefined,
-              guestWhatsApp: guestInfo.whatsapp.trim() || undefined,
-            }
-        ),
+        guestWhatsApp: whatsapp.trim(),
         cgvAcceptedAt: new Date().toISOString(),
         provider: provider ?? undefined,
         ...(promoValidation ? { promoCode: promoValidation.code } : {}),
@@ -609,117 +573,24 @@ export default function Checkout() {
                   className="space-y-4"
                 >
                   <div className="glass-card p-6 space-y-5">
-                    {!user ? (
-                      <>
-                        <div className="p-3 rounded-xl bg-violet-neon/10 border border-violet-neon/20 text-xs text-white/60 leading-relaxed">
-                          Vos billets seront envoyés par WhatsApp et/ou email. Retrouvez-les à tout moment sur{' '}
-                          <Link to="/retrouver-mes-billets" className="text-violet-neon hover:underline">retrouver-mes-billets</Link>.{' '}
-                          <Link to="/login" className="text-violet-neon hover:underline">Se connecter</Link>
-                          {' '}pour un accès permanent.
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="text-xs text-white/50 uppercase tracking-widest block mb-2">
-                              Prénom <span className="text-rose-neon">*</span>
-                            </label>
-                            <input
-                              value={guestInfo.firstName}
-                              onChange={(e) => setGuestInfo((g) => ({ ...g, firstName: e.target.value }))}
-                              placeholder="Prénom"
-                              className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-xs text-white/50 uppercase tracking-widest block mb-2">
-                              Nom <span className="text-rose-neon">*</span>
-                            </label>
-                            <input
-                              value={guestInfo.lastName}
-                              onChange={(e) => setGuestInfo((g) => ({ ...g, lastName: e.target.value }))}
-                              placeholder="Nom"
-                              className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Alerte si aucun contact renseigné */}
-                        {(guestInfo.firstName.trim().length >= 2 || guestInfo.lastName.trim().length >= 2) && !guestContactValid && (
-                          <div className="flex items-center gap-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30">
-                            <Info className="w-4 h-4 text-amber-400 flex-shrink-0" />
-                            <p className="text-amber-300 text-xs">Renseignez au moins un numéro WhatsApp ou une adresse email pour recevoir votre billet.</p>
-                          </div>
-                        )}
-
-                        <div>
-                          <label className="text-xs text-white/50 uppercase tracking-widest block mb-2">
-                            WhatsApp <span className="text-white/30">(optionnel)</span>
-                          </label>
-                          <div className="relative">
-                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#25D366]/60" />
-                            <input
-                              value={guestInfo.whatsapp}
-                              onChange={(e) => setGuestInfo((g) => ({ ...g, whatsapp: e.target.value }))}
-                              type="tel"
-                              placeholder="074000000"
-                              className="w-full bg-bg-secondary border border-[#25D366]/30 rounded-xl pl-9 pr-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-[#25D366]/60 transition-colors"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="text-xs text-white/50 uppercase tracking-widest block mb-2">
-                            Email <span className="text-white/30">(optionnel)</span>
-                          </label>
-                          <input
-                            value={guestInfo.email}
-                            onChange={(e) => setGuestInfo((g) => ({ ...g, email: e.target.value }))}
-                            type="email"
-                            placeholder="votre@email.com"
-                            className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors"
-                          />
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div>
-                          <label className="text-xs text-white/50 uppercase tracking-widest block mb-2">
-                            Nom complet <span className="text-rose-neon">*</span>
-                          </label>
-                          <input
-                            value={buyerInfo.name}
-                            onChange={(e) => setBuyerInfo((b) => ({ ...b, name: e.target.value }))}
-                            placeholder="Votre nom complet"
-                            className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs text-white/50 uppercase tracking-widest block mb-2">
-                            WhatsApp <span className="text-white/30">(optionnel)</span>
-                          </label>
-                          <div className="relative">
-                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#25D366]/60" />
-                            <input
-                              value={buyerInfo.whatsapp}
-                              onChange={(e) => setBuyerInfo((b) => ({ ...b, whatsapp: e.target.value }))}
-                              type="tel"
-                              placeholder="074000000"
-                              className="w-full bg-bg-secondary border border-[#25D366]/30 rounded-xl pl-9 pr-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-[#25D366]/60 transition-colors"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="text-xs text-white/50 uppercase tracking-widest block mb-2">
-                            Email <span className="text-white/30">(optionnel)</span>
-                          </label>
-                          <input
-                            value={buyerInfo.email}
-                            onChange={(e) => setBuyerInfo((b) => ({ ...b, email: e.target.value }))}
-                            type="email"
-                            placeholder="votre@email.com"
-                            className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-4 py-3 text-white placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors"
-                          />
-                        </div>
-                      </>
-                    )}
+                    {/* Champ WhatsApp unique */}
+                    <div>
+                      <label className="text-xs text-white/50 uppercase tracking-widest block mb-1.5">
+                        Numéro WhatsApp <span className="text-rose-neon">*</span>
+                      </label>
+                      <p className="text-xs text-white/30 mb-3">Votre billet sera envoyé sur ce numéro WhatsApp après paiement.</p>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#25D366]/70" />
+                        <input
+                          value={whatsapp}
+                          onChange={(e) => setWhatsapp(e.target.value)}
+                          type="tel"
+                          placeholder="074 00 00 00"
+                          autoFocus
+                          className="w-full bg-bg-secondary border border-[#25D366]/40 rounded-xl pl-9 pr-4 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-[#25D366]/70 transition-colors text-lg"
+                        />
+                      </div>
+                    </div>
 
                     <div className="border-t border-white/5 pt-5">
                       <label className="text-xs text-white/50 uppercase tracking-widest block mb-3">
@@ -831,22 +702,14 @@ export default function Checkout() {
                     </div>
                   )}
 
-                  {/* Confirmation email guest */}
-                  {!user && guestInfo.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestInfo.email) && (
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-violet-neon/8 border border-violet-neon/25">
-                      <Mail className="w-4 h-4 text-violet-neon flex-shrink-0" />
+                  {/* Confirmation WhatsApp */}
+                  {whatsapp.trim().length >= 6 && (
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-[#25D366]/8 border border-[#25D366]/25">
+                      <Phone className="w-4 h-4 text-[#25D366] flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs text-white/40">Vos billets seront envoyés à</p>
-                        <p className="text-sm font-semibold text-white truncate">{guestInfo.email}</p>
+                        <p className="text-xs text-white/40">Billet envoyé sur WhatsApp après paiement</p>
+                        <p className="text-sm font-semibold text-white">{whatsapp.trim()}</p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setGuestInfo((g) => ({ ...g, email: '' }))}
-                        className="text-white/25 hover:text-rose-neon transition-colors flex-shrink-0"
-                        title="Modifier l'email"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
                     </div>
                   )}
 

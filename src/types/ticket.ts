@@ -72,9 +72,11 @@ export interface CreateOrderPayload {
   buyerName?: string;
   buyerEmail?: string;
   buyerPhone?: string;
+  buyerWhatsApp?: string;
   guestFirstName?: string;
   guestLastName?: string;
   guestEmail?: string;
+  guestWhatsApp?: string;
   cgvAcceptedAt?: string;
   utmSource?: string;
   utmMedium?: string;
