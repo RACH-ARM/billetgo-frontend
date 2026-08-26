@@ -585,7 +585,7 @@ export default function Checkout() {
                           value={whatsapp}
                           onChange={(e) => setWhatsapp(e.target.value)}
                           type="tel"
-                          placeholder="074 00 00 00"
+                          placeholder="ex : 077... ou 062..."
                           autoFocus
                           className="w-full bg-bg-secondary border border-[#25D366]/40 rounded-xl pl-9 pr-4 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-[#25D366]/70 transition-colors text-lg"
                         />
