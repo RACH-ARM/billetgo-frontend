@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation } from 'react-query';
 import {
-  ShoppingBag, Minus, Plus, User, Phone, Mail, CheckCircle,
+  ShoppingBag, Minus, Plus, Phone, Mail, CheckCircle,
   QrCode, LogOut, BarChart3, Ticket, RefreshCw,
   Banknote, Smartphone, Loader2, XCircle, ChevronDown,
   AlertCircle, Send, Search, History, ChevronLeft, ChevronRight,
@@ -36,7 +36,7 @@ interface SaleResult {
   orderId: string;
   qrToken: string;
   totalAmount: number;
-  buyerName: string;
+  buyerPhone?: string;
 }
 
 interface AgentStats {
@@ -94,8 +94,7 @@ export default function AgentPOS() {
   const [selectedEvent, setSelectedEvent] = useState<AgentEvent | null>(null);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH');
-  const [buyerName, setBuyerName] = useState('');
-  const [payerPhone, setPayerPhone] = useState('');   // numéro Mobile Money
+  const [payerPhone, setPayerPhone] = useState('');   // numéro acheteur (WhatsApp pour CASH, Mobile Money pour Airtel/Moov)
 
   // ── Overlay state ──────────────────────────────────────────────────────────
   const [showStats, setShowStats] = useState(false);
@@ -171,7 +170,6 @@ export default function AgentPOS() {
 
   const resetForm = () => {
     setQuantities({});
-    setBuyerName('');
     setPayerPhone('');
     setPaymentMethod('CASH');
     setPendingOrderId(null);
@@ -232,7 +230,7 @@ export default function AgentPOS() {
 
         if (status === 'COMPLETED' && qrToken) {
           clearInterval(pollRef.current!);
-          setSaleResult({ orderId: pendingOrderId, qrToken, totalAmount: total, buyerName: buyerName.trim() });
+          setSaleResult({ orderId: pendingOrderId, qrToken, totalAmount: total, buyerPhone: payerPhone.trim() });
           setSaleWhatsApp('');
           setShowWaiting(false);
           setShowQR(true);
@@ -262,10 +260,11 @@ export default function AgentPOS() {
     async () => {
       const items = Object.entries(quantities).filter(([, q]) => q > 0).map(([id, q]) => ({ categoryId: id, quantity: q }));
       if (items.length === 0) throw new Error('Sélectionnez au moins un billet');
-      if (!buyerName.trim()) throw new Error("Le nom de l'acheteur est requis");
+      if (!payerPhone.trim()) throw new Error('Le numéro WhatsApp du client est requis');
       const res = await api.post('/agent/pos/sale', {
         eventId: selectedEvent!.id, items,
-        buyerName: buyerName.trim(),
+        buyerName: 'Acheteur',
+        buyerPhone: payerPhone.trim(),
       });
       return res.data.data as SaleResult;
     },
@@ -288,11 +287,10 @@ export default function AgentPOS() {
     async () => {
       const items = Object.entries(quantities).filter(([, q]) => q > 0).map(([id, q]) => ({ categoryId: id, quantity: q }));
       if (items.length === 0) throw new Error('Sélectionnez au moins un billet');
-      if (!buyerName.trim()) throw new Error("Le nom de l'acheteur est requis");
       if (!payerPhone.trim()) throw new Error('Le numéro Mobile Money du client est requis');
       const res = await api.post('/agent/pos/mobile-money', {
         eventId: selectedEvent!.id, items,
-        buyerName: buyerName.trim(),
+        buyerName: 'Acheteur',
         payerPhone: payerPhone.trim(),
         operator: paymentMethod,
       });
@@ -377,7 +375,7 @@ export default function AgentPOS() {
   const opColor = paymentMethod === 'MOOV_MONEY' ? 'text-blue-400 border-blue-400/30 bg-blue-400/5' : 'text-red-400 border-red-400/30 bg-red-400/5';
 
   const isLoading = saleMutation.isLoading || mobileMoneyMutation.isLoading;
-  const canSubmit = totalTickets > 0 && !!buyerName.trim() && (paymentMethod === 'CASH' || !!payerPhone.trim()) && !isLoading;
+  const canSubmit = totalTickets > 0 && !!payerPhone.trim() && !isLoading;
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
@@ -632,34 +630,35 @@ export default function AgentPOS() {
 
                 {/* ── Infos acheteur ── */}
                 <section>
-                  <h2 className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">Acheteur</h2>
-                  <div className="flex flex-col gap-3">
-
-                    {/* Nom */}
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                      <input type="text" placeholder="Nom complet *" value={buyerName} onChange={(e) => setBuyerName(e.target.value)}
-                        className="w-full bg-bg-card border border-white/10 rounded-xl pl-9 pr-4 py-3 text-white placeholder:text-white/25 focus:border-violet-neon/50 focus:outline-none transition-colors" />
-                    </div>
-
-                    {/* Numéro Mobile Money */}
-                    {paymentMethod !== 'CASH' && (
-                      <div>
-                        <div className="relative">
-                          <Smartphone className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${paymentMethod === 'MOOV_MONEY' ? 'text-blue-400' : 'text-red-400'}`} />
-                          <input type="tel"
-                            placeholder={`Numéro ${paymentMethod === 'MOOV_MONEY' ? 'Moov Money' : 'Airtel Money'} du client *`}
-                            value={payerPhone} onChange={(e) => setPayerPhone(e.target.value)}
-                            className={`w-full bg-bg-card rounded-xl pl-9 pr-4 py-3 text-white placeholder:text-white/25 focus:outline-none transition-colors border ${paymentMethod === 'MOOV_MONEY' ? 'border-blue-400/30 focus:border-blue-400/70' : 'border-red-400/30 focus:border-red-400/70'}`}
-                          />
-                        </div>
-                        <p className={`text-xs mt-1 pl-1 ${paymentMethod === 'MOOV_MONEY' ? 'text-blue-400/60' : 'text-red-400/60'}`}>
-                          Le client reçoit une demande USSD et valide depuis son téléphone
-                        </p>
-                      </div>
-                    )}
-
+                  <h2 className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-2">Numéro du client</h2>
+                  <div className="relative">
+                    {paymentMethod === 'CASH'
+                      ? <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#25D366]/70" />
+                      : <Smartphone className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${paymentMethod === 'MOOV_MONEY' ? 'text-blue-400' : 'text-red-400'}`} />
+                    }
+                    <input
+                      type="tel"
+                      placeholder="ex : 077... ou 062..."
+                      value={payerPhone}
+                      onChange={(e) => setPayerPhone(e.target.value)}
+                      className={`w-full bg-bg-card rounded-xl pl-9 pr-4 py-3 text-white placeholder:text-white/25 focus:outline-none transition-colors border ${
+                        paymentMethod === 'CASH'
+                          ? 'border-[#25D366]/30 focus:border-[#25D366]/70'
+                          : paymentMethod === 'MOOV_MONEY'
+                            ? 'border-blue-400/30 focus:border-blue-400/70'
+                            : 'border-red-400/30 focus:border-red-400/70'
+                      }`}
+                    />
                   </div>
+                  <p className={`text-xs mt-1 pl-1 ${
+                    paymentMethod === 'CASH' ? 'text-[#25D366]/50'
+                    : paymentMethod === 'MOOV_MONEY' ? 'text-blue-400/60'
+                    : 'text-red-400/60'
+                  }`}>
+                    {paymentMethod === 'CASH'
+                      ? 'Le billet sera envoyé sur WhatsApp'
+                      : 'Le client reçoit une demande USSD et valide depuis son téléphone'}
+                  </p>
                 </section>
               </>
             )}
@@ -783,7 +782,9 @@ export default function AgentPOS() {
 
             <div>
               <p className="text-2xl font-bold mb-1">{formatPrice(saleResult.totalAmount)}</p>
-              <p className="text-white/50 text-sm">Vente pour <span className="text-white">{saleResult.buyerName}</span></p>
+              {saleResult.buyerPhone && (
+                <p className="text-white/50 text-sm">Billet envoyé sur <span className="text-[#25D366]">{saleResult.buyerPhone}</span></p>
+              )}
             </div>
 
             {/* Billet complet ou QR en fallback */}
