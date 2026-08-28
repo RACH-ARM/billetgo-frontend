@@ -271,7 +271,7 @@ export default function AgentPOS() {
     {
       onSuccess: (data) => {
         setSaleResult(data);
-        setSaleWhatsApp('');
+        setSaleWhatsApp(payerPhone.trim()); // capturé avant resetForm — marque "déjà envoyé" dans l'overlay
         setShowQR(true);
         resetForm();
         refetchEvents();
@@ -817,52 +817,55 @@ export default function AgentPOS() {
 
             </div>
 
-            {/* ── Envoi WhatsApp ── */}
-            <div className="w-full glass-card p-4">
-              <p className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">Envoyer le billet sur WhatsApp</p>
-
-              {/* Numéros déjà envoyés */}
-              {saleWhatsApp && (
-                <div className="flex items-center gap-2 mb-2 bg-[#25D366]/10 border border-[#25D366]/20 rounded-lg px-3 py-1.5">
-                  <Phone className="w-3 h-3 text-[#25D366]" />
-                  <span className="text-[#25D366] text-xs font-medium flex-1">{saleWhatsApp}</span>
-                  <span className="text-[#25D366]/60 text-xs">✓ Envoyé auto</span>
+            {/* ── WhatsApp ── */}
+            {saleWhatsApp ? (
+              /* CASH : envoyé automatiquement pendant la vente — pas de second envoi */
+              <div className="w-full glass-card p-4">
+                <p className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">WhatsApp</p>
+                <div className="flex items-center gap-2 bg-[#25D366]/10 border border-[#25D366]/20 rounded-lg px-3 py-2.5">
+                  <Phone className="w-3.5 h-3.5 text-[#25D366] flex-shrink-0" />
+                  <span className="text-[#25D366] text-sm font-medium flex-1">{saleWhatsApp}</span>
+                  <span className="text-[#25D366]/70 text-xs font-semibold">✓ Envoyé</span>
                 </div>
-              )}
-              {waSentNumbers.map(n => (
-                <div key={n} className="flex items-center gap-2 mb-2 bg-[#25D366]/10 border border-[#25D366]/20 rounded-lg px-3 py-1.5">
-                  <Phone className="w-3 h-3 text-[#25D366]" />
-                  <span className="text-[#25D366] text-xs font-medium flex-1">{n}</span>
-                  <span className="text-[#25D366]/60 text-xs">✓ Envoyé</span>
-                </div>
-              ))}
-
-              {/* Champ + bouton envoi */}
-              <div className="flex gap-2 mt-2">
-                <div className="relative flex-1">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#25D366]/60" />
-                  <input
-                    type="tel"
-                    placeholder="Autre numéro WhatsApp"
-                    value={waResendPhone}
-                    onChange={e => setWaResendPhone(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleWaResend()}
-                    className="w-full bg-bg border border-[#25D366]/30 rounded-xl pl-9 pr-3 py-2.5 text-white placeholder:text-white/25 focus:border-[#25D366]/70 focus:outline-none text-sm transition-colors"
-                  />
-                </div>
-                <button
-                  onClick={handleWaResend}
-                  disabled={!waResendPhone.trim() || waResendSending}
-                  className="px-4 py-2.5 rounded-xl bg-[#25D366] text-white text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 shrink-0"
-                >
-                  {waResendSending
-                    ? <Loader2 className="w-4 h-4 animate-spin" />
-                    : <Send className="w-4 h-4" />
-                  }
-                  Envoyer
-                </button>
+                <p className="text-white/25 text-xs mt-2 pl-1">Billet envoyé automatiquement à la validation.</p>
               </div>
-            </div>
+            ) : (
+              /* Mobile Money : l'agent envoie manuellement si besoin */
+              <div className="w-full glass-card p-4">
+                <p className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">Envoyer le billet sur WhatsApp</p>
+                {waSentNumbers.map(n => (
+                  <div key={n} className="flex items-center gap-2 mb-2 bg-[#25D366]/10 border border-[#25D366]/20 rounded-lg px-3 py-1.5">
+                    <Phone className="w-3 h-3 text-[#25D366]" />
+                    <span className="text-[#25D366] text-xs font-medium flex-1">{n}</span>
+                    <span className="text-[#25D366]/60 text-xs">✓ Envoyé</span>
+                  </div>
+                ))}
+                <div className="flex gap-2 mt-2">
+                  <div className="relative flex-1">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#25D366]/60" />
+                    <input
+                      type="tel"
+                      placeholder="Numéro WhatsApp du client"
+                      value={waResendPhone}
+                      onChange={e => setWaResendPhone(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleWaResend()}
+                      className="w-full bg-bg border border-[#25D366]/30 rounded-xl pl-9 pr-3 py-2.5 text-white placeholder:text-white/25 focus:border-[#25D366]/70 focus:outline-none text-sm transition-colors"
+                    />
+                  </div>
+                  <button
+                    onClick={handleWaResend}
+                    disabled={!waResendPhone.trim() || waResendSending}
+                    className="px-4 py-2.5 rounded-xl bg-[#25D366] text-white text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 shrink-0"
+                  >
+                    {waResendSending
+                      ? <Loader2 className="w-4 h-4 animate-spin" />
+                      : <Send className="w-4 h-4" />
+                    }
+                    Envoyer
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* ── Envoi Email ── */}
             <div className="w-full glass-card p-4">

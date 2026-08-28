@@ -222,9 +222,9 @@ export default function Login() {
         </form>
 
         <p className="mt-6 text-center text-sm text-white/40">
-          Pas encore de compte ?{' '}
-          <Link to="/register" className="text-violet-neon hover:text-rose-neon transition-colors">
-            S'inscrire
+          Vous êtes organisateur ?{' '}
+          <Link to="/register?role=organizer" className="text-violet-neon hover:text-rose-neon transition-colors">
+            Créer un compte organisateur
           </Link>
         </p>
       </motion.div>

@@ -16,11 +16,6 @@ export default function LoginWallModal({ onClose, action = 'like' }: Props) {
     onClose();
   };
 
-  const handleRegister = () => {
-    navigate('/register');
-    onClose();
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
@@ -46,14 +41,9 @@ export default function LoginWallModal({ onClose, action = 'like' }: Props) {
           Connecte-toi pour {action === 'like' ? 'liker cet événement' : 'suivre cet organisateur'} et ne rien manquer.
         </p>
 
-        <div className="flex flex-col gap-2">
-          <Button variant="primary" onClick={handleLogin} className="w-full">
-            Se connecter
-          </Button>
-          <Button variant="secondary" onClick={handleRegister} className="w-full">
-            Créer un compte
-          </Button>
-        </div>
+        <Button variant="primary" onClick={handleLogin} className="w-full">
+          Se connecter
+        </Button>
       </div>
     </div>
   );
