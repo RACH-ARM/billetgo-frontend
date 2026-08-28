@@ -35,4 +35,5 @@ export interface RegisterPayload {
   role?: UserRole;
   companyName?: string;
   cguAcceptedAt?: string;
+  contractAcceptedAt?: string;
 }
