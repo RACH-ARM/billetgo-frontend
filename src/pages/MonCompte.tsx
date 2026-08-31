@@ -42,6 +42,14 @@ const TABS_BY_ROLE: Record<string, { id: string; label: string }[]> = {
     { id: 'profil',   label: 'Mon profil' },
     { id: 'securite', label: 'Sécurité' },
   ],
+  AGENT: [
+    { id: 'profil',   label: 'Mon profil' },
+    { id: 'securite', label: 'Sécurité' },
+  ],
+  INFLUENCER: [
+    { id: 'profil',   label: 'Mon profil' },
+    { id: 'securite', label: 'Sécurité' },
+  ],
 };
 
 const ORDER_STATUS_LABEL: Record<string, string> = {
@@ -801,7 +809,7 @@ export default function MonCompte() {
     <div className="min-h-screen bg-bg py-20 px-4">
       <div className="max-w-3xl mx-auto">
         <Link
-          to={role === 'ORGANIZER' ? '/dashboard' : role === 'ADMIN' ? '/admin' : '/'}
+          to={role === 'ORGANIZER' ? '/dashboard' : role === 'ADMIN' ? '/admin' : role === 'AGENT' ? '/pos' : role === 'INFLUENCER' ? '/influencer' : '/'}
           className="inline-flex items-center gap-1.5 text-white/40 hover:text-white text-sm mb-8 transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />

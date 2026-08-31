@@ -178,7 +178,7 @@ function GuestInfoBlock() {
           {
             n: '3',
             title: 'Retrouver vos billets',
-            body: "Saisissez votre email ou numéro de téléphone sur billetgab.com/retrouver-mes-billets pour accéder à vos billets à tout moment, sans compte.",
+            body: "Saisissez votre numéro WhatsApp sur billetgab.com/retrouver-mes-billets pour accéder à vos billets à tout moment, sans compte.",
           },
         ].map(({ n, title, body }) => (
           <div key={n} className="flex gap-3">
