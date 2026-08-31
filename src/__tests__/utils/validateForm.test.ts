@@ -163,11 +163,11 @@ describe('checkoutSchema', () => {
     }
   });
 
-  it('rejette si buyerPhone trop court (< 8 caractères)', () => {
+  it('rejette si buyerPhone est un numéro invalide', () => {
     const result = checkoutSchema.safeParse({ ...validPayload, buyerPhone: '074' });
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues.map((i) => i.message)).toContain('Numéro de téléphone requis');
+      expect(result.error.issues.map((i) => i.message)).toContain('Numéro invalide — ex : 060 000 000');
     }
   });
 
