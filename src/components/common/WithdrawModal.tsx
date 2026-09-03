@@ -227,7 +227,8 @@ function PaymentStep({
           <p className="text-xs text-white/45 leading-relaxed">
             Limite {provider === 'AIRTEL_MONEY' ? 'Airtel Money' : 'Moov Money'} :{' '}
             <span className="text-white/70 font-semibold">{formatPrice(dailyLimit, 'FCFA')} par jour par numéro</span>.
-            Les virements individuels sont découpés à 500 000 FCFA max — automatique. Les frais sont pris en charge par BilletGab.
+            Les virements individuels sont découpés à 500 000 FCFA max — automatique.{' '}
+            Frais de virement : <span className="text-white/70 font-semibold">{provider === 'AIRTEL_MONEY' ? '0,5%' : '1%'}</span> à votre charge.
           </p>
         </div>
       )}
@@ -261,22 +262,28 @@ function PaymentStep({
         </div>
       )}
 
-      {/* Récap montant (frais absorbés par BilletGab) */}
-      {provider && amountValid && (
-        <div className="rounded-2xl bg-violet-neon/[0.04] border border-violet-neon/20 overflow-hidden divide-y divide-white/[0.06]">
-          <div className="flex items-center justify-between px-4 py-3">
-            <span className="flex items-center gap-2 text-sm text-white/50">
-              <Receipt className="w-4 h-4 text-white/25" />
-              Frais virement
-            </span>
-            <span className="text-sm text-green-400/80 font-semibold">Offerts par BilletGab</span>
+      {/* Récap montant avec frais à la charge de l'organisateur */}
+      {provider && amountValid && (() => {
+        const rate = provider === 'AIRTEL_MONEY' ? ctx.airtelPayoutRate : ctx.moovPayoutRate;
+        const fee  = Math.round(amount * rate);
+        const net  = amount - fee;
+        const pct  = (rate * 100).toLocaleString('fr-FR', { minimumFractionDigits: 1 });
+        return (
+          <div className="rounded-2xl bg-violet-neon/[0.04] border border-violet-neon/20 overflow-hidden divide-y divide-white/[0.06]">
+            <div className="flex items-center justify-between px-4 py-3">
+              <span className="flex items-center gap-2 text-sm text-white/50">
+                <Receipt className="w-4 h-4 text-white/25" />
+                Frais virement ({pct}%)
+              </span>
+              <span className="font-mono text-sm text-rose-neon font-semibold">−{formatPrice(fee, 'FCFA')}</span>
+            </div>
+            <div className="flex items-center justify-between px-4 py-3.5">
+              <span className="text-sm font-bold text-white">Vous recevez</span>
+              <span className="font-mono font-bold text-xl text-violet-neon">{formatPrice(net, 'FCFA', '0 FCFA')}</span>
+            </div>
           </div>
-          <div className="flex items-center justify-between px-4 py-3.5">
-            <span className="text-sm font-bold text-white">Vous recevez</span>
-            <span className="font-mono font-bold text-xl text-violet-neon">{formatPrice(amount, 'FCFA', '0 FCFA')}</span>
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Saisie numéro */}
       <AnimatePresence mode="wait">
@@ -397,29 +404,39 @@ function ConfirmStep({
           <span className="text-sm text-white/50">Numéro</span>
           <span className="font-mono text-white text-sm">{phone}</span>
         </div>
-        <div className="flex items-center justify-between px-4 py-3">
-          <span className="text-sm text-white/50">Frais virement</span>
-          <span className="text-sm text-green-400/80 font-semibold">Offerts par BilletGab</span>
-        </div>
-        {exceedsDaily ? (
-          <>
-            <div className="flex items-center justify-between px-4 py-3 bg-green-500/[0.05]">
-              <span className="text-sm text-green-400/80">Reçu aujourd'hui</span>
-              <span className="font-mono font-bold text-green-400 text-sm">{formatPrice(todayAmount, 'FCFA')}</span>
-            </div>
-            <div className="flex items-center justify-between px-4 py-3 bg-amber-500/[0.04]">
-              <span className="text-sm text-amber-400/70">Programmé (jours suivants)</span>
-              <span className="font-mono text-amber-400/70 text-sm">
-                {formatPrice(amount - todayAmount, 'FCFA')}
-              </span>
-            </div>
-          </>
-        ) : (
-          <div className="flex items-center justify-between px-4 py-4 bg-violet-neon/[0.04]">
-            <span className="font-bold text-white">Vous recevez</span>
-            <span className="font-mono font-bold text-2xl text-violet-neon">{formatPrice(amount, 'FCFA')}</span>
-          </div>
-        )}
+        {(() => {
+          const rate = operator === 'AIRTEL_MONEY' ? ctx.airtelPayoutRate : ctx.moovPayoutRate;
+          const fee  = Math.round(amount * rate);
+          const net  = amount - fee;
+          const pct  = (rate * 100).toLocaleString('fr-FR', { minimumFractionDigits: 1 });
+          return (
+            <>
+              <div className="flex items-center justify-between px-4 py-3">
+                <span className="text-sm text-white/50">Frais virement ({pct}%)</span>
+                <span className="font-mono text-sm text-rose-neon font-semibold">−{formatPrice(fee, 'FCFA')}</span>
+              </div>
+              {exceedsDaily ? (
+                <>
+                  <div className="flex items-center justify-between px-4 py-3 bg-green-500/[0.05]">
+                    <span className="text-sm text-green-400/80">Reçu aujourd'hui</span>
+                    <span className="font-mono font-bold text-green-400 text-sm">{formatPrice(Math.min(net, dailyLimit), 'FCFA')}</span>
+                  </div>
+                  <div className="flex items-center justify-between px-4 py-3 bg-amber-500/[0.04]">
+                    <span className="text-sm text-amber-400/70">Programmé (jours suivants)</span>
+                    <span className="font-mono text-amber-400/70 text-sm">
+                      {formatPrice(Math.max(0, net - dailyLimit), 'FCFA')}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center justify-between px-4 py-4 bg-violet-neon/[0.04]">
+                  <span className="font-bold text-white">Vous recevez</span>
+                  <span className="font-mono font-bold text-2xl text-violet-neon">{formatPrice(net, 'FCFA')}</span>
+                </div>
+              )}
+            </>
+          );
+        })()}
       </div>
 
       {exceedsDaily && (
@@ -536,8 +553,10 @@ export default function WithdrawModal({ context, onConfirm, onClose }: Props) {
 
   const handleConfirm = async () => {
     if (!operator || !phone || !context) return;
+    const rate = operator === 'AIRTEL_MONEY' ? context.airtelPayoutRate : context.moovPayoutRate;
+    const fee  = Math.round(selectedAmount * rate);
     const result = await onConfirm(phone, operator, selectedAmount);
-    setNetReceived(selectedAmount);
+    setNetReceived(selectedAmount - fee);
     setSuccessMsg(result.message ?? `Virement initié vers ${phone}`);
     setStep('success');
   };
