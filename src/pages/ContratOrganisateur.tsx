@@ -167,7 +167,7 @@ export default function ContratOrganisateur() {
         <Section num="4" title="Commission et frais de service" icon={Banknote}>
           <P>En contrepartie des services rendus, BilletGab prélève :</P>
           <ul className="space-y-1">
-            <Li><span className="text-white font-semibold">7 % du montant net</span> sur chaque billet payant vendu (taux standard, modifiable par accord particulier entre BilletGab et l'Organisateur) ;</Li>
+            <Li><span className="text-white font-semibold">Une commission sur le montant net</span> sur chaque billet payant vendu (taux défini par accord entre BilletGab et l'Organisateur — disponible sur demande à <a href="/contact" className="text-violet-neon underline underline-offset-2">billetgab.com/contact</a>) ;</Li>
             <Li><span className="text-white font-semibold">500 FCFA de frais fixes</span> par billet gratuit émis, à la charge de l'Organisateur ;</Li>
             <Li>Les <span className="text-white font-semibold">frais opérateur Mobile Money (2,5 %)</span> prélevés par les opérateurs Airtel et Moov lors de la collecte des paiements acheteurs, déduits du montant reversé à l'Organisateur ;</Li>
             <Li>Les <span className="text-white font-semibold">frais de traitement PVit</span> appliqués lors des reversements à l'Organisateur (environ 1 % par virement), pris en charge par BilletGab.</Li>

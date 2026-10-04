@@ -76,7 +76,7 @@ export default function ContratPrint() {
         <h2 style={h2Style}>Article 4 — Commission et frais de service</h2>
         <p>En contrepartie des services rendus, BilletGab prélève :</p>
         <ul style={ulStyle}>
-          <li><strong>10 % du prix HT</strong> sur chaque billet payant vendu ;</li>
+          <li><strong>Une commission sur le montant net</strong> sur chaque billet payant vendu (taux défini par accord entre BilletGab et l'Organisateur) ;</li>
           <li><strong>500 FCFA de frais fixes</strong> par billet gratuit émis ;</li>
           <li>Les <strong>frais de traitement Mobile Money (PVit)</strong> appliqués lors des reversements, à la charge exclusive de l'Organisateur.</li>
         </ul>

@@ -1115,8 +1115,9 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
             <h3 className="font-bebas text-lg tracking-wider text-white leading-none">Frais & commission</h3>
           </div>
           <p className="text-sm text-white/60">
-            <span className="text-white font-semibold">7% de commission</span> prélevée sur chaque billet payant vendu.
-            Les billets gratuits sont soumis à des frais fixes de <span className="text-white font-semibold">500 FCFA</span>.
+            Une <span className="text-white font-semibold">commission</span> est prélevée sur chaque billet payant vendu.
+            Les billets gratuits sont soumis à des frais fixes de <span className="text-white font-semibold">500 FCFA</span>.{' '}
+            <a href="/contact" className="text-violet-neon underline underline-offset-2 hover:text-violet-300 transition-colors">Contactez-nous</a> pour connaître les conditions tarifaires.
           </p>
           <div>
             <label className={labelCls}>Frais opérateur Mobile Money (2,5 %)</label>
@@ -1283,9 +1284,7 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
             className="mt-0.5 accent-violet-500 w-4 h-4 flex-shrink-0"
           />
           <span className="text-xs text-white/50 leading-relaxed">
-            J'accepte les conditions de la plateforme BilletGab, notamment la commission de{' '}
-            <span className="text-white font-semibold">7%</span>{' '}
-            prélevée sur chaque billet vendu.
+            J'accepte les conditions de la plateforme BilletGab, notamment la commission en vigueur prélevée sur chaque billet vendu.
             Je certifie être habilité à soumettre cet événement.
           </span>
         </label>

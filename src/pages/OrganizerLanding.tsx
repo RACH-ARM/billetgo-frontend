@@ -43,7 +43,7 @@ const FEATURES = [
   {
     Icon: ShieldCheck,
     title: 'Commission transparente, rien de caché',
-    desc: 'Commission unique à 7% sur chaque billet vendu. 0 FCFA tant que vous ne vendez pas. Pas d\'abonnement, pas de frais cachés.',
+    desc: 'Commission sur chaque billet vendu. 0 FCFA tant que vous ne vendez pas. Pas d\'abonnement, pas de frais cachés. Contactez-nous pour connaître les conditions.',
     color: 'rose' as const,
   },
 ] as const;
@@ -91,10 +91,10 @@ const COLORS: Record<ColorKey, { text: string; bg: string; border: string }> = {
 
 // ── Stats ─────────────────────────────────────────────────────
 const STATS = [
-  { value: '7%', label: 'de commission fixe', sub: 'sur chaque billet vendu' },
+  { value: '0 FCFA', label: 'à l\'avance', sub: 'aucun frais avant vos ventes' },
   { value: '< 30s', label: 'pour payer', sub: 'via Mobile Money' },
   { value: '100%', label: 'sécurisé', sub: 'QR code anti-fraude HMAC' },
-  { value: '0 FCFA', label: 'à l\'avance', sub: 'aucun abonnement' },
+  { value: '0 FCFA', label: 'd\'abonnement', sub: 'aucun frais fixe mensuel' },
 ];
 
 // ── Component ─────────────────────────────────────────────────
@@ -309,7 +309,7 @@ export default function OrganizerLanding() {
                 <ArrowRight className="w-5 h-5" />
               </motion.button>
             </Link>
-            <p className="mt-4 text-white/20 text-xs">Aucun abonnement · 0 FCFA à l'avance · Commission uniquement sur les ventes</p>
+            <p className="mt-4 text-white/20 text-xs">Aucun abonnement · 0 FCFA à l'avance · Commission sur les ventes uniquement</p>
           </motion.div>
         </div>
       </section>

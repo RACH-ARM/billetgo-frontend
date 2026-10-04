@@ -737,7 +737,7 @@ Nous accompagnons aujourd'hui plusieurs organisateurs dans la commercialisation 
 • Reversements directement sur Mobile Money
 • Support technique avant et pendant l'événement
 • Aucun abonnement ni frais d'installation
-• Commission standard de 7 %
+• Commission sur les ventes (conditions sur demande)
 
 J'ai vu que vous êtes actifs dans [type d'événement] et je souhaiterais vous présenter BilletGab afin de voir si nous pouvons vous accompagner sur vos prochains événements.
 
@@ -771,7 +771,7 @@ Seriez-vous disponible pour un court échange cette semaine ?`,
 
 const OBJECTIONS = [
   { q: '« Je travaille déjà avec Tikerama. »', r: `Je comprends parfaitement. Si votre solution actuelle vous convient, je ne vous demanderai pas de changer simplement pour changer. L'idée est de vous présenter BilletGab et de voir si nous pouvons vous apporter quelque chose de supplémentaire. Vous pourrez ensuite comparer tranquillement.` },
-  { q: "« 7 %, c'est trop cher. »", r: `Je comprends. Par rapport à quelle solution comparez-vous ? Les 7 % couvrent la billetterie, le paiement Mobile Money, les QR codes, le contrôle des entrées, le tableau de bord, les outils promo et le support technique — sans abonnement. Regardons ce que vous obtenez pour cette commission.` },
+  { q: "« C'est trop cher. »", r: `Je comprends. Par rapport à quelle solution comparez-vous ? Notre commission couvre la billetterie, le paiement Mobile Money, les QR codes, le contrôle des entrées, le tableau de bord, les outils promo et le support technique — sans abonnement. Regardons ce que vous obtenez pour cette commission.` },
   { q: '« Votre plateforme est nouvelle. »', r: `Oui, BilletGab est plus récent. Mais cette jeunesse nous donne une grande capacité d'évolution. Nous développons rapidement les fonctionnalités demandées par les organisateurs. Et surtout, BilletGab est déjà opérationnel sur des événements réels.` },
   { q: '« Je veux réfléchir. »', r: `Bien sûr. Pour que je puisse vous accompagner correctement, qu'est-ce qui vous fait principalement hésiter : le tarif, le fonctionnement, le fait que BilletGab soit récent, ou simplement le besoin de comparer ?` },
   { q: '« Envoyez-moi vos tarifs. »', r: `Avec plaisir. Mais avant, j'aimerais connaître votre prochain événement : date, nombre de personnes attendu et catégories de billets. Cela me permettra de vous présenter l'offre qui correspond réellement à votre événement.` },
@@ -978,7 +978,7 @@ function ProspectionTab() {
         urgency: 'critical', badge: 'Envoyer la proposition', badgeColor: 'text-pink-300 bg-pink-500/10',
         actionTitle: "Envoyer la proposition commerciale",
         actionDescription: `La démo est faite — agis vite pendant que l'intérêt est maximal. Envoie une proposition claire et concrète avec les conditions.`,
-        steps: ["Envoyer un message récapitulatif : 7% de commission, Mobile Money, QR codes, dashboard temps réel", "Proposer de commencer avec un premier événement test", "Préciser que l'inscription est gratuite et sans engagement", "Relancer dans 2 jours si pas de retour"],
+        steps: ["Envoyer un message récapitulatif : conditions de commission, Mobile Money, QR codes, dashboard temps réel", "Proposer de commencer avec un premier événement test", "Préciser que l'inscription est gratuite et sans engagement", "Relancer dans 2 jours si pas de retour"],
         nextStatus: 'PROPOSAL_SENT', nextStatusLabel: 'Proposition envoyée', suggestedDays: 2,
       };
       case 'PROPOSAL_SENT': return {
@@ -5839,7 +5839,7 @@ BilletGab prend en charge :
 → Le suivi en temps réel de vos ventes
 → L'envoi automatique des billets sur WhatsApp
 
-Commission : 7% par billet vendu. Rien à payer d'avance.
+Commission sur les ventes. Rien à payer d'avance.
 
 Vous gérez l'événement. Nous gérons les billets.
 
@@ -6601,7 +6601,7 @@ Vous gérez l'événement. Nous gérons les billets.
                 <div className="glass-card p-4">
                   <p className="text-emerald-400 font-bold text-xs uppercase tracking-widest mb-3">Ce qu'on fait ✓</p>
                   <ul className="space-y-2">
-                    {['Parler simplement, comme à un ami', 'Être direct — une idée par post', 'Utiliser des chiffres concrets (7%, 2 min...)', 'Montrer la fierté du Gabon', 'Créer l\'urgence sans mentir', 'Répondre aux commentaires'].map((item) => (
+                    {['Parler simplement, comme à un ami', 'Être direct — une idée par post', 'Utiliser des chiffres concrets (2 min, 0 FCFA d\'avance...)', 'Montrer la fierté du Gabon', 'Créer l\'urgence sans mentir', 'Répondre aux commentaires'].map((item) => (
                       <li key={item} className="text-xs text-white/60 flex items-start gap-2">
                         <CheckCircle className="w-3 h-3 text-emerald-400 mt-0.5 flex-shrink-0" />
                         {item}

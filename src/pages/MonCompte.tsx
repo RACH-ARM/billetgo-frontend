@@ -319,9 +319,9 @@ function TabOrganisateur() {
     <div className="space-y-6">
       {/* Commission */}
       <div className="glass-card p-4 flex justify-end">
-        <div className="text-xs text-white/30">
-          Commission : {(Number(org.commissionRate) * 100).toFixed(0)}%
-        </div>
+        <a href="/contact" className="text-xs text-white/30 hover:text-violet-neon transition-colors underline underline-offset-2">
+          Conditions tarifaires — nous contacter
+        </a>
       </div>
 
       {/* Logo */}
