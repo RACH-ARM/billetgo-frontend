@@ -38,12 +38,10 @@ interface EventTrackCardProps {
   isPast?: boolean;
 }
 
-function EventTrackCard({ event, isPast }: EventTrackCardProps) {
+export function EventTrackCard({ event, isPast }: EventTrackCardProps) {
   const minPrice = event.ticketCategories.length
     ? Math.min(...event.ticketCategories.map((c) => c.price))
     : null;
-
-  const totalSold = event.ticketCategories.reduce((s, c) => s + c.quantitySold, 0);
 
   return (
     <Link
@@ -65,14 +63,12 @@ function EventTrackCard({ event, isPast }: EventTrackCardProps) {
           </div>
         )}
 
-        {/* Past overlay */}
+        {/* Past overlay — le nombre de billets vendus reste confidentiel (donnée
+            commerciale de l'organisateur), on n'affiche que le statut */}
         {isPast && (
           <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-1">
             <span className="text-white/70 text-xs font-medium font-sora uppercase tracking-wider">
               Terminé
-            </span>
-            <span className="text-cyan-neon font-space text-sm font-bold">
-              {totalSold} billets vendus
             </span>
           </div>
         )}
