@@ -25,6 +25,17 @@ Interface web de la plateforme de billetterie événementielle BilletGab.
 - npm 9+
 - Backend BilletGab démarré sur `http://localhost:3000`
 
+## Workflow Git
+
+Deux branches : `dev` (développement) et `main` (production, `billetgab.com`).
+Travailler sur `dev` — chaque push génère automatiquement une URL de preview
+Vercel. Fusionner vers `main` seulement une fois testé.
+
+> ⚠️ Le lien automatique Git → déploiement a été vu en défaut sur `main` le
+> 2026-10-08 (push sans déploiement déclenché). À vérifier côté dashboard
+> Vercel (Settings → Git) avant de compter dessus ; en secours, déployer
+> directement avec `vercel --prod`.
+
 ## Démarrage en développement
 
 ```bash
@@ -42,10 +53,16 @@ Créer un fichier `.env` à la racine (déjà présent en local) :
 
 | Variable | Valeur dev | Description |
 |----------|------------|-------------|
-| `VITE_API_URL` | `/api/v1` | Préfixe API (proxy Vite en dev, chemin direct en prod) |
+| `VITE_API_URL` | `/api/v1` | Préfixe API (proxy Vite en dev local) |
 | `VITE_BACKEND_URL` | `http://localhost:3000` | URL complète du backend |
 | `VITE_APP_NAME` | `BilletGab` | Nom de l'app |
 | `VITE_APP_URL` | `http://localhost:5173` | URL frontend |
+
+Sur Vercel, `VITE_API_URL` et `VITE_BACKEND_URL` sont scopées séparément par
+environnement : **Production** pointe vers `api.billetgab.com`, **Preview**
+(branche `dev`) pointe vers un tunnel [ngrok](https://ngrok.com) exposant le
+backend local (nécessite le header `ngrok-skip-browser-warning`, déjà géré
+dans `src/services/api.ts`).
 
 ## Scripts disponibles
 
@@ -65,7 +82,8 @@ npm run test:coverage # Rapport de couverture
 ```
 src/
 ├── pages/           # Pages par rôle et fonctionnalité
-│   ├── Home.tsx              # Catalogue événements (public)
+│   ├── Home.tsx              # Accueil (public)
+│   ├── Events.tsx            # Catalogue événements (/evenements)
 │   ├── EventDetail.tsx       # Page événement + achat
 │   ├── Checkout.tsx          # Tunnel de paiement Mobile Money
 │   ├── MesEvenements.tsx     # Dashboard organisateur
@@ -83,7 +101,16 @@ src/
 ├── hooks/           # Hooks personnalisés
 ├── types/           # Types TypeScript
 └── lib/             # Utilitaires (sentry, etc.)
+api/                  # Fonctions serverless Vercel (hors build Vite)
+├── events-og/[id].ts # Meta og: dynamiques par événement (partage WhatsApp/FB)
+└── page-meta.ts      # Meta og: par page fixe (accueil, evenements, ...)
 ```
+
+Les fonctions `api/` détectent le User-Agent : un robot (WhatsApp, Facebook,
+Googlebot...) reçoit une page HTML minimale avec les bonnes balises `og:*` /
+`twitter:card` ; un vrai navigateur reçoit l'app React normale. Nécessaire
+car l'app est une SPA — sans ça, tous les liens partagés affichent le même
+aperçu générique.
 
 ## Rôles et routes protégées
 
@@ -104,10 +131,13 @@ Hébergé sur **Vercel** (billetgab.com).
 npm run build   # tsc + vite build
 ```
 
-Variables d'environnement à configurer dans le dashboard Vercel. En production, `VITE_API_URL` pointe vers l'URL complète du backend Render.
+Variables d'environnement à configurer dans le dashboard Vercel (scopées par
+environnement — voir section ci-dessus). En production, `VITE_API_URL` reste
+`/api/v1` : c'est un rewrite dans `vercel.json` qui proxy ce chemin vers
+`api.billetgab.com`, pas la variable d'env elle-même.
 
 ## Tests
 
 ```bash
-npm test   # 107 tests — auth, commandes, formulaires, services
+npm test   # 109 tests — auth, commandes, formulaires, services, pages
 ```
