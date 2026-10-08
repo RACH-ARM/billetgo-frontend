@@ -7,3 +7,6 @@ dist/
 desktop.ini
 *.log
 coverage/
+
+.vercel
+.env*
