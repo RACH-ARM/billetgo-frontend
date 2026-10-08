@@ -2,6 +2,9 @@
   "functions": {
     "api/events-og/[id].ts": {
       "includeFiles": "dist/index.html"
+    },
+    "api/page-meta.ts": {
+      "includeFiles": "dist/index.html"
     }
   },
   "headers": [
@@ -53,6 +56,12 @@
       "source": "/events/:id",
       "destination": "/api/events-og/:id"
     },
+    { "source": "/", "destination": "/api/page-meta?page=home" },
+    { "source": "/evenements", "destination": "/api/page-meta?page=evenements" },
+    { "source": "/organisateurs", "destination": "/api/page-meta?page=organisateurs" },
+    { "source": "/a-propos", "destination": "/api/page-meta?page=a-propos" },
+    { "source": "/contact", "destination": "/api/page-meta?page=contact" },
+    { "source": "/comment-ca-marche", "destination": "/api/page-meta?page=comment-ca-marche" },
     {
       "source": "/api/v1/:path*",
       "destination": "https://api.billetgab.com/api/v1/:path*"

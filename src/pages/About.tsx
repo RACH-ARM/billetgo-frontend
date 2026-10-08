@@ -22,10 +22,10 @@ export default function About() {
     <div className="min-h-screen bg-bg">
       <Helmet>
         <title>À propos — BilletGab, la billetterie événementielle du Gabon</title>
-        <meta name="description" content="BilletGab est la première plateforme gabonaise de billetterie en ligne. Notre mission : rendre l'accès aux événements simple, sécurisé et local." />
+        <meta name="description" content="BilletGab est la billetterie pensée pour le Gabon. Notre mission : rendre l'accès aux événements simple, sécurisé et local." />
         <link rel="canonical" href="https://billetgab.com/a-propos" />
         <meta property="og:title" content="À propos — BilletGab" />
-        <meta property="og:description" content="La première billetterie événementielle du Gabon. Simple, sécurisée, locale." />
+        <meta property="og:description" content="La billetterie événementielle pensée pour le Gabon. Simple, sécurisée, locale." />
         <meta property="og:url" content="https://billetgab.com/a-propos" />
         <meta property="og:image" content="https://billetgab.com/og-default.jpg" />
       </Helmet>
@@ -40,7 +40,7 @@ export default function About() {
               À propos de BilletGab
             </h1>
             <p className="text-white/60 text-lg max-w-2xl mx-auto">
-              La première plateforme de billetterie numérique conçue pour le Gabon.
+              La billetterie numérique pensée pour le Gabon.
               Notre mission : rendre l'achat de billets simple, sécurisé et accessible à tous.
             </p>
           </motion.div>
