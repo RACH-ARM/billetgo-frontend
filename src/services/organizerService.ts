@@ -1,4 +1,4 @@
-import api from './api';
+import api, { NGROK_SKIP_HEADER } from './api';
 
 export interface CategoryStat {
   id: string;
@@ -223,7 +223,7 @@ export const organizerService = {
   exportCSV: (eventId: string) => {
     const token = localStorage.getItem('accessToken');
     const url = `${api.defaults.baseURL}/organizer/events/${eventId}/buyers/export`;
-    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(url, { headers: { Authorization: `Bearer ${token}`, ...NGROK_SKIP_HEADER } })
       .then((res) => res.blob())
       .then((blob) => {
         const objUrl = URL.createObjectURL(blob);
@@ -262,7 +262,7 @@ export const organizerService = {
   exportWaitlistCSV: (eventId: string) => {
     const token = localStorage.getItem('accessToken');
     const url = `${api.defaults.baseURL}/organizer/events/${eventId}/waitlist/export`;
-    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(url, { headers: { Authorization: `Bearer ${token}`, ...NGROK_SKIP_HEADER } })
       .then((res) => res.blob())
       .then((blob) => {
         const objUrl = URL.createObjectURL(blob);

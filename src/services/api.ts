@@ -1,9 +1,22 @@
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_API_URL || '/api/v1';
+
+// Backend de dev exposé via ngrok (plan gratuit) : sans ce header, ngrok
+// intercepte les requêtes navigateur et renvoie une page d'avertissement
+// HTML à la place du JSON de l'API. Exporté pour les appels fetch() bruts
+// (hors de cette instance axios) qui ciblent aussi le backend.
+export const NGROK_SKIP_HEADER: Record<string, string> = API_URL.includes('ngrok')
+  ? { 'ngrok-skip-browser-warning': 'true' }
+  : {};
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api/v1',
+  baseURL: API_URL,
   timeout: 30000,
-  headers: { 'Content-Type': 'application/json' },
+  headers: {
+    'Content-Type': 'application/json',
+    ...NGROK_SKIP_HEADER,
+  },
 });
 
 // Intercepteur request — ajouter le token
