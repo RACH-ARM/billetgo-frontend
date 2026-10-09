@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation } from 'react-query';
 import {
-  ShoppingBag, Minus, Plus, Phone, Mail, CheckCircle,
+  ShoppingBag, Minus, Plus, Phone, CheckCircle,
   QrCode, LogOut, BarChart3, Ticket, RefreshCw,
   Banknote, Smartphone, Loader2, XCircle, ChevronDown,
   AlertCircle, Send, Search, History, ChevronLeft, ChevronRight,
@@ -10,8 +10,10 @@ import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
 import { formatPrice } from '../utils/formatPrice';
 import { formatEventDate } from '../utils/formatDate';
+import { isValidGabonPhone, isPhoneMatchingProvider } from '../utils/phone';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import ResendTicketPanel from '../components/common/ResendTicketPanel';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -84,15 +86,15 @@ export default function AgentPOS() {
   const [historySearch, setHistorySearch] = useState('');
   const [historyPage, setHistoryPage]     = useState(1);
   const [resendOrder, setResendOrder]           = useState<HistoryOrder | null>(null);
-  const [resendEmail, setResendEmail]           = useState('');
-  const [resendPhone, setResendPhone]           = useState('');
-  const [resendSending, setResendSending]       = useState<'email' | 'whatsapp' | null>(null);
   const [resendTicketSrc, setResendTicketSrc]   = useState<string | null>(null);
   const [resendTicketLoading, setResendTicketLoading] = useState(false);
 
   // ── Form state ─────────────────────────────────────────────────────────────
   const [selectedEvent, setSelectedEvent] = useState<AgentEvent | null>(null);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [eventMenuOpen, setEventMenuOpen] = useState(false);
+  const [eventSearch, setEventSearch] = useState('');
+  const eventMenuRef = useRef<HTMLDivElement>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH');
   const [payerPhone, setPayerPhone] = useState('');   // numéro acheteur (WhatsApp pour CASH, Mobile Money pour Airtel/Moov)
 
@@ -108,12 +110,6 @@ export default function AgentPOS() {
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
   const [ticketImageSrc, setTicketImageSrc] = useState<string | null>(null);
   const [ticketImageLoading, setTicketImageLoading] = useState(false);
-  const [waResendPhone, setWaResendPhone] = useState('');
-  const [waResendSending, setWaResendSending] = useState(false);
-  const [waSentNumbers, setWaSentNumbers] = useState<string[]>([]);
-  const [emailResend, setEmailResend] = useState('');
-  const [emailResendSending, setEmailResendSending] = useState(false);
-  const [emailSentList, setEmailSentList] = useState<string[]>([]);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollStartRef = useRef<number>(0);
@@ -129,38 +125,6 @@ export default function AgentPOS() {
       .finally(() => setTicketImageLoading(false));
     return () => { if (objectUrl) URL.revokeObjectURL(objectUrl); };
   }, [saleResult?.orderId]);
-
-  const handleWaResend = async () => {
-    const phone = waResendPhone.trim();
-    if (!phone || !saleResult) return;
-    setWaResendSending(true);
-    try {
-      await api.post(`/agent/orders/${saleResult.orderId}/send-whatsapp`, { phone });
-      setWaSentNumbers(prev => [...prev, phone]);
-      setWaResendPhone('');
-      toast.success(`Billet envoyé · ${phone}`);
-    } catch {
-      toast.error('Échec de l\'envoi WhatsApp');
-    } finally {
-      setWaResendSending(false);
-    }
-  };
-
-  const handleEmailResend = async () => {
-    const email = emailResend.trim();
-    if (!email || !saleResult) return;
-    setEmailResendSending(true);
-    try {
-      await api.post(`/agent/orders/${saleResult.orderId}/send-email`, { email });
-      setEmailSentList(prev => [...prev, email]);
-      setEmailResend('');
-      toast.success(`Billet envoyé à ${email}`);
-    } catch {
-      toast.error('Échec de l\'envoi email');
-    } finally {
-      setEmailResendSending(false);
-    }
-  };
 
   const handleLogout = async () => {
     await logout();
@@ -206,6 +170,22 @@ export default function AgentPOS() {
   useEffect(() => {
     if (events?.length === 1 && !selectedEvent) setSelectedEvent(events[0]);
   }, [events, selectedEvent]);
+
+  // Fermer le menu événement au clic en dehors
+  useEffect(() => {
+    if (!eventMenuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (eventMenuRef.current && !eventMenuRef.current.contains(e.target as Node)) {
+        setEventMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [eventMenuOpen]);
+
+  const filteredEvents = (events ?? []).filter((ev) =>
+    ev.title.toLowerCase().includes(eventSearch.toLowerCase())
+  );
 
   // ── Polling Mobile Money ───────────────────────────────────────────────────
 
@@ -327,38 +307,6 @@ export default function AgentPOS() {
 
   const openResend = (order: HistoryOrder) => {
     setResendOrder(order);
-    setResendEmail(order.buyerEmail ?? '');
-    setResendPhone('');
-  };
-
-  const handleResendEmail = async () => {
-    if (!resendOrder || !resendEmail.trim()) return;
-    setResendSending('email');
-    try {
-      await api.post(`/agent/orders/${resendOrder.id}/send-email`, { email: resendEmail.trim() });
-      toast.success(`Billet envoyé à ${resendEmail.trim()}`);
-      setResendOrder(null);
-      setResendTicketSrc(null);
-    } catch {
-      toast.error('Échec de l\'envoi email');
-    } finally {
-      setResendSending(null);
-    }
-  };
-
-  const handleResendWhatsApp = async () => {
-    if (!resendOrder || !resendPhone.trim()) return;
-    setResendSending('whatsapp');
-    try {
-      await api.post(`/agent/orders/${resendOrder.id}/send-whatsapp`, { phone: resendPhone.trim() });
-      toast.success(`Billet envoyé sur WhatsApp · ${resendPhone.trim()}`);
-      setResendOrder(null);
-      setResendTicketSrc(null);
-    } catch {
-      toast.error('Échec de l\'envoi WhatsApp');
-    } finally {
-      setResendSending(null);
-    }
   };
 
   const handleRetry = () => {
@@ -375,7 +323,15 @@ export default function AgentPOS() {
   const opColor = paymentMethod === 'MOOV_MONEY' ? 'text-blue-400 border-blue-400/30 bg-blue-400/5' : 'text-red-400 border-red-400/30 bg-red-400/5';
 
   const isLoading = saleMutation.isLoading || mobileMoneyMutation.isLoading;
-  const canSubmit = totalTickets > 0 && !!payerPhone.trim() && !isLoading;
+
+  const phoneError = payerPhone.trim().length >= 2 && !isValidGabonPhone(payerPhone)
+    ? 'Numéro invalide — ex : 062 557 655'
+    : payerPhone.trim().length >= 2 && paymentMethod !== 'CASH' && isValidGabonPhone(payerPhone) && !isPhoneMatchingProvider(payerPhone, paymentMethod)
+      ? `Ce numéro ne correspond pas à ${opLabel} (${paymentMethod === 'AIRTEL_MONEY' ? '07X...' : '06X...'})`
+      : null;
+
+  const phoneValid = isValidGabonPhone(payerPhone) && (paymentMethod === 'CASH' || isPhoneMatchingProvider(payerPhone, paymentMethod));
+  const canSubmit = totalTickets > 0 && phoneValid && !isLoading;
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
@@ -540,22 +496,54 @@ export default function AgentPOS() {
                   </div>
                 </div>
               ) : (
-                <div className="relative">
-                  <select
-                    value={selectedEvent?.id ?? ''}
-                    onChange={(e) => {
-                      const ev = events.find((ev) => ev.id === e.target.value) ?? null;
-                      setSelectedEvent(ev);
-                      setQuantities({});
-                    }}
-                    className="w-full bg-bg-card border border-violet-neon/20 rounded-xl px-4 py-3 pr-10 text-white text-sm focus:outline-none focus:border-violet-neon transition-colors appearance-none"
+                <div className="relative" ref={eventMenuRef}>
+                  <button
+                    type="button"
+                    onClick={() => { setEventMenuOpen((o) => !o); setEventSearch(''); }}
+                    className="w-full bg-bg-card border border-violet-neon/20 rounded-xl px-4 py-3 pr-10 text-sm text-left focus:outline-none focus:border-violet-neon transition-colors flex items-center justify-between gap-2"
                   >
-                    <option value="">-- Sélectionner un événement --</option>
-                    {events.map((ev) => (
-                      <option key={ev.id} value={ev.id}>{ev.title} · {formatEventDate(ev.eventDate)}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30 pointer-events-none" />
+                    <span className={`truncate ${selectedEvent ? 'text-white' : 'text-white/30'}`}>
+                      {selectedEvent ? `${selectedEvent.title} · ${formatEventDate(selectedEvent.eventDate)}` : '-- Sélectionner un événement --'}
+                    </span>
+                    <ChevronDown className={`w-4 h-4 text-white/30 flex-shrink-0 transition-transform ${eventMenuOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {eventMenuOpen && (
+                    <div className="absolute z-30 mt-1.5 w-full bg-bg-card border border-violet-neon/20 rounded-xl shadow-xl overflow-hidden">
+                      <div className="relative p-2 border-b border-white/5">
+                        <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                        <input
+                          autoFocus
+                          type="text"
+                          placeholder="Rechercher un événement..."
+                          value={eventSearch}
+                          onChange={(e) => setEventSearch(e.target.value)}
+                          className="w-full bg-bg border border-white/10 rounded-lg pl-9 pr-3 py-2 text-white text-sm placeholder:text-white/25 focus:outline-none focus:border-violet-neon/50 transition-colors"
+                        />
+                      </div>
+                      <div className="max-h-60 overflow-y-auto">
+                        {filteredEvents.length === 0 ? (
+                          <p className="px-4 py-3 text-white/30 text-sm text-center">Aucun événement trouvé</p>
+                        ) : (
+                          filteredEvents.map((ev) => (
+                            <button
+                              key={ev.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedEvent(ev);
+                                setQuantities({});
+                                setEventMenuOpen(false);
+                              }}
+                              className={`w-full text-left px-4 py-2.5 text-sm hover:bg-violet-neon/10 transition-colors ${selectedEvent?.id === ev.id ? 'text-violet-neon bg-violet-neon/5' : 'text-white'}`}
+                            >
+                              <p className="truncate">{ev.title}</p>
+                              <p className="text-white/30 text-xs">{formatEventDate(ev.eventDate)}</p>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </section>
@@ -642,23 +630,29 @@ export default function AgentPOS() {
                       value={payerPhone}
                       onChange={(e) => setPayerPhone(e.target.value)}
                       className={`w-full bg-bg-card rounded-xl pl-9 pr-4 py-3 text-white placeholder:text-white/25 focus:outline-none transition-colors border ${
-                        paymentMethod === 'CASH'
-                          ? 'border-[#25D366]/30 focus:border-[#25D366]/70'
-                          : paymentMethod === 'MOOV_MONEY'
-                            ? 'border-blue-400/30 focus:border-blue-400/70'
-                            : 'border-red-400/30 focus:border-red-400/70'
+                        phoneError
+                          ? 'border-rose-neon/60 focus:border-rose-neon'
+                          : paymentMethod === 'CASH'
+                            ? 'border-[#25D366]/30 focus:border-[#25D366]/70'
+                            : paymentMethod === 'MOOV_MONEY'
+                              ? 'border-blue-400/30 focus:border-blue-400/70'
+                              : 'border-red-400/30 focus:border-red-400/70'
                       }`}
                     />
                   </div>
-                  <p className={`text-xs mt-1 pl-1 ${
-                    paymentMethod === 'CASH' ? 'text-[#25D366]/50'
-                    : paymentMethod === 'MOOV_MONEY' ? 'text-blue-400/60'
-                    : 'text-red-400/60'
-                  }`}>
-                    {paymentMethod === 'CASH'
-                      ? 'Le billet sera envoyé sur WhatsApp'
-                      : 'Le client reçoit une demande USSD et valide depuis son téléphone'}
-                  </p>
+                  {phoneError ? (
+                    <p className="text-xs mt-1 pl-1 text-rose-neon">{phoneError}</p>
+                  ) : (
+                    <p className={`text-xs mt-1 pl-1 ${
+                      paymentMethod === 'CASH' ? 'text-[#25D366]/50'
+                      : paymentMethod === 'MOOV_MONEY' ? 'text-blue-400/60'
+                      : 'text-red-400/60'
+                    }`}>
+                      {paymentMethod === 'CASH'
+                        ? 'Le billet sera envoyé sur WhatsApp'
+                        : 'Le client reçoit une demande USSD et valide depuis son téléphone'}
+                    </p>
+                  )}
                 </section>
               </>
             )}
@@ -829,87 +823,14 @@ export default function AgentPOS() {
                 </div>
                 <p className="text-white/25 text-xs mt-2 pl-1">Billet envoyé automatiquement à la validation.</p>
               </div>
-            ) : (
-              /* Mobile Money : l'agent envoie manuellement si besoin */
-              <div className="w-full glass-card p-4">
-                <p className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">Envoyer le billet sur WhatsApp</p>
-                {waSentNumbers.map(n => (
-                  <div key={n} className="flex items-center gap-2 mb-2 bg-[#25D366]/10 border border-[#25D366]/20 rounded-lg px-3 py-1.5">
-                    <Phone className="w-3 h-3 text-[#25D366]" />
-                    <span className="text-[#25D366] text-xs font-medium flex-1">{n}</span>
-                    <span className="text-[#25D366]/60 text-xs">✓ Envoyé</span>
-                  </div>
-                ))}
-                <div className="flex gap-2 mt-2">
-                  <div className="relative flex-1">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#25D366]/60" />
-                    <input
-                      type="tel"
-                      placeholder="Numéro WhatsApp du client"
-                      value={waResendPhone}
-                      onChange={e => setWaResendPhone(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && handleWaResend()}
-                      className="w-full bg-bg border border-[#25D366]/30 rounded-xl pl-9 pr-3 py-2.5 text-white placeholder:text-white/25 focus:border-[#25D366]/70 focus:outline-none text-sm transition-colors"
-                    />
-                  </div>
-                  <button
-                    onClick={handleWaResend}
-                    disabled={!waResendPhone.trim() || waResendSending}
-                    className="px-4 py-2.5 rounded-xl bg-[#25D366] text-white text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 shrink-0"
-                  >
-                    {waResendSending
-                      ? <Loader2 className="w-4 h-4 animate-spin" />
-                      : <Send className="w-4 h-4" />
-                    }
-                    Envoyer
-                  </button>
-                </div>
-              </div>
-            )}
+            ) : null}
 
-            {/* ── Envoi Email ── */}
-            <div className="w-full glass-card p-4">
-              <p className="text-xs font-semibold text-white/40 uppercase tracking-wider mb-3">Envoyer le billet par email</p>
-
-              {emailSentList.map(e => (
-                <div key={e} className="flex items-center gap-2 mb-2 bg-violet-neon/10 border border-violet-neon/20 rounded-lg px-3 py-1.5">
-                  <Mail className="w-3 h-3 text-violet-neon" />
-                  <span className="text-violet-neon text-xs font-medium flex-1 truncate">{e}</span>
-                  <span className="text-violet-neon/60 text-xs">✓ Envoyé</span>
-                </div>
-              ))}
-
-              <div className="flex gap-2 mt-2">
-                <div className="relative flex-1">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-violet-neon/60" />
-                  <input
-                    type="email"
-                    placeholder="Email du client"
-                    value={emailResend}
-                    onChange={e => setEmailResend(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleEmailResend()}
-                    className="w-full bg-bg border border-violet-neon/30 rounded-xl pl-9 pr-3 py-2.5 text-white placeholder:text-white/25 focus:border-violet-neon/70 focus:outline-none text-sm transition-colors"
-                  />
-                </div>
-                <button
-                  onClick={handleEmailResend}
-                  disabled={!emailResend.trim() || emailResendSending}
-                  className="px-4 py-2.5 rounded-xl bg-violet-neon text-white text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 shrink-0"
-                >
-                  {emailResendSending
-                    ? <Loader2 className="w-4 h-4 animate-spin" />
-                    : <Send className="w-4 h-4" />
-                  }
-                  Envoyer
-                </button>
-              </div>
-            </div>
+            <ResendTicketPanel orderId={saleResult.orderId} hideWhatsApp={!!saleWhatsApp} />
 
             <button
               onClick={() => {
                 setSaleResult(null); setSaleWhatsApp(''); setShowQR(false);
-                setTicketImageSrc(null); setWaSentNumbers([]); setWaResendPhone('');
-                setEmailSentList([]); setEmailResend('');
+                setTicketImageSrc(null);
               }}
               className="w-full py-3 rounded-xl bg-neon-gradient font-semibold text-white"
             >
@@ -950,55 +871,7 @@ export default function AgentPOS() {
               )}
             </div>
 
-            {/* WhatsApp */}
-            <div className="glass-card p-4 flex flex-col gap-3">
-              <p className="text-xs font-semibold text-white/40 uppercase tracking-wider">Envoyer sur WhatsApp</p>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#25D366]" />
-                  <input
-                    type="tel"
-                    placeholder="Numéro WhatsApp (ex: 074000000)"
-                    value={resendPhone}
-                    onChange={(e) => setResendPhone(e.target.value)}
-                    className="w-full bg-bg border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-white text-sm placeholder:text-white/25 focus:border-[#25D366]/50 focus:outline-none"
-                  />
-                </div>
-                <button
-                  onClick={handleResendWhatsApp}
-                  disabled={!resendPhone.trim() || resendSending !== null}
-                  className="px-4 py-2.5 rounded-xl bg-[#25D366]/20 text-[#25D366] font-semibold text-sm hover:bg-[#25D366]/30 disabled:opacity-30 transition-colors flex items-center gap-1.5"
-                >
-                  {resendSending === 'whatsapp' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  Envoyer
-                </button>
-              </div>
-            </div>
-
-            {/* Email */}
-            <div className="glass-card p-4 flex flex-col gap-3">
-              <p className="text-xs font-semibold text-white/40 uppercase tracking-wider">Envoyer par Email</p>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                  <input
-                    type="email"
-                    placeholder="Adresse email"
-                    value={resendEmail}
-                    onChange={(e) => setResendEmail(e.target.value)}
-                    className="w-full bg-bg border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-white text-sm placeholder:text-white/25 focus:border-violet-neon/50 focus:outline-none"
-                  />
-                </div>
-                <button
-                  onClick={handleResendEmail}
-                  disabled={!resendEmail.trim() || resendSending !== null}
-                  className="px-4 py-2.5 rounded-xl bg-violet-neon/20 text-violet-neon font-semibold text-sm hover:bg-violet-neon/30 disabled:opacity-30 transition-colors flex items-center gap-1.5"
-                >
-                  {resendSending === 'email' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  Envoyer
-                </button>
-              </div>
-            </div>
+            <ResendTicketPanel orderId={resendOrder.id} defaultEmail={resendOrder.buyerEmail ?? ''} />
           </div>
         </div>
       )}

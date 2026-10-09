@@ -3,11 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   CalendarDays, Ticket, Download, Search, QrCode,
   ChevronRight, ChevronDown, ChevronUp, ArrowLeft, Phone, Mail, CreditCard,
-  Plus, Trash2, AlertTriangle, Check,
+  Plus, Trash2, AlertTriangle, Check, Copy,
   Clock, Ban, X, Banknote, Images, ImagePlus, MapPin, Heart,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { useOrganizerStats, useEventBuyers, useCreateEvent, useUpdateEvent, useProposeChanges, useResubmitEvent, useCancelEvent, useOrganizerProfile, useEventDetails, useEventWaitlist, useUploadEventGallery, useDeleteEventGalleryPhoto } from '../hooks/useOrganizer';
+import { useOrganizerStats, useEventBuyers, useCreateEvent, useUpdateEvent, useProposeChanges, useResubmitEvent, useCancelEvent, useOrganizerProfile, useEventDetails, useUploadEventGallery, useDeleteEventGalleryPhoto } from '../hooks/useOrganizer';
 import { organizerService, type OrganizerEventStat, type CreateEventTicketCategory } from '../services/organizerService';
 import { promoService } from '../services/promoService';
 import type { PromoCode } from '../types/promo';
@@ -274,7 +274,16 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
   const [showForm, setShowForm] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const { data: eventDetails } = useEventDetails(event.eventId);
-  const eventCategories: { id: string; name: string }[] = eventDetails?.ticketCategories ?? [];
+  const eventCategories: { id: string; name: string; price: number }[] = eventDetails?.ticketCategories ?? [];
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const copyCode = (code: string) => {
+    const url = `https://billetgab.com/events/${event.eventId}?promo=${code}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedCode(code);
+      setTimeout(() => setCopiedCode(null), 2000);
+    });
+  };
   const emptyForm = {
     influencerEmail: '', influencerFirstName: '', influencerLastName: '',
     code: '', label: '',
@@ -449,6 +458,44 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
               </div>
             </div>
           </div>
+
+          {(() => {
+            const targetCats = form.allCategories ? eventCategories : eventCategories.filter((c) => form.categoryIds.includes(c.id));
+            if (targetCats.length === 0 || (form.discountType === 'NONE' && form.commissionType === 'NONE')) return null;
+            const discountValue = Number(form.discountValue) || 0;
+            const commissionValue = Number(form.commissionValue) || 0;
+            const rows = targetCats.map((cat) => {
+              const discountAmount = form.discountType === 'PERCENTAGE' ? Math.round(cat.price * discountValue / 100) : form.discountType === 'FIXED' ? discountValue : 0;
+              const priceAfterDiscount = Math.max(0, cat.price - discountAmount);
+              const commissionAmount = form.commissionType === 'PERCENTAGE' ? Math.round(cat.price * commissionValue / 100) : form.commissionType === 'FIXED' ? commissionValue : 0;
+              const margin = priceAfterDiscount - commissionAmount;
+              return { ...cat, discountAmount, commissionAmount, margin };
+            });
+            const hasNegative = rows.some((r) => r.margin < 0);
+            return (
+              <div className={`rounded-xl border p-3 space-y-2 ${hasNegative ? 'bg-rose-neon/5 border-rose-neon/30' : 'bg-white/[0.02] border-white/10'}`}>
+                <p className="text-xs text-white/40 font-semibold uppercase tracking-widest">Aperçu de marge par billet</p>
+                {rows.map((r) => (
+                  <div key={r.id} className="flex items-center justify-between text-xs gap-2">
+                    <span className="text-white/50 truncate">{r.name}</span>
+                    <span className="text-white/30 font-mono whitespace-nowrap">
+                      {formatPrice(r.price)} − {formatPrice(r.discountAmount)} (réduc.) − {formatPrice(r.commissionAmount)} (comm.) =
+                    </span>
+                    <span className={`font-mono font-semibold whitespace-nowrap ${r.margin < 0 ? 'text-rose-neon' : 'text-emerald-400'}`}>
+                      {formatPrice(r.margin)}
+                    </span>
+                  </div>
+                ))}
+                {hasNegative && (
+                  <p className="text-rose-neon text-xs flex items-center gap-1.5 pt-1 border-t border-rose-neon/20">
+                    <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                    Cette configuration fait perdre de l'argent : la réduction + commission dépasse le prix du billet.
+                  </p>
+                )}
+              </div>
+            );
+          })()}
+
           {/* Limite d'utilisations */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -655,6 +702,13 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
                       Commission : {c.commissionType === 'NONE' ? 'Aucune' : c.commissionType === 'PERCENTAGE' ? `${c.commissionValue}% par billet` : `${formatPrice(Number(c.commissionValue))} par billet`}
                     </span>
                     <button
+                      onClick={() => copyCode(c.code)}
+                      className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border border-white/10 text-white/40 hover:border-violet-neon/40 hover:text-violet-neon transition-colors"
+                    >
+                      {copiedCode === c.code ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copiedCode === c.code ? 'Copié !' : 'Copier le lien'}
+                    </button>
+                    <button
                       onClick={() => {
                         setEditingId(c.id);
                         setEditForm({
@@ -682,13 +736,31 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
                     >
                       {c.isActive ? 'Désactiver' : 'Activer'}
                     </button>
-                    <button
-                      onClick={() => deleteMutation.mutate(c.id)}
-                      className="text-white/20 hover:text-rose-neon transition-colors"
-                      title="Supprimer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {confirmDeleteId === c.id ? (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-rose-neon/70">Supprimer ?</span>
+                        <button
+                          onClick={() => { deleteMutation.mutate(c.id); setConfirmDeleteId(null); }}
+                          className="text-xs px-2 py-1 rounded-lg bg-rose-neon/10 border border-rose-neon/30 text-rose-neon hover:bg-rose-neon/20 transition-colors"
+                        >
+                          Oui
+                        </button>
+                        <button
+                          onClick={() => setConfirmDeleteId(null)}
+                          className="text-xs px-2 py-1 rounded-lg border border-white/10 text-white/40 hover:border-white/20 transition-colors"
+                        >
+                          Non
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmDeleteId(c.id)}
+                        className="text-white/20 hover:text-rose-neon transition-colors"
+                        title="Supprimer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
 
                   {/* Formulaire d'édition inline */}
@@ -771,101 +843,6 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
         </div>
       )}
     </div>
-  );
-}
-
-// ── Waitlist panel ─────────────────────────────────────────────
-function WaitlistPanel({ event, onBack }: { event: OrganizerEventStat; onBack: () => void }) {
-  const { data, isLoading } = useEventWaitlist(event.eventId);
-  const [search, setSearch] = useState('');
-
-  const entries = data?.waitlist ?? [];
-  const filtered = entries.filter((w) =>
-    w.email.toLowerCase().includes(search.toLowerCase()) ||
-    (w.phone ?? '').includes(search)
-  );
-
-  return (
-    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-      <div className="flex flex-wrap items-center gap-4 mb-6">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 text-white/50 hover:text-white transition-colors text-sm"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Retour
-        </button>
-        <div className="flex-1 min-w-0">
-          <h2 className="font-bebas text-2xl tracking-wider text-white truncate">{event.title}</h2>
-          <p className="text-white/40 text-xs">{data?.total ?? 0} personne{(data?.total ?? 0) > 1 ? 's' : ''} en attente</p>
-        </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => organizerService.exportWaitlistCSV(event.eventId)}
-        >
-          <Download className="w-4 h-4" />
-          Export CSV
-        </Button>
-      </div>
-
-      <div className="relative mb-4">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Rechercher par email ou téléphone..."
-          className="w-full bg-bg-card border border-violet-neon/20 rounded-xl pl-11 pr-4 py-2.5 text-white placeholder-white/30 focus:outline-none focus:border-violet-neon transition-colors text-sm"
-        />
-      </div>
-
-      {isLoading ? (
-        <div className="flex justify-center py-20"><Spinner size="lg" /></div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-20 text-white/30">
-          {search ? 'Aucun résultat' : 'Aucune personne en liste d\'attente'}
-        </div>
-      ) : (
-        <div className="glass-card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-white/5 text-white/40 text-xs uppercase tracking-widest">
-                  <th className="text-left px-5 py-3">Email</th>
-                  <th className="text-left px-5 py-3">Téléphone</th>
-                  <th className="text-left px-5 py-3">Notifié</th>
-                  <th className="text-left px-5 py-3">Date inscription</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((w) => (
-                  <tr key={w.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-                    <td className="px-5 py-4 text-white">{w.email}</td>
-                    <td className="px-5 py-4 text-white/60 text-xs">{w.phone ?? '—'}</td>
-                    <td className="px-5 py-4">
-                      {w.notified ? (
-                        <span className="flex items-center gap-1 text-xs text-green-400 font-semibold">
-                          <Check className="w-3 h-3" /> Oui
-                        </span>
-                      ) : (
-                        <span className="text-xs text-white/30">Non</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-4 text-white/40 text-xs">
-                      {new Date(w.createdAt).toLocaleDateString('fr-FR')}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="px-5 py-3 border-t border-white/5 text-xs text-white/30">
-            {filtered.length} entrée{filtered.length > 1 ? 's' : ''}
-            {search && ` · filtré sur "${search}"`}
-          </div>
-        </div>
-      )}
-    </motion.div>
   );
 }
 
@@ -1800,7 +1777,6 @@ export default function MesEvenements() {
   const [editingEventStatus, setEditingEventStatus] = useState<string | null>(null);
   const [cancelTarget, setCancelTarget] = useState<{ id: string; title: string } | null>(null);
   const [cancelReason, setCancelReason] = useState('');
-  const [waitlistEvent, setWaitlistEvent] = useState<OrganizerEventStat | null>(null);
   const [promoEvent, setPromoEvent] = useState<OrganizerEventStat | null>(null);
   const [qrDownloading, setQrDownloading] = useState<string | null>(null);
   const cancelEvent = useCancelEvent();
@@ -1863,14 +1839,6 @@ export default function MesEvenements() {
             onSuccess={() => { setEditingEventId(null); setEditingEventNote(null); setEditingEventStatus(null); }}
           />
         </AnimatePresence>
-      </div>
-    );
-  }
-
-  if (waitlistEvent) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <WaitlistPanel event={waitlistEvent} onBack={() => setWaitlistEvent(null)} />
       </div>
     );
   }
@@ -2015,12 +1983,6 @@ export default function MesEvenements() {
                           <Clock className="w-3.5 h-3.5" /> En attente
                         </span>
                       )}
-                      <button
-                        onClick={() => setWaitlistEvent(event)}
-                        className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-white/5 text-white/40 hover:bg-cyan-neon/10 hover:text-cyan-neon border border-white/5 hover:border-cyan-neon/20 transition-colors"
-                      >
-                        <Clock className="w-3 h-3" /> Waitlist
-                      </button>
                       <button
                         onClick={() => setPromoEvent(event)}
                         className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-white/5 text-white/40 hover:bg-violet-neon/10 hover:text-violet-neon border border-white/5 hover:border-violet-neon/20 transition-colors"

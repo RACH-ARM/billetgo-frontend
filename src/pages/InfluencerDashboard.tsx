@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { TrendingUp, Ticket, MousePointerClick, Wallet, Clock, CheckCircle, XCircle, ChevronDown, ChevronUp, LogOut, Copy, Check } from 'lucide-react';
+import { TrendingUp, Ticket, MousePointerClick, Wallet, Clock, CheckCircle, XCircle, ChevronDown, ChevronUp, ChevronRight, LogOut, Copy, Check, MessageCircle } from 'lucide-react';
 import { promoService } from '../services/promoService';
 import { formatPrice } from '../utils/formatPrice';
-import { formatEventDate } from '../utils/formatDate';
+import { formatEventDate, formatDateShort } from '../utils/formatDate';
 import { useAuthStore } from '../stores/authStore';
 import type { InfluencerCampaign, InfluencerPayout } from '../types/promo';
 
@@ -39,6 +39,17 @@ export default function InfluencerDashboard() {
       setCopiedCode(code);
       setTimeout(() => setCopiedCode(null), 2000);
     });
+  };
+
+  const shareOnWhatsApp = (eventTitle: string, eventId: string, code: string, discountType: string, discountValue: number) => {
+    const url = `https://billetgab.com/events/${eventId}?promo=${code}`;
+    const discountText = discountType === 'PERCENTAGE'
+      ? `${discountValue}% de réduction`
+      : discountType === 'FIXED'
+        ? `${formatPrice(discountValue)} de réduction`
+        : '';
+    const message = `🎟️ ${eventTitle}${discountText ? ` — ${discountText} avec mon code ${code} !` : ` — code promo ${code} !`}\n${url}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   const { data, isLoading } = useQuery(
@@ -244,11 +255,37 @@ export default function InfluencerDashboard() {
                         </p>
                       </div>
                     </div>
+                    {/* Entonnoir de conversion */}
+                    <div className="flex items-center gap-2 bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3">
+                      <div className="flex-1 text-center">
+                        <p className="text-white font-bebas text-xl tracking-wider">{c.clickCount.toLocaleString('fr-FR')}</p>
+                        <p className="text-white/30 text-[11px]">Clics</p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-white/15 flex-shrink-0" />
+                      <div className="flex-1 text-center">
+                        <p className="text-white font-bebas text-xl tracking-wider">{c.stats.ticketsSold.toLocaleString('fr-FR')}</p>
+                        <p className="text-white/30 text-[11px]">Billets vendus</p>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-white/15 flex-shrink-0" />
+                      <div className="flex-1 text-center">
+                        <p className="text-cyan-neon font-bebas text-xl tracking-wider">
+                          {c.clickCount > 0 ? `${((c.stats.ticketsSold / c.clickCount) * 100).toFixed(1)}%` : '—'}
+                        </p>
+                        <p className="text-white/30 text-[11px]">Conversion</p>
+                      </div>
+                    </div>
                     {/* Lien à partager */}
                     <div className="flex items-center gap-3 bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3">
                       <p className="flex-1 font-mono text-xs text-white/40 truncate">
                         billetgab.com/events/{c.event.id}?promo={c.code}
                       </p>
+                      <button
+                        onClick={() => shareOnWhatsApp(c.event.title, c.event.id, c.code, c.discountType, c.discountValue)}
+                        className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors flex-shrink-0"
+                      >
+                        <MessageCircle className="w-3.5 h-3.5" />
+                        WhatsApp
+                      </button>
                       <button
                         onClick={() => copyLink(c.event.id, c.code)}
                         className="flex items-center gap-1.5 text-xs font-semibold text-violet-neon hover:text-white transition-colors flex-shrink-0"
@@ -283,6 +320,7 @@ export default function InfluencerDashboard() {
                   <p className={`text-sm font-semibold ${p.status === 'PAID' ? 'text-emerald-400' : p.status === 'REJECTED' ? 'text-rose-neon' : 'text-amber-400'}`}>
                     {p.status === 'PAID' ? 'Versé' : p.status === 'REJECTED' ? 'Rejeté' : 'En attente'}
                   </p>
+                  <p className="text-white/30 text-xs mt-0.5">{formatDateShort(p.processedAt ?? p.createdAt)}</p>
                   {p.adminNote && <p className="text-white/30 text-xs mt-0.5">{p.adminNote}</p>}
                 </div>
               </div>
