@@ -227,6 +227,12 @@ export default function Login() {
             Créer un compte organisateur
           </Link>
         </p>
+        <p className="mt-2 text-center text-sm text-white/40">
+          Vous êtes agent de scan avec un code d'accès ?{' '}
+          <Link to="/scanner/acces" className="text-cyan-neon hover:text-rose-neon transition-colors">
+            Connexion par code
+          </Link>
+        </p>
       </motion.div>
     </div>
   );

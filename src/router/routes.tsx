@@ -58,6 +58,7 @@ export const GoogleAuthCallback = lazy(() => import('../pages/GoogleAuthCallback
 export const GuestTicketLookup = lazyWithReload(() => import('../pages/GuestTicketLookup'));
 export const InfluencerDashboard = lazyWithReload(() => import('../pages/InfluencerDashboard'));
 export const AcceptInvite = lazyWithReload(() => import('../pages/AcceptInvite'));
+export const ScannerAccess = lazyWithReload(() => import('../pages/ScannerAccess'));
 export const AgentPOS = lazyWithReload(() => import('../pages/AgentPOS'));
 export const PublicLayout = lazy(() => import('../components/layout/PageLayout'));
 

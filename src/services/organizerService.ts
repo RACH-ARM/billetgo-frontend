@@ -98,6 +98,13 @@ export interface CreateScannerPayload {
   eventId: string;
 }
 
+export interface EventScannerEntry {
+  id: string;
+  isActive: boolean;
+  createdAt: string;
+  user: { id: string; firstName: string; isActive: boolean; accessCode: string | null; createdAt: string };
+}
+
 export interface OrganizerProfile {
   id: string;
   companyName: string;
@@ -241,6 +248,26 @@ export const organizerService = {
 
   createScannerAccount: async (payload: CreateScannerPayload) => {
     const { data } = await api.post('/organizer/scanners/create-account', payload);
+    return data.data;
+  },
+
+  getEventScanners: async (eventId: string): Promise<EventScannerEntry[]> => {
+    const { data } = await api.get(`/organizer/events/${eventId}/scanners`);
+    return data.data;
+  },
+
+  createEventScannerCode: async (eventId: string, label: string): Promise<{ scanner: { id: string }; user: EventScannerEntry['user'] }> => {
+    const { data } = await api.post(`/organizer/events/${eventId}/scanners`, { label });
+    return data.data;
+  },
+
+  regenerateScannerCode: async (eventId: string, scannerId: string): Promise<{ accessCode: string }> => {
+    const { data } = await api.patch(`/organizer/events/${eventId}/scanners/${scannerId}/regenerate`);
+    return data.data;
+  },
+
+  toggleEventScanner: async (eventId: string, scannerId: string): Promise<{ isActive: boolean }> => {
+    const { data } = await api.patch(`/organizer/events/${eventId}/scanners/${scannerId}/toggle`);
     return data.data;
   },
 
