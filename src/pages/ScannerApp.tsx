@@ -594,21 +594,25 @@ export default function ScannerApp() {
     setCameraError(null);
     const qr = new Html5Qrcode('qr-reader');
     scannerRef.current = qr;
+    const onDecoded = async (decodedText: string) => {
+      setScanGlow(true);
+      setTimeout(() => setScanGlow(false), 700);
+      // pause() garde la caméra allumée — reprise instantanée vs stop/start (1-2s)
+      try { scannerRef.current?.pause(); } catch {}
+      setIsVerifying(true); // feedback visuel immédiat pendant la requête serveur
+      await verifyQR(decodedText);
+      setIsVerifying(false);
+    };
+    const config = { fps: 25, qrbox: { width: 240, height: 240 } };
     try {
-      await qr.start(
-        { facingMode: 'environment' },
-        { fps: 25, qrbox: { width: 240, height: 240 } },
-        async (decodedText) => {
-          setScanGlow(true);
-          setTimeout(() => setScanGlow(false), 700);
-          // pause() garde la caméra allumée — reprise instantanée vs stop/start (1-2s)
-          try { scannerRef.current?.pause(); } catch {}
-          setIsVerifying(true); // feedback visuel immédiat pendant la requête serveur
-          await verifyQR(decodedText);
-          setIsVerifying(false);
-        },
-        () => {}
-      );
+      try {
+        // Caméra arrière — cas normal sur téléphone/tablette
+        await qr.start({ facingMode: 'environment' }, config, onDecoded, () => {});
+      } catch {
+        // Pas de caméra arrière (ex: ordinateur portable) — se rabattre sur
+        // n'importe quelle caméra disponible plutôt que d'échouer.
+        await qr.start({ facingMode: 'user' }, config, onDecoded, () => {});
+      }
       setScanning(true);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
