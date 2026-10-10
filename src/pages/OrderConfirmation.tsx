@@ -313,20 +313,22 @@ function OrderConfirmationInner({ initialState }: { initialState: NavState }) {
 
     const paymentId = currentPaymentId;
     let attempts = 0;
+    let cancelled = false;
     const MAX_ATTEMPTS = Math.floor(MAX_WAIT_MS / POLL_INTERVAL_MS);
 
-    pollRef.current = setInterval(async () => {
+    const checkStatus = async () => {
       attempts++;
       try {
         const result = await paymentService.getPaymentStatus(paymentId);
+        if (cancelled) return;
         if (result.status === 'SUCCESS') {
-          clearInterval(pollRef.current!);
+          if (pollRef.current) clearInterval(pollRef.current);
           setQrImageUrl(result.qrImageUrl ?? null);
           setConfirmationState('SUCCESS');
           playPaymentSuccess();
           queryClient.invalidateQueries('my-tickets');
         } else if (result.status === 'FAILED' || result.status === 'CANCELLED') {
-          clearInterval(pollRef.current!);
+          if (pollRef.current) clearInterval(pollRef.current);
           const ft = classifyClientFailure(result.failureReason);
           setFailureType(ft);
           // Retryable = order still PENDING (pas POLLING_TIMEOUT) + pas expiré
@@ -336,15 +338,21 @@ function OrderConfirmationInner({ initialState }: { initialState: NavState }) {
             (result.orderExpiresAt ? new Date(result.orderExpiresAt) > new Date() : false);
           setConfirmationState(isRetryable ? 'RETRYABLE_FAILURE' : 'FAILURE');
         } else if (attempts >= MAX_ATTEMPTS) {
-          clearInterval(pollRef.current!);
+          if (pollRef.current) clearInterval(pollRef.current);
           setConfirmationState('TIMEOUT');
         }
       } catch {
         // ignore transient network errors
       }
-    }, POLL_INTERVAL_MS);
+    };
 
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+    // Vérification immédiate — en DEV le paiement est déjà terminé au moment
+    // du montage (auto-pay synchrone côté Checkout), inutile d'attendre le
+    // premier tick de l'intervalle (5s) pour le découvrir.
+    checkStatus();
+    pollRef.current = setInterval(checkStatus, POLL_INTERVAL_MS);
+
+    return () => { cancelled = true; if (pollRef.current) clearInterval(pollRef.current); };
   }, [confirmationState, currentPaymentId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleRetry = async () => {
