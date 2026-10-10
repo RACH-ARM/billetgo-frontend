@@ -920,7 +920,7 @@ function ScannersPanel({ event, onBack }: { event: OrganizerEventStat; onBack: (
 
       <div className="p-4 rounded-xl bg-cyan-neon/5 border border-cyan-neon/20 text-cyan-neon/80 text-sm flex items-start gap-2">
         <ScanLine className="w-4 h-4 flex-shrink-0 mt-0.5" />
-        <span>Chaque poste scanner a son propre code d'accès — pas de téléphone ni d'email à saisir. Communiquez le code à l'agent : il l'utilise pour se connecter sur l'application de scan.</span>
+        <span>Chaque poste scanner a son propre code d'accès. Communiquez-le à l'agent : il se connecte sur billetgab.com/scanner/acces en saisissant uniquement ce code.</span>
       </div>
 
       {showForm && (
