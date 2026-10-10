@@ -15,6 +15,7 @@ import { normalizeGabonPhone, isValidGabonPhone, isPhoneMatchingProvider } from 
 import { unlockAudio } from '../utils/sounds';
 import Button from '../components/common/Button';
 import { promoService } from '../services/promoService';
+import api from '../services/api';
 import type { PromoValidation } from '../types/promo';
 
 type Step = 1 | 2;
@@ -264,9 +265,12 @@ export default function Checkout() {
         phone: normalizeGabonPhone(paymentPhone) ?? paymentPhone,
       });
 
-      // DEV uniquement : déclencher l'auto-paiement en arrière-plan via le proxy Vite
+      // DEV uniquement : déclencher l'auto-paiement en arrière-plan.
+      // Passe par l'instance api (baseURL configurée) plutôt qu'un fetch sur une URL
+      // relative — sur une preview Vercel, une URL relative est réécrite par
+      // vercel.json vers la prod au lieu du backend réellement utilisé (ngrok/local).
       if (result?.paymentUrl) {
-        fetch(result.paymentUrl).catch(() => {});
+        api.get(result.paymentUrl.replace(/^\/api\/v1/, '')).catch(() => {});
       }
 
       sessionStorage.removeItem('checkout_expiry');
