@@ -8,6 +8,7 @@ import {
   Smartphone, AlertCircle, Check, ImageDown,
 } from 'lucide-react';
 import { paymentService } from '../services/paymentService';
+import { NGROK_SKIP_HEADER } from '../services/api';
 import { useQueryClient } from 'react-query';
 import { formatEventDate } from '../utils/formatDate';
 import { useAuthStore } from '../stores/authStore';
@@ -252,7 +253,7 @@ function OrderConfirmationInner({ initialState }: { initialState: NavState }) {
   useEffect(() => {
     if (!qrImageUrl) return;
     let cancelled = false;
-    fetch(qrImageUrl)
+    fetch(qrImageUrl, { headers: NGROK_SKIP_HEADER })
       .then(r => r.blob())
       .then(blob => blobToBase64(blob))
       .then(b64 => { if (!cancelled) setQrDataUrl(b64); })

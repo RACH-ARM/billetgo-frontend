@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import api from '../../services/api';
+import api, { NGROK_SKIP_HEADER } from '../../services/api';
 import Button from '../common/Button';
 import Spinner from '../common/Spinner';
 import toast from 'react-hot-toast';
@@ -71,7 +71,7 @@ export default function QRCodeDisplay({
     try {
       let rawBlob: Blob;
       if (publicQrUrl) {
-        const res = await fetch(publicQrUrl);
+        const res = await fetch(publicQrUrl, { headers: NGROK_SKIP_HEADER });
         if (!res.ok) throw new Error('QR fetch failed');
         rawBlob = await res.blob();
       } else {
