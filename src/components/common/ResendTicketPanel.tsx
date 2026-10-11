@@ -16,7 +16,7 @@ export default function ResendTicketPanel({ orderId, defaultEmail = '', hideWhat
   const [sentPhones, setSentPhones] = useState<string[]>([]);
   const [sentEmails, setSentEmails] = useState<string[]>([]);
 
-  const phoneError = phone.trim().length >= 2 && !isValidGabonPhone(phone) ? 'Numéro invalide — ex : 062 557 655' : null;
+  const phoneError = phone.trim().length >= 2 && !isValidGabonPhone(phone) ? 'Numéro invalide — ex : 060 000 000' : null;
 
   const sendWhatsApp = async () => {
     const trimmed = phone.trim();

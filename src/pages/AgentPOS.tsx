@@ -325,7 +325,7 @@ export default function AgentPOS() {
   const isLoading = saleMutation.isLoading || mobileMoneyMutation.isLoading;
 
   const phoneError = payerPhone.trim().length >= 2 && !isValidGabonPhone(payerPhone)
-    ? 'Numéro invalide — ex : 062 557 655'
+    ? 'Numéro invalide — ex : 060 000 000'
     : payerPhone.trim().length >= 2 && paymentMethod !== 'CASH' && isValidGabonPhone(payerPhone) && !isPhoneMatchingProvider(payerPhone, paymentMethod)
       ? `Ce numéro ne correspond pas à ${opLabel} (${paymentMethod === 'AIRTEL_MONEY' ? '07X...' : '06X...'})`
       : null;

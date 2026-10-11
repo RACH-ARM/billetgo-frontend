@@ -6,7 +6,7 @@ const CHANNELS = [
   {
     label: 'WhatsApp',
     cta: 'Ouvrir la conversation →',
-    href: 'https://wa.me/24162557655',
+    href: 'https://wa.me/24100000000', // TODO: remplacer par le vrai numéro WhatsApp support
     border: 'border-green-500/30 hover:border-green-500/60',
     bg: 'bg-green-500/10 group-hover:bg-green-500/20',
     text: 'text-green-400 group-hover:text-green-300',
