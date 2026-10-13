@@ -228,14 +228,8 @@ export default function Login() {
           </Link>
         </p>
         <p className="mt-2 text-center text-sm text-white/40">
-          Vous êtes agent de scan avec un code d'accès ?{' '}
-          <Link to="/scanner/acces" className="text-cyan-neon hover:text-rose-neon transition-colors">
-            Connexion par code
-          </Link>
-        </p>
-        <p className="mt-2 text-center text-sm text-white/40">
-          Vous êtes vendeur avec un code d'accès ?{' '}
-          <Link to="/pos/acces" className="text-cyan-neon hover:text-rose-neon transition-colors">
+          Vous êtes agent de scan ou vendeur avec un code d'accès ?{' '}
+          <Link to="/acces" className="text-cyan-neon hover:text-rose-neon transition-colors">
             Connexion par code
           </Link>
         </p>

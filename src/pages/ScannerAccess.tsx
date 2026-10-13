@@ -1,20 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ScanLine, ShoppingBag } from 'lucide-react';
+import { KeyRound } from 'lucide-react';
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
 import Button from '../components/common/Button';
 
-// Page de connexion par code d'accès — partagée entre /scanner/acces et
-// /pos/acces (comptes SCANNER et AGENT créés sans téléphone/email).
-// Le backend accepte les deux rôles sur le même endpoint ; la redirection
-// après connexion suit le rôle réellement renvoyé, pas l'URL d'entrée.
+// Page de connexion par code d'accès — unique pour SCANNER et AGENT (vendeur).
+// Un seul code d'accès existe par compte, et il porte son rôle avec lui : le
+// backend (/auth/scanner-access) accepte les deux rôles sur le même endpoint,
+// et la redirection suit le rôle réellement renvoyé — pas une page dédiée par
+// rôle. Avoir deux pages séparées ("accès scanner" / "accès vendeur") aurait
+// été trompeur puisqu'un code vendeur fonctionne tout aussi bien tapé ici.
 export default function ScannerAccess() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { loginWithTokens } = useAuthStore();
-  const isAgent = location.pathname.startsWith('/pos');
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitLoading, setSubmitLoading] = useState(false);
@@ -64,10 +64,12 @@ export default function ScannerAccess() {
         className="glass-card p-8 w-full max-w-md"
       >
         <div className="w-12 h-12 rounded-xl bg-cyan-neon/10 border border-cyan-neon/20 flex items-center justify-center mb-4">
-          {isAgent ? <ShoppingBag className="w-6 h-6 text-cyan-neon" /> : <ScanLine className="w-6 h-6 text-cyan-neon" />}
+          <KeyRound className="w-6 h-6 text-cyan-neon" />
         </div>
-        <h1 className="font-bebas text-4xl tracking-wider text-gradient mb-2">{isAgent ? 'ACCÈS VENDEUR' : 'ACCÈS SCANNER'}</h1>
-        <p className="text-white/50 text-sm mb-6">Entrez le code d'accès communiqué par l'organisateur.</p>
+        <h1 className="font-bebas text-4xl tracking-wider text-gradient mb-2">ACCÈS PAR CODE</h1>
+        <p className="text-white/50 text-sm mb-6">
+          Pour les agents de scan et les vendeurs (point de vente). Entrez le code communiqué par l'organisateur ou l'administrateur — la page reconnaît automatiquement s'il s'agit d'un code scanner ou vendeur et vous envoie au bon endroit.
+        </p>
 
         <form onSubmit={onSubmit} className="space-y-4">
           <div>

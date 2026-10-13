@@ -145,8 +145,9 @@ export const router = createBrowserRouter(
           element: <OpenRoute />,
           children: [
             { path: 'influencer/accept-invite', element: <AcceptInvite /> },
-            { path: 'scanner/acces', element: <ScannerAccess /> },
-            { path: 'pos/acces', element: <ScannerAccess /> },
+            { path: 'acces', element: <ScannerAccess /> },
+            { path: 'scanner/acces', element: <Navigate to="/acces" replace /> },
+            { path: 'pos/acces', element: <Navigate to="/acces" replace /> },
           ],
         },
         { path: '*', element: <Navigate to="/" replace /> },

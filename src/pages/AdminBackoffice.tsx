@@ -4450,7 +4450,7 @@ export default function AdminBackoffice() {
                       {copiedAgentCode ? 'Copié !' : 'Copier'}
                     </button>
                   </div>
-                  <p className="text-white/40 text-xs mt-2">Connexion : billetgab.com/pos/acces — le code suffit, pas de téléphone ni mot de passe.</p>
+                  <p className="text-white/40 text-xs mt-2">Connexion : billetgab.com/acces — le code suffit, pas de téléphone ni mot de passe.</p>
                   <button onClick={() => setCreatedAgentCode(null)} className="mt-3 text-xs text-white/30 hover:text-white/60">Masquer</button>
                 </div>
               </motion.div>
