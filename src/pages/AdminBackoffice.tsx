@@ -8,7 +8,7 @@ import {
   Star, Flame, Ban, Sparkles, ScanLine, Plus, Eye, EyeOff, Pencil, MessageSquare, FileSearch, RotateCcw, ScrollText, Settings,
   Square, CheckSquare, BadgeCheck, MapPin, QrCode, Download, ShoppingCart, UserCheck,
   ChevronDown, ChevronLeft, ChevronRight, Search, AlertCircle, Heart, Ticket, Link2, ShoppingBag,
-  Megaphone, Copy, Check, Target, Phone, Instagram, Trash2, Bell, Palette,
+  Megaphone, Copy, Check, Target, Phone, Instagram, Trash2, Bell, Palette, CreditCard,
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -2522,6 +2522,23 @@ export default function AdminBackoffice() {
     { enabled: tab === 'agents' }
   );
 
+  const { data: posReport } = useQuery(
+    'admin-pos-report',
+    async () => {
+      const { data } = await api.get('/admin/pos-report');
+      return data.data as {
+        breakdown: {
+          CASH: { count: number; totalAmount: number };
+          AIRTEL_MONEY: { count: number; totalAmount: number };
+          MOOV_MONEY: { count: number; totalAmount: number };
+        };
+        totalCount: number;
+        totalAmount: number;
+      };
+    },
+    { enabled: tab === 'agents' }
+  );
+
   type AgentOrder = {
     id: string; buyerName: string; totalAmount: number; organizerAmount: number;
     serviceFee: number; createdAt: string;
@@ -4430,6 +4447,37 @@ export default function AdminBackoffice() {
               {showAgentForm ? 'Annuler' : 'Nouveau point de vente'}
             </Button>
           </div>
+
+          {/* Payment method report — plateforme entière, tous organisateurs confondus */}
+          {posReport && posReport.totalCount > 0 && (
+            <div className="glass-card p-4 sm:p-5 mb-5">
+              <p className="text-white/40 text-xs uppercase tracking-widest mb-3">Ventes POS plateforme — par moyen de paiement (tous organisateurs)</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="rounded-xl border border-white/10 p-3 flex items-center gap-3">
+                  <Banknote className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-white font-semibold text-sm">{formatPrice(posReport.breakdown.CASH.totalAmount)}</p>
+                    <p className="text-white/30 text-xs">Espèces · {posReport.breakdown.CASH.count} vente{posReport.breakdown.CASH.count > 1 ? 's' : ''}</p>
+                  </div>
+                </div>
+                <div className="rounded-xl border border-white/10 p-3 flex items-center gap-3">
+                  <CreditCard className="w-5 h-5 text-red-400 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-white font-semibold text-sm">{formatPrice(posReport.breakdown.AIRTEL_MONEY.totalAmount)}</p>
+                    <p className="text-white/30 text-xs">Airtel Money · {posReport.breakdown.AIRTEL_MONEY.count} vente{posReport.breakdown.AIRTEL_MONEY.count > 1 ? 's' : ''}</p>
+                  </div>
+                </div>
+                <div className="rounded-xl border border-white/10 p-3 flex items-center gap-3">
+                  <CreditCard className="w-5 h-5 text-orange-400 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-white font-semibold text-sm">{formatPrice(posReport.breakdown.MOOV_MONEY.totalAmount)}</p>
+                    <p className="text-white/30 text-xs">Moov Money · {posReport.breakdown.MOOV_MONEY.count} vente{posReport.breakdown.MOOV_MONEY.count > 1 ? 's' : ''}</p>
+                  </div>
+                </div>
+              </div>
+              <p className="text-white/50 text-xs mt-3 text-right">Total : {formatPrice(posReport.totalAmount)} ({posReport.totalCount} vente{posReport.totalCount > 1 ? 's' : ''})</p>
+            </div>
+          )}
 
           {/* Access code reveal block */}
           <AnimatePresence>

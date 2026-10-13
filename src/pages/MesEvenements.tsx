@@ -1029,6 +1029,11 @@ function AgentsPanel({ event, onBack }: { event: OrganizerEventStat; onBack: () 
     () => organizerService.getEventAgents(event.eventId),
   );
 
+  const { data: report } = useQuery(
+    ['event-pos-report', event.eventId],
+    () => organizerService.getPosPaymentReport(event.eventId),
+  );
+
   const copyCode = (id: string, code: string) => {
     navigator.clipboard.writeText(code).then(() => {
       setCopiedId(id);
@@ -1092,6 +1097,36 @@ function AgentsPanel({ event, onBack }: { event: OrganizerEventStat; onBack: () 
         <ShoppingBag className="w-4 h-4 flex-shrink-0 mt-0.5" />
         <span>Chaque vendeur a son propre code d'accès — pas de téléphone ni d'email à saisir. Communiquez-le au vendeur : il se connecte sur billetgab.com/acces en saisissant uniquement ce code (la page reconnaît automatiquement qu'il s'agit d'un code vendeur).</span>
       </div>
+
+      {report && report.totalCount > 0 && (
+        <div className="glass-card p-4 sm:p-5">
+          <p className="text-white/40 text-xs uppercase tracking-widest mb-3">Ventes au point de vente — par moyen de paiement</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="rounded-xl border border-white/10 p-3 flex items-center gap-3">
+              <Banknote className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-white font-semibold text-sm">{formatPrice(report.breakdown.CASH.totalAmount)}</p>
+                <p className="text-white/30 text-xs">Espèces · {report.breakdown.CASH.count} vente{report.breakdown.CASH.count > 1 ? 's' : ''}</p>
+              </div>
+            </div>
+            <div className="rounded-xl border border-white/10 p-3 flex items-center gap-3">
+              <CreditCard className="w-5 h-5 text-red-400 flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-white font-semibold text-sm">{formatPrice(report.breakdown.AIRTEL_MONEY.totalAmount)}</p>
+                <p className="text-white/30 text-xs">Airtel Money · {report.breakdown.AIRTEL_MONEY.count} vente{report.breakdown.AIRTEL_MONEY.count > 1 ? 's' : ''}</p>
+              </div>
+            </div>
+            <div className="rounded-xl border border-white/10 p-3 flex items-center gap-3">
+              <CreditCard className="w-5 h-5 text-orange-400 flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-white font-semibold text-sm">{formatPrice(report.breakdown.MOOV_MONEY.totalAmount)}</p>
+                <p className="text-white/30 text-xs">Moov Money · {report.breakdown.MOOV_MONEY.count} vente{report.breakdown.MOOV_MONEY.count > 1 ? 's' : ''}</p>
+              </div>
+            </div>
+          </div>
+          <p className="text-white/50 text-xs mt-3 text-right">Total : {formatPrice(report.totalAmount)} ({report.totalCount} vente{report.totalCount > 1 ? 's' : ''})</p>
+        </div>
+      )}
 
       {showForm && (
         <div className="glass-card p-4 sm:p-5 space-y-4">

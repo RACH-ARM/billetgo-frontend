@@ -199,6 +199,16 @@ export interface OrganizerPayoutSummary {
   recentSales: SaleTransaction[];
 }
 
+export interface PosPaymentReport {
+  breakdown: {
+    CASH: { count: number; totalAmount: number };
+    AIRTEL_MONEY: { count: number; totalAmount: number };
+    MOOV_MONEY: { count: number; totalAmount: number };
+  };
+  totalCount: number;
+  totalAmount: number;
+}
+
 export interface OrganizerDebt {
   id: string;
   eventId: string;
@@ -295,6 +305,11 @@ export const organizerService = {
 
   toggleEventAgent: async (eventId: string, agentId: string): Promise<{ isActive: boolean }> => {
     const { data } = await api.patch(`/organizer/events/${eventId}/agents/${agentId}/toggle`);
+    return data.data;
+  },
+
+  getPosPaymentReport: async (eventId?: string): Promise<PosPaymentReport> => {
+    const { data } = await api.get('/organizer/pos-report', { params: eventId ? { eventId } : {} });
     return data.data;
   },
 
