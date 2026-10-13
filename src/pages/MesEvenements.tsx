@@ -996,10 +996,10 @@ function ScannersPanel({ event, onBack }: { event: OrganizerEventStat; onBack: (
                 <button
                   onClick={() => regenerateMutation.mutate(s.user.id)}
                   disabled={regenerateMutation.isLoading}
-                  className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border border-white/10 text-white/40 hover:border-cyan-neon/40 hover:text-cyan-neon transition-colors disabled:opacity-40"
+                  className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border border-white/10 text-white/40 hover:border-cyan-neon/40 hover:text-cyan-neon transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   title="Régénérer le code"
                 >
-                  <RefreshCw className="w-3.5 h-3.5" />
+                  <RefreshCw className={`w-3.5 h-3.5 ${regenerateMutation.isLoading && regenerateMutation.variables === s.user.id ? 'animate-spin' : ''}`} />
                 </button>
                 <button
                   onClick={() => toggleMutation.mutate(s.user.id)}
@@ -1166,10 +1166,10 @@ function AgentsPanel({ event, onBack }: { event: OrganizerEventStat; onBack: () 
                 <button
                   onClick={() => regenerateMutation.mutate(a.agent.id)}
                   disabled={regenerateMutation.isLoading}
-                  className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border border-white/10 text-white/40 hover:border-cyan-neon/40 hover:text-cyan-neon transition-colors disabled:opacity-40"
+                  className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border border-white/10 text-white/40 hover:border-cyan-neon/40 hover:text-cyan-neon transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   title="Régénérer le code"
                 >
-                  <RefreshCw className="w-3.5 h-3.5" />
+                  <RefreshCw className={`w-3.5 h-3.5 ${regenerateMutation.isLoading && regenerateMutation.variables === a.agent.id ? 'animate-spin' : ''}`} />
                 </button>
                 <button
                   onClick={() => toggleMutation.mutate(a.agent.id)}

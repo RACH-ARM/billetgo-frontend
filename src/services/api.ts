@@ -57,7 +57,7 @@ api.interceptors.response.use(
 
     // Tente un refresh si 401, pas déjà en retry, et pas une route qui ne doit pas déclencher de refresh
     // (refresh lui-même, login, register — mais PAS /auth/me qui est une route protégée)
-    const noRefreshRoutes = ['/auth/refresh', '/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password', '/auth/verify-email'];
+    const noRefreshRoutes = ['/auth/refresh', '/auth/login', '/auth/register', '/auth/forgot-password', '/auth/reset-password', '/auth/verify-email', '/auth/scanner-access'];
     const isNoRefreshRoute = noRefreshRoutes.some((r) => original.url?.includes(r));
     if (status === 401 && !original._retry && !isNoRefreshRoute) {
       original._retry = true;

@@ -4540,10 +4540,10 @@ export default function AdminBackoffice() {
                               <button
                                 onClick={() => regenerateAgentCodeMutation.mutate(a.id)}
                                 disabled={regenerateAgentCodeMutation.isLoading}
-                                className="text-white/20 hover:text-cyan-neon transition-colors disabled:opacity-40"
+                                className="text-white/20 hover:text-cyan-neon transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                 title="Régénérer le code"
                               >
-                                <RotateCcw className="w-3 h-3" />
+                                <RotateCcw className={`w-3 h-3 ${regenerateAgentCodeMutation.isLoading && regenerateAgentCodeMutation.variables === a.id ? 'animate-spin' : ''}`} />
                               </button>
                             </div>
                           ) : (
