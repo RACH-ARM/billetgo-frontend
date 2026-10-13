@@ -105,6 +105,13 @@ export interface EventScannerEntry {
   user: { id: string; firstName: string; isActive: boolean; accessCode: string | null; createdAt: string };
 }
 
+export interface EventAgentEntry {
+  id: string;
+  isActive: boolean;
+  createdAt: string;
+  agent: { id: string; firstName: string; isActive: boolean; accessCode: string | null; createdAt: string };
+}
+
 export interface OrganizerProfile {
   id: string;
   companyName: string;
@@ -268,6 +275,26 @@ export const organizerService = {
 
   toggleEventScanner: async (eventId: string, scannerId: string): Promise<{ isActive: boolean }> => {
     const { data } = await api.patch(`/organizer/events/${eventId}/scanners/${scannerId}/toggle`);
+    return data.data;
+  },
+
+  getEventAgents: async (eventId: string): Promise<EventAgentEntry[]> => {
+    const { data } = await api.get(`/organizer/events/${eventId}/agents`);
+    return data.data;
+  },
+
+  createEventAgentCode: async (eventId: string, label: string): Promise<{ assignment: { id: string }; agent: EventAgentEntry['agent'] }> => {
+    const { data } = await api.post(`/organizer/events/${eventId}/agents`, { label });
+    return data.data;
+  },
+
+  regenerateAgentCode: async (eventId: string, agentId: string): Promise<{ accessCode: string }> => {
+    const { data } = await api.patch(`/organizer/events/${eventId}/agents/${agentId}/regenerate`);
+    return data.data;
+  },
+
+  toggleEventAgent: async (eventId: string, agentId: string): Promise<{ isActive: boolean }> => {
+    const { data } = await api.patch(`/organizer/events/${eventId}/agents/${agentId}/toggle`);
     return data.data;
   },
 

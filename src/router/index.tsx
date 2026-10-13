@@ -146,6 +146,7 @@ export const router = createBrowserRouter(
           children: [
             { path: 'influencer/accept-invite', element: <AcceptInvite /> },
             { path: 'scanner/acces', element: <ScannerAccess /> },
+            { path: 'pos/acces', element: <ScannerAccess /> },
           ],
         },
         { path: '*', element: <Navigate to="/" replace /> },

@@ -2223,11 +2223,10 @@ export default function AdminBackoffice() {
   const [createdScannerCreds, setCreatedScannerCreds] = useState<{ phone: string; password: string } | null>(null);
   const [editingScanner, setEditingScanner] = useState<ScannerRow | null>(null);
 
-  const [agentForm, setAgentForm] = useState({ firstName: '', lastName: '', phone: '', password: '', confirmPassword: '', eventIds: [] as string[] });
+  const [agentForm, setAgentForm] = useState({ firstName: '', eventIds: [] as string[] });
   const [showAgentForm, setShowAgentForm] = useState(false);
-  const [showAgentPassword, setShowAgentPassword] = useState(false);
-  const [showAgentConfirmPassword, setShowAgentConfirmPassword] = useState(false);
-  const [createdAgentCreds, setCreatedAgentCreds] = useState<{ phone: string; password: string } | null>(null);
+  const [createdAgentCode, setCreatedAgentCode] = useState<string | null>(null);
+  const [copiedAgentCode, setCopiedAgentCode] = useState(false);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [selectedAgentName, setSelectedAgentName] = useState<string>('');
   const [editingCommission, setEditingCommission] = useState<{ id: string; value: string } | null>(null);
@@ -2515,8 +2514,8 @@ export default function AdminBackoffice() {
       const { data } = await api.get('/admin/agents');
       return data.data as {
         id: string; firstName: string; lastName: string; phone: string | null;
-        isActive: boolean; scannerPassword: string | null; createdAt: string;
-        agentAssignments: { id: string; event: { id: string; title: string; eventDate: string; status: string } }[];
+        isActive: boolean; scannerPassword: string | null; accessCode: string | null; createdAt: string;
+        agentAssignments: { id: string; event: { id: string; title: string; eventDate: string; status: string; organizer: { id: string; companyName: string } | null } }[];
         _count: { agentOrders: number };
       }[];
     },
@@ -2542,19 +2541,14 @@ export default function AdminBackoffice() {
 
   const createAgent = useMutation(
     async (payload: typeof agentForm) => {
-      const { confirmPassword: _cp, ...body } = payload;
-      const { data } = await api.post('/admin/agents/create-account', { ...body, eventIds: body.eventIds });
+      const { data } = await api.post('/admin/agents/create-account', payload);
       return data.data;
     },
     {
       onSuccess: (result) => {
         qc.invalidateQueries('admin-agents');
-        if (result.isNew) {
-          setCreatedAgentCreds({ phone: agentForm.phone, password: agentForm.password });
-        } else {
-          toast.success('Agent assigné à l\'événement');
-        }
-        setAgentForm({ firstName: '', lastName: '', phone: '', password: '', confirmPassword: '', eventIds: [] });
+        setCreatedAgentCode(result.agent?.accessCode ?? null);
+        setAgentForm({ firstName: '', eventIds: [] });
         setShowAgentForm(false);
       },
       onError: (err: unknown) => {
@@ -2582,6 +2576,18 @@ export default function AdminBackoffice() {
         toast.success('Agent retiré de l\'événement');
       },
       onError: () => { toast.error('Erreur lors de la mise à jour'); },
+    }
+  );
+
+  const regenerateAgentCodeMutation = useMutation(
+    (agentId: string) => api.patch(`/admin/agents/${agentId}/regenerate-code`).then((r) => r.data.data),
+    {
+      onSuccess: (data) => {
+        qc.invalidateQueries('admin-agents');
+        setCreatedAgentCode(data.accessCode);
+        toast.success('Code régénéré — l\'ancien code ne fonctionne plus');
+      },
+      onError: () => { toast.error('Erreur lors de la régénération'); },
     }
   );
 
@@ -4418,42 +4424,34 @@ export default function AdminBackoffice() {
       {tab === 'agents' && (
         <div>
           <div className="flex items-center justify-between gap-3 mb-5">
-            <p className="text-white/40 text-sm">Créez des comptes agents POS et assignez-les à des événements.</p>
-            <Button variant="secondary" size="sm" className="flex-shrink-0" onClick={() => { setShowAgentForm((v) => !v); setCreatedAgentCreds(null); }}>
+            <p className="text-white/40 text-sm">Créez des points de vente officiels BilletGab (par code d'accès) et assignez-les à des événements — y compris des événements déjà couverts par les vendeurs propres de l'organisateur.</p>
+            <Button variant="secondary" size="sm" className="flex-shrink-0" onClick={() => { setShowAgentForm((v) => !v); setCreatedAgentCode(null); }}>
               {showAgentForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-              {showAgentForm ? 'Annuler' : 'Nouvel agent'}
+              {showAgentForm ? 'Annuler' : 'Nouveau point de vente'}
             </Button>
           </div>
 
-          {/* Credentials block */}
+          {/* Access code reveal block */}
           <AnimatePresence>
-            {createdAgentCreds && (
+            {createdAgentCode && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mb-4">
                 <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
                   <div className="flex items-center gap-2 mb-3">
                     <CheckCircle className="w-5 h-5 text-green-400" />
-                    <p className="text-green-400 font-semibold text-sm">Compte agent créé — transmettez ces identifiants à l'agent</p>
+                    <p className="text-green-400 font-semibold text-sm">Point de vente créé — communiquez ce code au vendeur</p>
                   </div>
-                  <div className="space-y-1.5 text-sm font-mono">
-                    <div className="flex justify-between bg-bg-secondary rounded-lg px-3 py-2">
-                      <span className="text-white/40">Téléphone</span>
-                      <span className="text-white">{createdAgentCreds.phone}</span>
-                    </div>
-                    <div className="flex justify-between bg-bg-secondary rounded-lg px-3 py-2">
-                      <span className="text-white/40">Mot de passe</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-white">{showAgentPassword ? createdAgentCreds.password : '••••••••'}</span>
-                        <button onClick={() => setShowAgentPassword((v) => !v)} className="text-white/40 hover:text-white">
-                          {showAgentPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex justify-between bg-bg-secondary rounded-lg px-3 py-2">
-                      <span className="text-white/40">URL de connexion</span>
-                      <span className="text-violet-neon">billetgab.com/login → /pos</span>
-                    </div>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className="font-mono text-2xl tracking-widest text-white bg-bg-secondary px-4 py-2.5 rounded-xl border border-green-500/30">{createdAgentCode}</span>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(createdAgentCode); setCopiedAgentCode(true); setTimeout(() => setCopiedAgentCode(false), 2000); }}
+                      className="flex items-center gap-1.5 text-sm font-semibold text-green-400 hover:text-green-300 transition-colors"
+                    >
+                      {copiedAgentCode ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      {copiedAgentCode ? 'Copié !' : 'Copier'}
+                    </button>
                   </div>
-                  <button onClick={() => setCreatedAgentCreds(null)} className="mt-3 text-xs text-white/30 hover:text-white/60">Masquer</button>
+                  <p className="text-white/40 text-xs mt-2">Connexion : billetgab.com/pos/acces — le code suffit, pas de téléphone ni mot de passe.</p>
+                  <button onClick={() => setCreatedAgentCode(null)} className="mt-3 text-xs text-white/30 hover:text-white/60">Masquer</button>
                 </div>
               </motion.div>
             )}
@@ -4464,43 +4462,10 @@ export default function AdminBackoffice() {
             {showAgentForm && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mb-5">
                 <div className="glass-card p-5 border border-violet-neon/20 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs text-white/40 uppercase tracking-widest block mb-1.5">Prénom</label>
-                    <input type="text" autoComplete="off" value={agentForm.firstName} onChange={(e) => setAgentForm((f) => ({ ...f, firstName: e.target.value }))} placeholder="Prénom"
-                      className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-white/40 uppercase tracking-widest block mb-1.5">Nom</label>
-                    <input type="text" autoComplete="off" value={agentForm.lastName} onChange={(e) => setAgentForm((f) => ({ ...f, lastName: e.target.value }))} placeholder="Nom"
-                      className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors" />
-                  </div>
                   <div className="sm:col-span-2">
-                    <label className="text-xs text-white/40 uppercase tracking-widest block mb-1.5">Téléphone</label>
-                    <input type="tel" autoComplete="off" value={agentForm.phone} onChange={(e) => setAgentForm((f) => ({ ...f, phone: e.target.value }))} placeholder="07 00 00 00"
+                    <label className="text-xs text-white/40 uppercase tracking-widest block mb-1.5">Nom du point de vente</label>
+                    <input type="text" autoComplete="off" value={agentForm.firstName} onChange={(e) => setAgentForm((f) => ({ ...f, firstName: e.target.value }))} placeholder="ex. Kiosque Centre-ville"
                       className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-white/40 uppercase tracking-widest block mb-1.5">Mot de passe</label>
-                    <div className="relative">
-                      <input type={showAgentPassword ? 'text' : 'password'} autoComplete="new-password" value={agentForm.password} onChange={(e) => setAgentForm((f) => ({ ...f, password: e.target.value }))} placeholder="Min. 8 caractères"
-                        className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 pr-10 text-white text-sm placeholder-white/20 focus:outline-none focus:border-violet-neon transition-colors" />
-                      <button type="button" onClick={() => setShowAgentPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors">
-                        {showAgentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-xs text-white/40 uppercase tracking-widest block mb-1.5">Confirmer le mot de passe</label>
-                    <div className="relative">
-                      <input type={showAgentConfirmPassword ? 'text' : 'password'} autoComplete="new-password" value={agentForm.confirmPassword} onChange={(e) => setAgentForm((f) => ({ ...f, confirmPassword: e.target.value }))} placeholder="Répéter le mot de passe"
-                        className={`w-full bg-bg-secondary border rounded-xl px-3 py-2.5 pr-10 text-white text-sm placeholder-white/20 focus:outline-none transition-colors ${agentForm.confirmPassword && agentForm.confirmPassword !== agentForm.password ? 'border-rose-neon/60' : 'border-violet-neon/20 focus:border-violet-neon'}`} />
-                      <button type="button" onClick={() => setShowAgentConfirmPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors">
-                        {showAgentConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                    {agentForm.confirmPassword && agentForm.confirmPassword !== agentForm.password && (
-                      <p className="text-xs text-rose-neon mt-1">Les mots de passe ne correspondent pas</p>
-                    )}
                   </div>
                   <div className="sm:col-span-2">
                     <div className="flex items-center justify-between mb-1.5">
@@ -4533,9 +4498,9 @@ export default function AdminBackoffice() {
                   </div>
                   <div className="sm:col-span-2 flex justify-end">
                     <Button variant="primary" size="md" onClick={() => createAgent.mutate(agentForm)} isLoading={createAgent.isLoading}
-                      disabled={!agentForm.firstName || !agentForm.lastName || !agentForm.phone || !agentForm.password || agentForm.password !== agentForm.confirmPassword}>
+                      disabled={!agentForm.firstName.trim()}>
                       <ShoppingBag className="w-4 h-4" />
-                      Créer le compte agent
+                      Créer le point de vente
                     </Button>
                   </div>
                 </div>
@@ -4569,7 +4534,21 @@ export default function AdminBackoffice() {
                       <tr key={a.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
                         <td className="px-4 sm:px-5 py-4">
                           <p className="text-white font-semibold text-sm">{a.firstName} {a.lastName}</p>
-                          <p className="text-white/40 text-xs mt-0.5 font-mono">{a.phone || '—'}</p>
+                          {a.accessCode ? (
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="text-violet-neon/80 text-xs font-mono">{a.accessCode}</span>
+                              <button
+                                onClick={() => regenerateAgentCodeMutation.mutate(a.id)}
+                                disabled={regenerateAgentCodeMutation.isLoading}
+                                className="text-white/20 hover:text-cyan-neon transition-colors disabled:opacity-40"
+                                title="Régénérer le code"
+                              >
+                                <RotateCcw className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ) : (
+                            <p className="text-white/40 text-xs mt-0.5 font-mono">{a.phone || '—'}</p>
+                          )}
                           {a.scannerPassword && (
                             <p className="text-violet-neon/70 text-xs mt-1 font-mono">
                               MDP : <span className="text-white/80">{a.scannerPassword}</span>
@@ -4580,7 +4559,7 @@ export default function AdminBackoffice() {
                           <div className="flex flex-wrap gap-1 max-w-[260px]">
                             {a.agentAssignments.slice(0, 3).map((asgn) => (
                               <div key={asgn.id} className="flex items-center gap-1">
-                                <span className="text-[11px] px-2 py-0.5 rounded-full bg-violet-neon/10 text-violet-neon border border-violet-neon/20 truncate max-w-[120px]" title={asgn.event.title}>
+                                <span className="text-[11px] px-2 py-0.5 rounded-full bg-violet-neon/10 text-violet-neon border border-violet-neon/20 truncate max-w-[120px]" title={`${asgn.event.title} — ${asgn.event.organizer?.companyName ?? 'organisateur inconnu'}`}>
                                   {asgn.event.title}
                                 </span>
                                 <button onClick={() => removeAgentEventMutation.mutate({ agentId: a.id, eventId: asgn.event.id })} className="text-white/20 hover:text-rose-neon transition-colors" title="Retirer">

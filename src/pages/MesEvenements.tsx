@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   CalendarDays, Ticket, Download, Search, QrCode,
   ChevronRight, ChevronDown, ChevronUp, ArrowLeft, Phone, Mail, CreditCard,
-  Plus, Trash2, AlertTriangle, Check, Copy, ScanLine, RefreshCw,
+  Plus, Trash2, AlertTriangle, Check, Copy, ScanLine, RefreshCw, ShoppingBag,
   Clock, Ban, X, Banknote, Images, ImagePlus, MapPin, Heart,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
@@ -1016,6 +1016,176 @@ function ScannersPanel({ event, onBack }: { event: OrganizerEventStat; onBack: (
   );
 }
 
+// ── Agents (vendeurs POS) panel ──────────────────────────────────
+function AgentsPanel({ event, onBack }: { event: OrganizerEventStat; onBack: () => void }) {
+  const queryClient = useQueryClient();
+  const [showForm, setShowForm] = useState(false);
+  const [label, setLabel] = useState('');
+  const [revealCode, setRevealCode] = useState<{ id: string; code: string } | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const { data: agents = [], isLoading } = useQuery(
+    ['event-agents', event.eventId],
+    () => organizerService.getEventAgents(event.eventId),
+  );
+
+  const copyCode = (id: string, code: string) => {
+    navigator.clipboard.writeText(code).then(() => {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    });
+  };
+
+  const createMutation = useMutation(
+    () => organizerService.createEventAgentCode(event.eventId, label),
+    {
+      onSuccess: (data) => {
+        queryClient.invalidateQueries(['event-agents', event.eventId]);
+        setShowForm(false);
+        setLabel('');
+        if (data.agent.accessCode) setRevealCode({ id: data.agent.id, code: data.agent.accessCode });
+        toast.success('Poste vendeur créé');
+      },
+      onError: () => { toast.error('Erreur lors de la création'); },
+    }
+  );
+
+  const regenerateMutation = useMutation(
+    (agentId: string) => organizerService.regenerateAgentCode(event.eventId, agentId),
+    {
+      onSuccess: (data, agentId) => {
+        queryClient.invalidateQueries(['event-agents', event.eventId]);
+        setRevealCode({ id: agentId, code: data.accessCode });
+        toast.success('Code régénéré — l\'ancien code ne fonctionne plus');
+      },
+      onError: () => { toast.error('Erreur lors de la régénération'); },
+    }
+  );
+
+  const toggleMutation = useMutation(
+    (agentId: string) => organizerService.toggleEventAgent(event.eventId, agentId),
+    {
+      onSuccess: () => queryClient.invalidateQueries(['event-agents', event.eventId]),
+      onError: () => { toast.error('Erreur lors de la mise à jour'); },
+    }
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <button onClick={onBack} className="text-white/40 hover:text-white transition-colors">
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <div>
+          <h2 className="font-bebas text-2xl tracking-wider text-white">VENDEURS</h2>
+          <p className="text-white/40 text-xs">{event.title}</p>
+        </div>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="ml-auto neon-button px-4 py-2 text-sm font-semibold rounded-xl flex items-center gap-2"
+        >
+          <Plus className="w-4 h-4" /> Nouveau vendeur
+        </button>
+      </div>
+
+      <div className="p-4 rounded-xl bg-cyan-neon/5 border border-cyan-neon/20 text-cyan-neon/80 text-sm flex items-start gap-2">
+        <ShoppingBag className="w-4 h-4 flex-shrink-0 mt-0.5" />
+        <span>Chaque vendeur a son propre code d'accès — pas de téléphone ni d'email à saisir. Communiquez-le au vendeur : il se connecte sur billetgab.com/pos/acces en saisissant uniquement ce code.</span>
+      </div>
+
+      {showForm && (
+        <div className="glass-card p-4 sm:p-5 space-y-4">
+          <input
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            placeholder="Nom du poste (ex. Stand entrée)"
+            className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors"
+          />
+          <div className="flex gap-3">
+            <button onClick={() => setShowForm(false)} className="flex-1 py-2.5 rounded-xl border border-white/10 text-white/40 text-sm hover:border-white/20 transition-colors">Annuler</button>
+            <button
+              onClick={() => createMutation.mutate()}
+              disabled={createMutation.isLoading}
+              className="flex-1 neon-button py-2.5 text-sm font-semibold rounded-xl disabled:opacity-40"
+            >
+              {createMutation.isLoading ? 'Création...' : 'Créer le poste'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {revealCode && (
+        <div className="glass-card p-5 border border-emerald-500/30 bg-emerald-500/5 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-emerald-400 text-sm font-semibold">Code d'accès généré — communiquez-le au vendeur</p>
+            <button onClick={() => setRevealCode(null)} className="text-white/30 hover:text-white/60 transition-colors">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="font-mono text-2xl tracking-widest text-white bg-bg-secondary px-4 py-2.5 rounded-xl border border-emerald-500/30">{revealCode.code}</span>
+            <button
+              onClick={() => copyCode(revealCode.id, revealCode.code)}
+              className="flex items-center gap-1.5 text-sm font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
+            >
+              {copiedId === revealCode.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              {copiedId === revealCode.id ? 'Copié !' : 'Copier'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isLoading ? (
+        <Spinner />
+      ) : agents.length === 0 ? (
+        <div className="glass-card p-10 text-center text-white/30">
+          <ShoppingBag className="w-8 h-8 mx-auto mb-3 opacity-30" />
+          <p className="text-sm">Aucun vendeur pour cet événement.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {agents.map((a) => (
+            <div key={a.agent.id} className="glass-card p-4 flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-white font-semibold">{a.agent.firstName}</span>
+                  <span className={`text-xs px-1.5 py-0.5 rounded-md ${a.agent.isActive ? 'bg-emerald-500/10 text-emerald-400' : 'bg-white/5 text-white/30'}`}>
+                    {a.agent.isActive ? 'Actif' : 'Inactif'}
+                  </span>
+                </div>
+                <p className="text-white/30 text-xs mt-1 font-mono">{a.agent.accessCode}</p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={() => a.agent.accessCode && copyCode(a.agent.id, a.agent.accessCode)}
+                  className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border border-white/10 text-white/40 hover:border-violet-neon/40 hover:text-violet-neon transition-colors"
+                >
+                  {copiedId === a.agent.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  Copier
+                </button>
+                <button
+                  onClick={() => regenerateMutation.mutate(a.agent.id)}
+                  disabled={regenerateMutation.isLoading}
+                  className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border border-white/10 text-white/40 hover:border-cyan-neon/40 hover:text-cyan-neon transition-colors disabled:opacity-40"
+                  title="Régénérer le code"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => toggleMutation.mutate(a.agent.id)}
+                  className={`text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${a.agent.isActive ? 'border-amber-400/30 text-amber-400 hover:bg-amber-400/10' : 'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10'}`}
+                >
+                  {a.agent.isActive ? 'Désactiver' : 'Activer'}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Create Event Form ──────────────────────────────────────────
 type CreateEventFormState = {
   title: string; subtitle: string; description: string; category: string;
@@ -1949,6 +2119,7 @@ export default function MesEvenements() {
   const [cancelReason, setCancelReason] = useState('');
   const [promoEvent, setPromoEvent] = useState<OrganizerEventStat | null>(null);
   const [scannersEvent, setScannersEvent] = useState<OrganizerEventStat | null>(null);
+  const [agentsEvent, setAgentsEvent] = useState<OrganizerEventStat | null>(null);
   const [qrDownloading, setQrDownloading] = useState<string | null>(null);
   const cancelEvent = useCancelEvent();
 
@@ -2026,6 +2197,14 @@ export default function MesEvenements() {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <ScannersPanel event={scannersEvent} onBack={() => setScannersEvent(null)} />
+      </div>
+    );
+  }
+
+  if (agentsEvent) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <AgentsPanel event={agentsEvent} onBack={() => setAgentsEvent(null)} />
       </div>
     );
   }
@@ -2173,6 +2352,12 @@ export default function MesEvenements() {
                         className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-white/5 text-white/40 hover:bg-cyan-neon/10 hover:text-cyan-neon border border-white/5 hover:border-cyan-neon/20 transition-colors"
                       >
                         <ScanLine className="w-3 h-3" /> Scanners
+                      </button>
+                      <button
+                        onClick={() => setAgentsEvent(event)}
+                        className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-white/5 text-white/40 hover:bg-emerald-500/10 hover:text-emerald-400 border border-white/5 hover:border-emerald-500/20 transition-colors"
+                      >
+                        <ShoppingBag className="w-3 h-3" /> Vendeurs
                       </button>
                       {['PUBLISHED', 'APPROVED', 'COMPLETED'].includes(event.status) && (
                         <button

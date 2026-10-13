@@ -1,14 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ScanLine } from 'lucide-react';
+import { ScanLine, ShoppingBag } from 'lucide-react';
 import api from '../services/api';
 import { useAuthStore } from '../stores/authStore';
 import Button from '../components/common/Button';
 
+// Page de connexion par code d'accès — partagée entre /scanner/acces et
+// /pos/acces (comptes SCANNER et AGENT créés sans téléphone/email).
+// Le backend accepte les deux rôles sur le même endpoint ; la redirection
+// après connexion suit le rôle réellement renvoyé, pas l'URL d'entrée.
 export default function ScannerAccess() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { loginWithTokens } = useAuthStore();
+  const isAgent = location.pathname.startsWith('/pos');
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitLoading, setSubmitLoading] = useState(false);
@@ -38,7 +44,7 @@ export default function ScannerAccess() {
     try {
       const { data } = await api.post('/auth/scanner-access', { code: code.trim() });
       loginWithTokens(data.data.user, data.data.accessToken, data.data.refreshToken);
-      navigate('/scanner', { replace: true });
+      navigate(data.data.user.role === 'AGENT' ? '/pos' : '/scanner', { replace: true });
     } catch (err: unknown) {
       const response = (err as { response?: { status?: number; data?: { message?: string; lockedUntil?: string } } })?.response;
       if (response?.status === 429 && response.data?.lockedUntil) {
@@ -58,9 +64,9 @@ export default function ScannerAccess() {
         className="glass-card p-8 w-full max-w-md"
       >
         <div className="w-12 h-12 rounded-xl bg-cyan-neon/10 border border-cyan-neon/20 flex items-center justify-center mb-4">
-          <ScanLine className="w-6 h-6 text-cyan-neon" />
+          {isAgent ? <ShoppingBag className="w-6 h-6 text-cyan-neon" /> : <ScanLine className="w-6 h-6 text-cyan-neon" />}
         </div>
-        <h1 className="font-bebas text-4xl tracking-wider text-gradient mb-2">ACCÈS SCANNER</h1>
+        <h1 className="font-bebas text-4xl tracking-wider text-gradient mb-2">{isAgent ? 'ACCÈS VENDEUR' : 'ACCÈS SCANNER'}</h1>
         <p className="text-white/50 text-sm mb-6">Entrez le code d'accès communiqué par l'organisateur.</p>
 
         <form onSubmit={onSubmit} className="space-y-4">

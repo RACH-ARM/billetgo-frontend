@@ -233,6 +233,12 @@ export default function Login() {
             Connexion par code
           </Link>
         </p>
+        <p className="mt-2 text-center text-sm text-white/40">
+          Vous êtes vendeur avec un code d'accès ?{' '}
+          <Link to="/pos/acces" className="text-cyan-neon hover:text-rose-neon transition-colors">
+            Connexion par code
+          </Link>
+        </p>
       </motion.div>
     </div>
   );
