@@ -46,7 +46,7 @@ export default function InfluencerDashboard() {
     const discountText = discountType === 'PERCENTAGE'
       ? `${discountValue}% de réduction`
       : discountType === 'FIXED'
-        ? `${formatPrice(discountValue)} de réduction`
+        ? `${formatPrice(discountValue, 'FCFA', '0 FCFA')} de réduction`
         : '';
     const message = `🎟️ ${eventTitle}${discountText ? ` — ${discountText} avec mon code ${code} !` : ` — code promo ${code} !`}\n${url}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
@@ -107,8 +107,8 @@ export default function InfluencerDashboard() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <StatCard icon={MousePointerClick} label="Clics totaux" value={summary.totalClicks.toLocaleString('fr-FR')} />
           <StatCard icon={Ticket} label="Billets vendus" value={summary.totalTickets.toLocaleString('fr-FR')} />
-          <StatCard icon={TrendingUp} label="Commissions confirmées" value={formatPrice(summary.totalConfirmed)} sub={summary.totalPending > 0 ? `+ ${formatPrice(summary.totalPending)} en attente` : undefined} />
-          <StatCard icon={Wallet} label="Solde disponible" value={formatPrice(summary.availableBalance)} sub={
+          <StatCard icon={TrendingUp} label="Commissions confirmées" value={formatPrice(summary.totalConfirmed, 'FCFA', '0 FCFA')} sub={summary.totalPending > 0 ? `+ ${formatPrice(summary.totalPending)} en attente` : undefined} />
+          <StatCard icon={Wallet} label="Solde disponible" value={formatPrice(summary.availableBalance, 'FCFA', '0 FCFA')} sub={
             summary.pendingPayouts > 0
               ? `${formatPrice(summary.pendingPayouts)} en demande en cours`
               : summary.totalPaid > 0
@@ -120,7 +120,7 @@ export default function InfluencerDashboard() {
         {/* Solde insuffisant */}
         {summary.availableBalance > 0 && summary.availableBalance < 1500 && (
           <div className="glass-card p-4 border border-amber-500/20 bg-amber-500/5">
-            <p className="text-amber-400 text-sm">Solde disponible : <span className="font-mono font-semibold">{formatPrice(summary.availableBalance)}</span> — le versement minimum est de <span className="font-semibold">1 500 FCFA</span>.</p>
+            <p className="text-amber-400 text-sm">Solde disponible : <span className="font-mono font-semibold">{formatPrice(summary.availableBalance, 'FCFA', '0 FCFA')}</span> — le versement minimum est de <span className="font-semibold">1 500 FCFA</span>.</p>
           </div>
         )}
 
@@ -140,7 +140,7 @@ export default function InfluencerDashboard() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-white font-semibold">Solde disponible</h2>
-                <p className="text-2xl font-bebas tracking-wider text-gradient mt-1">{formatPrice(summary.availableBalance)}</p>
+                <p className="text-2xl font-bebas tracking-wider text-gradient mt-1">{formatPrice(summary.availableBalance, 'FCFA', '0 FCFA')}</p>
               </div>
               <button
                 onClick={() => { setShowPayoutForm(!showPayoutForm); setPayoutErrorMsg(null); }}
@@ -180,7 +180,7 @@ export default function InfluencerDashboard() {
                   disabled={!phone.trim() || payoutMutation.isLoading}
                   className="neon-button w-full py-3 text-sm font-semibold rounded-xl disabled:opacity-40"
                 >
-                  {payoutMutation.isLoading ? 'Virement en cours...' : `Recevoir ${formatPrice(summary.availableBalance)}`}
+                  {payoutMutation.isLoading ? 'Virement en cours...' : `Recevoir ${formatPrice(summary.availableBalance, 'FCFA', '0 FCFA')}`}
                 </button>
                 {payoutErrorMsg && (
                   <p className="text-rose-neon text-sm text-center">{payoutErrorMsg}</p>
@@ -227,7 +227,7 @@ export default function InfluencerDashboard() {
                     </div>
                     <div>
                       <p className="text-white/40 text-xs">Commission</p>
-                      <p className="text-cyan-neon font-semibold font-mono">{formatPrice(c.stats.commissionConfirmed)}</p>
+                      <p className="text-cyan-neon font-semibold font-mono">{formatPrice(c.stats.commissionConfirmed, 'FCFA', '0 FCFA')}</p>
                     </div>
                     {expanded === c.promoCodeId ? <ChevronUp className="w-4 h-4 text-white/30" /> : <ChevronDown className="w-4 h-4 text-white/30" />}
                   </div>
@@ -246,12 +246,12 @@ export default function InfluencerDashboard() {
                       </div>
                       <div>
                         <p className="text-white/40 text-xs mb-1">En attente</p>
-                        <p className="text-amber-400 font-semibold font-mono">{formatPrice(c.stats.commissionPending)}</p>
+                        <p className="text-amber-400 font-semibold font-mono">{formatPrice(c.stats.commissionPending, 'FCFA', '0 FCFA')}</p>
                       </div>
                       <div>
                         <p className="text-white/40 text-xs mb-1">Réduction offerte</p>
                         <p className="text-white font-semibold">
-                          {c.discountType === 'PERCENTAGE' ? `${c.discountValue}%` : c.discountType === 'FIXED' ? formatPrice(Number(c.discountValue)) : 'Aucune'}
+                          {c.discountType === 'PERCENTAGE' ? `${c.discountValue}%` : c.discountType === 'FIXED' ? formatPrice(Number(c.discountValue), 'FCFA', '0 FCFA') : 'Aucune'}
                         </p>
                       </div>
                     </div>
@@ -312,7 +312,7 @@ export default function InfluencerDashboard() {
                    p.status === 'REJECTED' ? <XCircle className="w-5 h-5 text-rose-neon" /> :
                    <Clock className="w-5 h-5 text-amber-400" />}
                   <div>
-                    <p className="text-white font-semibold font-mono">{formatPrice(Number(p.amount))}</p>
+                    <p className="text-white font-semibold font-mono">{formatPrice(Number(p.amount), 'FCFA', '0 FCFA')}</p>
                     <p className="text-white/40 text-xs">{p.operator === 'AIRTEL_MONEY' ? 'Airtel Money' : 'Moov Money'} · {p.phoneNumber}</p>
                   </div>
                 </div>

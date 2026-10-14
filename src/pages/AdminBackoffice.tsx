@@ -2989,7 +2989,7 @@ export default function AdminBackoffice() {
                           labelStyle={{ color: 'rgba(255,255,255,0.5)', marginBottom: 4 }}
                           labelFormatter={fmtDate}
                           formatter={(value: number, name: string) => [
-                            formatPrice(value, 'FCFA'),
+                            formatPrice(value, 'FCFA', '0 FCFA'),
                             name === 'volume' ? 'Volume' : 'Revenus',
                           ]}
                         />
@@ -3793,15 +3793,15 @@ export default function AdminBackoffice() {
                     <div className="grid grid-cols-3 gap-2">
                       <div className="bg-white/5 rounded-xl p-2.5 text-center">
                         <p className="text-white/40 text-xs mb-1">Revenus bruts</p>
-                        <p className="text-white text-sm font-bold">{formatPrice(grossRevenue)}</p>
+                        <p className="text-white text-sm font-bold">{formatPrice(grossRevenue, 'FCFA', '0 FCFA')}</p>
                       </div>
                       <div className="bg-rose-neon/5 rounded-xl p-2.5 text-center border border-rose-neon/10">
                         <p className="text-white/40 text-xs mb-1">Commission ({Math.round(commRate * 100)}%)</p>
-                        <p className="text-rose-neon text-sm font-bold">{formatPrice(platformCommission)}</p>
+                        <p className="text-rose-neon text-sm font-bold">{formatPrice(platformCommission, 'FCFA', '0 FCFA')}</p>
                       </div>
                       <div className="bg-cyan-neon/5 rounded-xl p-2.5 text-center border border-cyan-neon/10">
                         <p className="text-white/40 text-xs mb-1">Organisateur</p>
-                        <p className="text-cyan-neon text-sm font-bold">{formatPrice(organizerAmt)}</p>
+                        <p className="text-cyan-neon text-sm font-bold">{formatPrice(organizerAmt, 'FCFA', '0 FCFA')}</p>
                       </div>
                     </div>
                     {/* Détail par catégorie */}
@@ -3817,7 +3817,7 @@ export default function AdminBackoffice() {
                               <div className="w-20 h-1.5 bg-white/10 rounded-full overflow-hidden flex-shrink-0">
                                 <div className="h-full bg-violet-neon/60 rounded-full" style={{ width: `${catPct}%` }} />
                               </div>
-                              <span className="text-white/60 w-20 text-right flex-shrink-0">{formatPrice(Number(cat.price) * cat.quantitySold)}</span>
+                              <span className="text-white/60 w-20 text-right flex-shrink-0">{formatPrice(Number(cat.price) * cat.quantitySold, 'FCFA', '0 FCFA')}</span>
                             </div>
                           );
                         })}
@@ -3897,15 +3897,15 @@ export default function AdminBackoffice() {
                           <div className="grid grid-cols-3 gap-2">
                             <div className="bg-white/5 rounded-xl p-2.5 text-center">
                               <p className="text-white/40 text-xs mb-1">Revenus bruts</p>
-                              <p className="text-white text-sm font-bold">{formatPrice(grossRevenue)}</p>
+                              <p className="text-white text-sm font-bold">{formatPrice(grossRevenue, 'FCFA', '0 FCFA')}</p>
                             </div>
                             <div className="bg-rose-neon/5 rounded-xl p-2.5 text-center border border-rose-neon/10">
                               <p className="text-white/40 text-xs mb-1">Commission ({Math.round(commRate * 100)}%)</p>
-                              <p className="text-rose-neon text-sm font-bold">{formatPrice(platformCommission)}</p>
+                              <p className="text-rose-neon text-sm font-bold">{formatPrice(platformCommission, 'FCFA', '0 FCFA')}</p>
                             </div>
                             <div className="bg-cyan-neon/5 rounded-xl p-2.5 text-center border border-cyan-neon/10">
                               <p className="text-white/40 text-xs mb-1">Organisateur</p>
-                              <p className="text-cyan-neon text-sm font-bold">{formatPrice(organizerAmt)}</p>
+                              <p className="text-cyan-neon text-sm font-bold">{formatPrice(organizerAmt, 'FCFA', '0 FCFA')}</p>
                             </div>
                           </div>
                           {cats.length > 0 && (
@@ -3920,7 +3920,7 @@ export default function AdminBackoffice() {
                                     <div className="w-20 h-1.5 bg-white/10 rounded-full overflow-hidden flex-shrink-0">
                                       <div className="h-full bg-violet-neon/60 rounded-full" style={{ width: `${catPct}%` }} />
                                     </div>
-                                    <span className="text-white/60 w-20 text-right flex-shrink-0">{formatPrice(Number(cat.price) * cat.quantitySold)}</span>
+                                    <span className="text-white/60 w-20 text-right flex-shrink-0">{formatPrice(Number(cat.price) * cat.quantitySold, 'FCFA', '0 FCFA')}</span>
                                   </div>
                                 );
                               })}
@@ -4838,7 +4838,7 @@ export default function AdminBackoffice() {
                           {order.refundStatus === 'REQUESTED' ? 'En attente' :
                            order.refundStatus === 'APPROVED' ? 'Approuvé' : 'Refusé'}
                         </span>
-                        <span className="font-mono text-cyan-neon text-xs">{formatPrice(order.totalAmount)}</span>
+                        <span className="font-mono text-cyan-neon text-xs">{formatPrice(order.totalAmount, 'FCFA', '0 FCFA')}</span>
                       </div>
                       <p className="text-white font-semibold truncate">{order.event.title}</p>
                       <p className="text-white/40 text-xs">{formatEventDate(order.event.eventDate)}</p>
@@ -5671,7 +5671,7 @@ export default function AdminBackoffice() {
                       }`}>
                         {p.status === 'PENDING' ? 'En attente' : p.status === 'PAID' ? 'Versé' : 'Rejeté'}
                       </span>
-                      <span className="text-white font-semibold font-mono">{formatPrice(Number(p.amount))}</span>
+                      <span className="text-white font-semibold font-mono">{formatPrice(Number(p.amount), 'FCFA', '0 FCFA')}</span>
                       <span className="text-white/40 text-xs">{p.operator === 'AIRTEL_MONEY' ? 'Airtel Money' : 'Moov Money'} · {p.phoneNumber}</span>
                     </div>
                     <p className="text-sm text-white/70">

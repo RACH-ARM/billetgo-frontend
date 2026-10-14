@@ -38,7 +38,6 @@ interface SaleResult {
   orderId: string;
   qrToken: string;
   totalAmount: number;
-  buyerPhone?: string;
 }
 
 interface AgentStats {
@@ -210,7 +209,7 @@ export default function AgentPOS() {
 
         if (status === 'COMPLETED' && qrToken) {
           clearInterval(pollRef.current!);
-          setSaleResult({ orderId: pendingOrderId, qrToken, totalAmount: total, buyerPhone: payerPhone.trim() });
+          setSaleResult({ orderId: pendingOrderId, qrToken, totalAmount: total });
           setSaleWhatsApp('');
           setShowWaiting(false);
           setShowQR(true);
@@ -427,7 +426,7 @@ export default function AgentPOS() {
                     )}
                   </div>
                   <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                    <p className="font-semibold text-violet-neon text-sm">{formatPrice(order.totalAmount)}</p>
+                    <p className="font-semibold text-violet-neon text-sm">{formatPrice(order.totalAmount, 'FCFA', '0 FCFA')}</p>
                     <button
                       onClick={() => openResend(order)}
                       className="flex items-center gap-1.5 text-xs font-semibold text-white/60 hover:text-violet-neon border border-white/10 hover:border-violet-neon/40 rounded-lg px-2.5 py-1.5 transition-colors"
@@ -667,7 +666,7 @@ export default function AgentPOS() {
           <div className="max-w-xl mx-auto">
             <div className="flex items-center justify-between mb-3">
               <span className="text-white/50 text-sm">{totalTickets} billet{totalTickets !== 1 ? 's' : ''}</span>
-              <span className="font-bebas text-2xl tracking-wider text-white">{formatPrice(total)}</span>
+              <span className="font-bebas text-2xl tracking-wider text-white">{formatPrice(total, 'FCFA', '0 FCFA')}</span>
             </div>
             <button
               onClick={handleSubmit}
@@ -748,7 +747,7 @@ export default function AgentPOS() {
 
                 <div className="glass-card p-4 w-full text-center border border-violet-neon/10">
                   <p className="text-white/40 text-xs mb-1">Montant à payer</p>
-                  <p className="font-bebas text-4xl tracking-wider text-violet-neon">{formatPrice(total)}</p>
+                  <p className="font-bebas text-4xl tracking-wider text-violet-neon">{formatPrice(total, 'FCFA', '0 FCFA')}</p>
                   <p className="text-white/30 text-xs mt-1">{totalTickets} billet{totalTickets !== 1 ? 's' : ''} · {selectedEvent?.title}</p>
                 </div>
 
@@ -775,9 +774,9 @@ export default function AgentPOS() {
             </div>
 
             <div>
-              <p className="text-2xl font-bold mb-1">{formatPrice(saleResult.totalAmount)}</p>
-              {saleResult.buyerPhone && (
-                <p className="text-white/50 text-sm">Billet envoyé sur <span className="text-[#25D366]">{saleResult.buyerPhone}</span></p>
+              <p className="text-2xl font-bold mb-1">{formatPrice(saleResult.totalAmount, 'FCFA', '0 FCFA')}</p>
+              {saleWhatsApp && (
+                <p className="text-white/50 text-sm">Billet envoyé sur <span className="text-[#25D366]">{saleWhatsApp}</span></p>
               )}
             </div>
 
@@ -904,7 +903,7 @@ export default function AgentPOS() {
                       <BarChart3 className="w-4 h-4 text-violet-neon" />
                       <span className="text-white/50 text-sm">Chiffre d'affaires</span>
                     </div>
-                    <p className="font-bebas text-2xl tracking-wider text-white">{formatPrice(stats?.totalRevenue ?? 0)}</p>
+                    <p className="font-bebas text-2xl tracking-wider text-white">{formatPrice(stats?.totalRevenue ?? 0, 'FCFA', '0 FCFA')}</p>
                   </div>
                 </div>
 
@@ -922,7 +921,7 @@ export default function AgentPOS() {
                           <p className="text-white/25 text-xs">{sale.orderItems.map((i) => `${i.quantity}× ${i.category.name}`).join(', ')}</p>
                         </div>
                         <div className="text-right flex-shrink-0 ml-3">
-                          <p className="font-semibold text-violet-neon">{formatPrice(sale.totalAmount)}</p>
+                          <p className="font-semibold text-violet-neon">{formatPrice(sale.totalAmount, 'FCFA', '0 FCFA')}</p>
                           <p className="text-white/30 text-xs">{new Date(sale.createdAt).toLocaleDateString('fr-FR')}</p>
                         </div>
                       </div>

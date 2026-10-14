@@ -107,7 +107,7 @@ export default function NotificationBell() {
                       <p className="text-xs text-white/50 mt-0.5 leading-relaxed">{n.message}</p>
                       {n.type === 'NEW_SALE' && n.amount !== undefined && (
                         <p className="text-xs font-mono text-cyan-neon mt-0.5">
-                          +{formatPrice(n.amount)}
+                          +{formatPrice(n.amount, 'FCFA', '0 FCFA')}
                         </p>
                       )}
                       <p className="text-[10px] text-white/25 mt-1">{timeAgo(n.createdAt)}</p>

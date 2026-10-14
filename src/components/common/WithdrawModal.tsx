@@ -97,7 +97,7 @@ function PaymentStep({
   const amountError = amount < MIN_AMOUNT
     ? `Montant minimum : ${formatPrice(MIN_AMOUNT, 'FCFA')}`
     : amount > ctx.grossAmount
-    ? `Dépasse le solde disponible (${formatPrice(ctx.grossAmount, 'FCFA')})`
+    ? `Dépasse le solde disponible (${formatPrice(ctx.grossAmount, 'FCFA', '0 FCFA')})`
     : null;
   const amountValid = amount >= MIN_AMOUNT && amount <= ctx.grossAmount;
 
@@ -159,7 +159,7 @@ function PaymentStep({
           <p className="text-xs text-rose-neon mt-1.5">{amountError}</p>
         ) : (
           <p className="text-xs text-white/25 mt-1.5">
-            Solde disponible : {formatPrice(ctx.grossAmount, 'FCFA')}
+            Solde disponible : {formatPrice(ctx.grossAmount, 'FCFA', '0 FCFA')}
           </p>
         )}
         {amount !== ctx.grossAmount && ctx.grossAmount > 0 && (
@@ -275,7 +275,7 @@ function PaymentStep({
                 <Receipt className="w-4 h-4 text-white/25" />
                 Frais virement ({pct}%)
               </span>
-              <span className="font-mono text-sm text-rose-neon font-semibold">−{formatPrice(fee, 'FCFA')}</span>
+              <span className="font-mono text-sm text-rose-neon font-semibold">−{formatPrice(fee, 'FCFA', '0 FCFA')}</span>
             </div>
             <div className="flex items-center justify-between px-4 py-3.5">
               <span className="text-sm font-bold text-white">Vous recevez</span>
@@ -394,7 +394,7 @@ function ConfirmStep({
       <div className="rounded-2xl bg-white/[0.03] border border-white/[0.07] divide-y divide-white/[0.06] overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3">
           <span className="text-sm text-white/50">Montant</span>
-          <span className="font-mono font-bold text-white text-sm">{formatPrice(amount, 'FCFA')}</span>
+          <span className="font-mono font-bold text-white text-sm">{formatPrice(amount, 'FCFA', '0 FCFA')}</span>
         </div>
         <div className="flex items-center justify-between px-4 py-3">
           <span className="text-sm text-white/50">Opérateur</span>
@@ -413,25 +413,25 @@ function ConfirmStep({
             <>
               <div className="flex items-center justify-between px-4 py-3">
                 <span className="text-sm text-white/50">Frais virement ({pct}%)</span>
-                <span className="font-mono text-sm text-rose-neon font-semibold">−{formatPrice(fee, 'FCFA')}</span>
+                <span className="font-mono text-sm text-rose-neon font-semibold">−{formatPrice(fee, 'FCFA', '0 FCFA')}</span>
               </div>
               {exceedsDaily ? (
                 <>
                   <div className="flex items-center justify-between px-4 py-3 bg-green-500/[0.05]">
                     <span className="text-sm text-green-400/80">Reçu aujourd'hui</span>
-                    <span className="font-mono font-bold text-green-400 text-sm">{formatPrice(Math.min(net, dailyLimit), 'FCFA')}</span>
+                    <span className="font-mono font-bold text-green-400 text-sm">{formatPrice(Math.min(net, dailyLimit), 'FCFA', '0 FCFA')}</span>
                   </div>
                   <div className="flex items-center justify-between px-4 py-3 bg-amber-500/[0.04]">
                     <span className="text-sm text-amber-400/70">Programmé (jours suivants)</span>
                     <span className="font-mono text-amber-400/70 text-sm">
-                      {formatPrice(Math.max(0, net - dailyLimit), 'FCFA')}
+                      {formatPrice(Math.max(0, net - dailyLimit), 'FCFA', '0 FCFA')}
                     </span>
                   </div>
                 </>
               ) : (
                 <div className="flex items-center justify-between px-4 py-4 bg-violet-neon/[0.04]">
                   <span className="font-bold text-white">Vous recevez</span>
-                  <span className="font-mono font-bold text-2xl text-violet-neon">{formatPrice(net, 'FCFA')}</span>
+                  <span className="font-mono font-bold text-2xl text-violet-neon">{formatPrice(net, 'FCFA', '0 FCFA')}</span>
                 </div>
               )}
             </>
@@ -443,7 +443,7 @@ function ConfirmStep({
         <div className="flex items-start gap-2.5 px-3.5 py-3 rounded-xl bg-amber-500/[0.07] border border-amber-500/20">
           <CalendarDays className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
           <p className="text-xs text-amber-200/60 leading-relaxed">
-            <span className="text-amber-300 font-semibold">{formatPrice(todayAmount, 'FCFA')}</span> seront envoyés immédiatement.
+            <span className="text-amber-300 font-semibold">{formatPrice(todayAmount, 'FCFA', '0 FCFA')}</span> seront envoyés immédiatement.
             Le reste est programmé automatiquement et sera viré à 6h les jours suivants.
           </p>
         </div>
@@ -507,7 +507,7 @@ function SuccessStep({
 
       <div>
         <p className="font-bebas text-3xl tracking-wider text-gradient leading-none">
-          {formatPrice(net, 'FCFA')}
+          {formatPrice(net, 'FCFA', '0 FCFA')}
         </p>
         <p className="text-sm text-white/50 mt-1">
           {isScheduled ? 'Virement initié + tranches programmées' : 'Virement en cours de traitement'}

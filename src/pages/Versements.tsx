@@ -50,7 +50,7 @@ function PayoutRow({ payout }: { payout: OrganizerPayout }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <p className={`font-mono font-bold text-sm ${cfg.amount}`}>
-            {formatPrice(payout.amountSent, 'FCFA')}
+            {formatPrice(payout.amountSent, 'FCFA', '0 FCFA')}
           </p>
           <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${cfg.bg} ${cfg.text} font-semibold leading-none`}>
             {cfg.label}
@@ -84,7 +84,7 @@ function SaleRow({ sale }: { sale: SaleTransaction }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <p className="font-mono font-bold text-sm text-green-400">
-            +{formatPrice(sale.organizerAmount, 'FCFA')}
+            +{formatPrice(sale.organizerAmount, 'FCFA', '0 FCFA')}
           </p>
           <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-400 font-semibold leading-none">
             Confirmé
@@ -321,7 +321,7 @@ export default function Versements() {
                   <p className="text-xs text-white/30 mt-0.5">{formatDateShort(ev.eventDate)}</p>
                 </div>
                 <p className="font-mono font-bold text-violet-neon text-sm flex-shrink-0">
-                  {formatPrice(ev.organizerAmount, 'FCFA')}
+                  {formatPrice(ev.organizerAmount, 'FCFA', '0 FCFA')}
                 </p>
               </div>
             ))}

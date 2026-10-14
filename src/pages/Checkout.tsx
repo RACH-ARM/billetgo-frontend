@@ -488,7 +488,7 @@ export default function Checkout() {
                               <p className="text-emerald-400 text-sm font-semibold">Code <span className="font-mono">{promoValidation.code}</span> appliqué</p>
                               <p className="text-white/50 text-xs mt-0.5">
                                 {promoValidation.label ? `${promoValidation.label} · ` : ''}
-                                -{formatPrice(promoValidation.discountAmount)}
+                                -{formatPrice(promoValidation.discountAmount, 'FCFA', '0 FCFA')}
                               </p>
                               {promoValidation.eligibleCategoryIds.length > 0 && (
                                 <p className="text-white/30 text-xs mt-0.5">
@@ -532,12 +532,12 @@ export default function Checkout() {
                     <div className="mt-3 pt-3 border-t border-white/10 space-y-2">
                       <div className="flex justify-between text-sm text-white/60">
                         <span>Sous-total</span>
-                        <span className="font-mono">{formatPrice(rawTotal)}</span>
+                        <span className="font-mono">{formatPrice(rawTotal, 'FCFA', '0 FCFA')}</span>
                       </div>
                       {discountAmount > 0 && (
                         <div className="flex justify-between items-center text-sm text-emerald-400">
                           <span className="flex items-center gap-1.5">Code promo ({promoValidation?.code})</span>
-                          <span className="font-mono">-{formatPrice(discountAmount)}</span>
+                          <span className="font-mono">-{formatPrice(discountAmount, 'FCFA', '0 FCFA')}</span>
                         </div>
                       )}
                       {freeTicketFee > 0 && (
@@ -546,7 +546,7 @@ export default function Checkout() {
                             <Info className="w-3.5 h-3.5" />
                             Frais de traitement billets gratuits
                           </span>
-                          <span className="font-mono">{formatPrice(freeTicketFee)}</span>
+                          <span className="font-mono">{formatPrice(freeTicketFee, 'FCFA', '0 FCFA')}</span>
                         </div>
                       )}
                       <div className="flex justify-between items-center pt-2 border-t border-white/10">
@@ -557,7 +557,7 @@ export default function Checkout() {
                         <div className="flex items-start gap-1.5 text-xs text-white/30 leading-relaxed">
                           <Info className="w-3 h-3 flex-shrink-0 mt-0.5" />
                           <span>
-                            Frais {provider === 'MOOV_MONEY' ? 'Moov Money' : 'Airtel Money'} estimés ≈ {formatPrice(estimatedOperatorFee)} prélevés directement par l'opérateur en plus.
+                            Frais {provider === 'MOOV_MONEY' ? 'Moov Money' : 'Airtel Money'} estimés ≈ {formatPrice(estimatedOperatorFee, 'FCFA', '0 FCFA')} prélevés directement par l'opérateur en plus.
                           </span>
                         </div>
                       )}
@@ -771,13 +771,13 @@ export default function Checkout() {
                 {freeTicketFee > 0 && (
                   <div className="flex justify-between text-xs text-white/35">
                     <span>Frais traitement billets gratuits</span>
-                    <span className="font-mono">{formatPrice(freeTicketFee)}</span>
+                    <span className="font-mono">{formatPrice(freeTicketFee, 'FCFA', '0 FCFA')}</span>
                   </div>
                 )}
                 {operatorFeeCharged > 0 && (
                   <div className="flex justify-between items-center text-xs text-white/50">
                     <span>Frais opérateur Mobile Money (2,5%)</span>
-                    <span className="font-mono">{formatPrice(operatorFeeCharged)}</span>
+                    <span className="font-mono">{formatPrice(operatorFeeCharged, 'FCFA', '0 FCFA')}</span>
                   </div>
                 )}
                 <div className="flex justify-between items-center pt-1.5 border-t border-white/5">
@@ -786,7 +786,7 @@ export default function Checkout() {
                 </div>
                 {estimatedOperatorFee > 0 && (
                   <p className="text-[10px] text-white/25 leading-relaxed">
-                    + frais opérateur ≈ {formatPrice(estimatedOperatorFee)} (prélevés par Mobile Money)
+                    + frais opérateur ≈ {formatPrice(estimatedOperatorFee, 'FCFA', '0 FCFA')} (prélevés par Mobile Money)
                   </p>
                 )}
               </div>

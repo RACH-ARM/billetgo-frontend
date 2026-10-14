@@ -365,7 +365,7 @@ function AnalyticsSection({ events }: { events: OrganizerEventStat[] }) {
                           <span className="text-xs font-mono text-white/70">{s.orders} cmd</span>
                         </div>
                         <div className="w-24 text-right flex-shrink-0">
-                          <span className="text-xs font-mono text-cyan-neon">{formatPrice(s.revenue)}</span>
+                          <span className="text-xs font-mono text-cyan-neon">{formatPrice(s.revenue, 'FCFA', '0 FCFA')}</span>
                         </div>
                       </div>
                     ));

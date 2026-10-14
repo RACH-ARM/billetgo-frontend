@@ -228,7 +228,7 @@ function BuyersPanel({ event, onBack }: { event: OrganizerEventStat; onBack: () 
                       </div>
                     </td>
                     <td className="px-5 py-4 text-right font-mono text-cyan-neon font-bold">
-                      {formatPrice(order.totalAmount)}
+                      {formatPrice(order.totalAmount, 'FCFA', '0 FCFA')}
                     </td>
                     <td className="px-5 py-4">
                       {(() => {
@@ -479,10 +479,10 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
                   <div key={r.id} className="flex items-center justify-between text-xs gap-2">
                     <span className="text-white/50 truncate">{r.name}</span>
                     <span className="text-white/30 font-mono whitespace-nowrap">
-                      {formatPrice(r.price)} − {formatPrice(r.discountAmount)} (réduc.) − {formatPrice(r.commissionAmount)} (comm.) =
+                      {formatPrice(r.price, 'FCFA', '0 FCFA')} − {formatPrice(r.discountAmount, 'FCFA', '0 FCFA')} (réduc.) − {formatPrice(r.commissionAmount, 'FCFA', '0 FCFA')} (comm.) =
                     </span>
                     <span className={`font-mono font-semibold whitespace-nowrap ${r.margin < 0 ? 'text-rose-neon' : 'text-emerald-400'}`}>
-                      {formatPrice(r.margin)}
+                      {formatPrice(r.margin, 'FCFA', '0 FCFA')}
                     </span>
                   </div>
                 ))}
@@ -642,7 +642,7 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
                   </div>
                   <div className="text-right">
                     <p className="text-white/40 text-xs">Commission</p>
-                    <p className="text-cyan-neon font-semibold font-mono text-sm">{formatPrice(c.stats.totalCommission)}</p>
+                    <p className="text-cyan-neon font-semibold font-mono text-sm">{formatPrice(c.stats.totalCommission, 'FCFA', '0 FCFA')}</p>
                   </div>
                   {expanded === c.id ? <ChevronUp className="w-4 h-4 text-white/30" /> : <ChevronDown className="w-4 h-4 text-white/30" />}
                 </div>
@@ -662,12 +662,12 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
                     </div>
                     <div>
                       <p className="text-white/40 text-xs mb-1">Commission en attente</p>
-                      <p className="text-amber-400 font-semibold font-mono">{formatPrice(c.stats.pendingCommission)}</p>
+                      <p className="text-amber-400 font-semibold font-mono">{formatPrice(c.stats.pendingCommission, 'FCFA', '0 FCFA')}</p>
                     </div>
                     <div>
                       <p className="text-white/40 text-xs mb-1">Réduction acheteur</p>
                       <p className="text-white font-semibold text-sm">
-                        {c.discountType === 'NONE' ? 'Aucune' : c.discountType === 'PERCENTAGE' ? `${c.discountValue}%` : formatPrice(Number(c.discountValue))}
+                        {c.discountType === 'NONE' ? 'Aucune' : c.discountType === 'PERCENTAGE' ? `${c.discountValue}%` : formatPrice(Number(c.discountValue), 'FCFA', '0 FCFA')}
                       </p>
                     </div>
                   </div>
@@ -691,7 +691,7 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
                       )}
                       {c.minPurchaseAmount !== null && (
                         <span className="text-xs bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-white/50">
-                          Min {formatPrice(Number(c.minPurchaseAmount))}
+                          Min {formatPrice(Number(c.minPurchaseAmount), 'FCFA', '0 FCFA')}
                         </span>
                       )}
                     </div>
@@ -699,7 +699,7 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
 
                   <div className="flex items-center gap-2 pt-1 border-t border-white/5">
                     <span className="text-white/30 text-xs flex-1">
-                      Commission : {c.commissionType === 'NONE' ? 'Aucune' : c.commissionType === 'PERCENTAGE' ? `${c.commissionValue}% par billet` : `${formatPrice(Number(c.commissionValue))} par billet`}
+                      Commission : {c.commissionType === 'NONE' ? 'Aucune' : c.commissionType === 'PERCENTAGE' ? `${c.commissionValue}% par billet` : `${formatPrice(Number(c.commissionValue), 'FCFA', '0 FCFA')} par billet`}
                     </span>
                     <button
                       onClick={() => copyCode(c.code)}
@@ -2378,7 +2378,7 @@ export default function MesEvenements() {
                         <span className="font-mono font-bold text-cyan-neon text-sm">{event.totalSold}</span>
                         <span className="text-white/25 text-xs">/ {event.totalTickets} billets</span>
                       </div>
-                      <span className="font-mono font-bold text-green-400 text-sm">{formatPrice(event.totalRevenue)}</span>
+                      <span className="font-mono font-bold text-green-400 text-sm">{formatPrice(event.totalRevenue, 'FCFA', '0 FCFA')}</span>
                       {(event.likeCount ?? 0) > 0 && (
                         <span className="flex items-center gap-1 text-xs text-rose-neon/80">
                           <Heart className="w-3 h-3 fill-rose-neon text-rose-neon" />
