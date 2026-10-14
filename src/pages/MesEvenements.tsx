@@ -1197,13 +1197,19 @@ function AgentsPanel({ event, onBack }: { event: OrganizerEventStat; onBack: () 
                       {a.sales.totalCount} vente{a.sales.totalCount > 1 ? 's' : ''} · {formatPrice(a.sales.totalAmount, 'FCFA', '0 FCFA')}
                     </span>
                     {a.sales.CASH.count > 0 && (
-                      <span className="text-xs px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400">{a.sales.CASH.count} Cash</span>
+                      <span className="text-xs px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400">
+                        {a.sales.CASH.count} Cash · {formatPrice(a.sales.CASH.totalAmount, 'FCFA', '0 FCFA')}
+                      </span>
                     )}
                     {a.sales.AIRTEL_MONEY.count > 0 && (
-                      <span className="text-xs px-1.5 py-0.5 rounded-md bg-red-500/10 text-red-400">{a.sales.AIRTEL_MONEY.count} Airtel</span>
+                      <span className="text-xs px-1.5 py-0.5 rounded-md bg-red-500/10 text-red-400">
+                        {a.sales.AIRTEL_MONEY.count} Airtel · {formatPrice(a.sales.AIRTEL_MONEY.totalAmount, 'FCFA', '0 FCFA')}
+                      </span>
                     )}
                     {a.sales.MOOV_MONEY.count > 0 && (
-                      <span className="text-xs px-1.5 py-0.5 rounded-md bg-orange-500/10 text-orange-400">{a.sales.MOOV_MONEY.count} Moov</span>
+                      <span className="text-xs px-1.5 py-0.5 rounded-md bg-orange-500/10 text-orange-400">
+                        {a.sales.MOOV_MONEY.count} Moov · {formatPrice(a.sales.MOOV_MONEY.totalAmount, 'FCFA', '0 FCFA')}
+                      </span>
                     )}
                   </div>
                 )}

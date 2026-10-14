@@ -2229,6 +2229,7 @@ export default function AdminBackoffice() {
   const [copiedAgentCode, setCopiedAgentCode] = useState(false);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [selectedAgentName, setSelectedAgentName] = useState<string>('');
+  const [posReportOrganizerId, setPosReportOrganizerId] = useState<string>('');
   const [editingCommission, setEditingCommission] = useState<{ id: string; value: string } | null>(null);
   const [reportEventId, setReportEventId] = useState<string | null>(null);
   const [deleteEventTarget, setDeleteEventTarget] = useState<{ id: string; title: string } | null>(null);
@@ -2508,6 +2509,13 @@ export default function AdminBackoffice() {
     }
   );
 
+  type AgentSalesSummary = {
+    CASH: { count: number; totalAmount: number };
+    AIRTEL_MONEY: { count: number; totalAmount: number };
+    MOOV_MONEY: { count: number; totalAmount: number };
+    totalCount: number; totalAmount: number;
+  };
+
   const { data: agentsData, isLoading: agentsLoading } = useQuery(
     'admin-agents',
     async () => {
@@ -2517,15 +2525,27 @@ export default function AdminBackoffice() {
         isActive: boolean; scannerPassword: string | null; accessCode: string | null; createdAt: string;
         agentAssignments: { id: string; event: { id: string; title: string; eventDate: string; status: string; organizer: { id: string; companyName: string } | null } }[];
         _count: { agentOrders: number };
+        sales: AgentSalesSummary;
       }[];
     },
     { enabled: tab === 'agents' }
   );
 
+  // Organisateurs distincts trouvés parmi les agents chargés — sert de filtre pour le rapport plateforme
+  const posReportOrganizers = (() => {
+    const map = new Map<string, string>();
+    for (const a of agentsData ?? []) {
+      for (const asg of a.agentAssignments) {
+        if (asg.event.organizer) map.set(asg.event.organizer.id, asg.event.organizer.companyName);
+      }
+    }
+    return Array.from(map, ([id, companyName]) => ({ id, companyName })).sort((x, y) => x.companyName.localeCompare(y.companyName));
+  })();
+
   const { data: posReport } = useQuery(
-    'admin-pos-report',
+    ['admin-pos-report', posReportOrganizerId],
     async () => {
-      const { data } = await api.get('/admin/pos-report');
+      const { data } = await api.get('/admin/pos-report', { params: posReportOrganizerId ? { organizerId: posReportOrganizerId } : {} });
       return data.data as {
         breakdown: {
           CASH: { count: number; totalAmount: number };
@@ -4448,10 +4468,25 @@ export default function AdminBackoffice() {
             </Button>
           </div>
 
-          {/* Payment method report — plateforme entière, tous organisateurs confondus */}
-          {posReport && posReport.totalCount > 0 && (
+          {/* Payment method report — plateforme entière, filtrable par organisateur */}
+          {posReport && (
             <div className="glass-card p-4 sm:p-5 mb-5">
-              <p className="text-white/40 text-xs uppercase tracking-widest mb-3">Ventes POS plateforme — par moyen de paiement (tous organisateurs)</p>
+              <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+                <p className="text-white/40 text-xs uppercase tracking-widest">Ventes POS — par moyen de paiement</p>
+                <select
+                  value={posReportOrganizerId}
+                  onChange={(e) => setPosReportOrganizerId(e.target.value)}
+                  className="bg-bg-secondary border border-violet-neon/20 rounded-lg px-2.5 py-1.5 text-xs text-white/70 focus:outline-none focus:border-violet-neon transition-colors"
+                >
+                  <option value="">Tous les organisateurs</option>
+                  {posReportOrganizers.map((o) => (
+                    <option key={o.id} value={o.id}>{o.companyName}</option>
+                  ))}
+                </select>
+              </div>
+              {posReport.totalCount === 0 ? (
+                <p className="text-white/20 text-sm py-2">Aucune vente POS {posReportOrganizerId ? 'pour cet organisateur' : ''}.</p>
+              ) : (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="rounded-xl border border-white/10 p-3 flex items-center gap-3">
                   <Banknote className="w-5 h-5 text-emerald-400 flex-shrink-0" />
@@ -4475,7 +4510,10 @@ export default function AdminBackoffice() {
                   </div>
                 </div>
               </div>
-              <p className="text-white/50 text-xs mt-3 text-right">Total : {formatPrice(posReport.totalAmount, 'FCFA', '0 FCFA')} ({posReport.totalCount} vente{posReport.totalCount > 1 ? 's' : ''})</p>
+              )}
+              {posReport.totalCount > 0 && (
+                <p className="text-white/50 text-xs mt-3 text-right">Total : {formatPrice(posReport.totalAmount, 'FCFA', '0 FCFA')} ({posReport.totalCount} vente{posReport.totalCount > 1 ? 's' : ''})</p>
+              )}
             </div>
           )}
 
@@ -4627,6 +4665,19 @@ export default function AdminBackoffice() {
                             <p className="text-white font-semibold group-hover:text-violet-neon">{a._count.agentOrders}</p>
                             <p className="text-white/30 text-xs group-hover:text-violet-neon/60">vente{a._count.agentOrders !== 1 ? 's' : ''} →</p>
                           </button>
+                          {a.sales.totalCount > 0 && (
+                            <div className="flex flex-col items-center gap-0.5 mt-1.5">
+                              {a.sales.CASH.count > 0 && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 whitespace-nowrap">{a.sales.CASH.count} Cash · {formatPrice(a.sales.CASH.totalAmount, 'FCFA', '0 FCFA')}</span>
+                              )}
+                              {a.sales.AIRTEL_MONEY.count > 0 && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 whitespace-nowrap">{a.sales.AIRTEL_MONEY.count} Airtel · {formatPrice(a.sales.AIRTEL_MONEY.totalAmount, 'FCFA', '0 FCFA')}</span>
+                              )}
+                              {a.sales.MOOV_MONEY.count > 0 && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 whitespace-nowrap">{a.sales.MOOV_MONEY.count} Moov · {formatPrice(a.sales.MOOV_MONEY.totalAmount, 'FCFA', '0 FCFA')}</span>
+                              )}
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 sm:px-5 py-4 text-center">
                           {a.isActive ? (
