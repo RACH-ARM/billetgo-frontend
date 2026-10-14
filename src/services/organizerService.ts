@@ -105,11 +105,20 @@ export interface EventScannerEntry {
   user: { id: string; firstName: string; isActive: boolean; accessCode: string | null; createdAt: string };
 }
 
+export interface AgentSalesSummary {
+  CASH: { count: number; totalAmount: number };
+  AIRTEL_MONEY: { count: number; totalAmount: number };
+  MOOV_MONEY: { count: number; totalAmount: number };
+  totalCount: number;
+  totalAmount: number;
+}
+
 export interface EventAgentEntry {
   id: string;
   isActive: boolean;
   createdAt: string;
   agent: { id: string; firstName: string; isActive: boolean; accessCode: string | null; createdAt: string };
+  sales: AgentSalesSummary;
 }
 
 export interface OrganizerProfile {

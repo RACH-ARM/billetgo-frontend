@@ -4456,26 +4456,26 @@ export default function AdminBackoffice() {
                 <div className="rounded-xl border border-white/10 p-3 flex items-center gap-3">
                   <Banknote className="w-5 h-5 text-emerald-400 flex-shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-white font-semibold text-sm">{formatPrice(posReport.breakdown.CASH.totalAmount)}</p>
+                    <p className="text-white font-semibold text-sm">{formatPrice(posReport.breakdown.CASH.totalAmount, 'FCFA', '0 FCFA')}</p>
                     <p className="text-white/30 text-xs">Espèces · {posReport.breakdown.CASH.count} vente{posReport.breakdown.CASH.count > 1 ? 's' : ''}</p>
                   </div>
                 </div>
                 <div className="rounded-xl border border-white/10 p-3 flex items-center gap-3">
                   <CreditCard className="w-5 h-5 text-red-400 flex-shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-white font-semibold text-sm">{formatPrice(posReport.breakdown.AIRTEL_MONEY.totalAmount)}</p>
+                    <p className="text-white font-semibold text-sm">{formatPrice(posReport.breakdown.AIRTEL_MONEY.totalAmount, 'FCFA', '0 FCFA')}</p>
                     <p className="text-white/30 text-xs">Airtel Money · {posReport.breakdown.AIRTEL_MONEY.count} vente{posReport.breakdown.AIRTEL_MONEY.count > 1 ? 's' : ''}</p>
                   </div>
                 </div>
                 <div className="rounded-xl border border-white/10 p-3 flex items-center gap-3">
                   <CreditCard className="w-5 h-5 text-orange-400 flex-shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-white font-semibold text-sm">{formatPrice(posReport.breakdown.MOOV_MONEY.totalAmount)}</p>
+                    <p className="text-white font-semibold text-sm">{formatPrice(posReport.breakdown.MOOV_MONEY.totalAmount, 'FCFA', '0 FCFA')}</p>
                     <p className="text-white/30 text-xs">Moov Money · {posReport.breakdown.MOOV_MONEY.count} vente{posReport.breakdown.MOOV_MONEY.count > 1 ? 's' : ''}</p>
                   </div>
                 </div>
               </div>
-              <p className="text-white/50 text-xs mt-3 text-right">Total : {formatPrice(posReport.totalAmount)} ({posReport.totalCount} vente{posReport.totalCount > 1 ? 's' : ''})</p>
+              <p className="text-white/50 text-xs mt-3 text-right">Total : {formatPrice(posReport.totalAmount, 'FCFA', '0 FCFA')} ({posReport.totalCount} vente{posReport.totalCount > 1 ? 's' : ''})</p>
             </div>
           )}
 

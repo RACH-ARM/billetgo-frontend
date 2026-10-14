@@ -1105,26 +1105,26 @@ function AgentsPanel({ event, onBack }: { event: OrganizerEventStat; onBack: () 
             <div className="rounded-xl border border-white/10 p-3 flex items-center gap-3">
               <Banknote className="w-5 h-5 text-emerald-400 flex-shrink-0" />
               <div className="min-w-0">
-                <p className="text-white font-semibold text-sm">{formatPrice(report.breakdown.CASH.totalAmount)}</p>
+                <p className="text-white font-semibold text-sm">{formatPrice(report.breakdown.CASH.totalAmount, 'FCFA', '0 FCFA')}</p>
                 <p className="text-white/30 text-xs">Espèces · {report.breakdown.CASH.count} vente{report.breakdown.CASH.count > 1 ? 's' : ''}</p>
               </div>
             </div>
             <div className="rounded-xl border border-white/10 p-3 flex items-center gap-3">
               <CreditCard className="w-5 h-5 text-red-400 flex-shrink-0" />
               <div className="min-w-0">
-                <p className="text-white font-semibold text-sm">{formatPrice(report.breakdown.AIRTEL_MONEY.totalAmount)}</p>
+                <p className="text-white font-semibold text-sm">{formatPrice(report.breakdown.AIRTEL_MONEY.totalAmount, 'FCFA', '0 FCFA')}</p>
                 <p className="text-white/30 text-xs">Airtel Money · {report.breakdown.AIRTEL_MONEY.count} vente{report.breakdown.AIRTEL_MONEY.count > 1 ? 's' : ''}</p>
               </div>
             </div>
             <div className="rounded-xl border border-white/10 p-3 flex items-center gap-3">
               <CreditCard className="w-5 h-5 text-orange-400 flex-shrink-0" />
               <div className="min-w-0">
-                <p className="text-white font-semibold text-sm">{formatPrice(report.breakdown.MOOV_MONEY.totalAmount)}</p>
+                <p className="text-white font-semibold text-sm">{formatPrice(report.breakdown.MOOV_MONEY.totalAmount, 'FCFA', '0 FCFA')}</p>
                 <p className="text-white/30 text-xs">Moov Money · {report.breakdown.MOOV_MONEY.count} vente{report.breakdown.MOOV_MONEY.count > 1 ? 's' : ''}</p>
               </div>
             </div>
           </div>
-          <p className="text-white/50 text-xs mt-3 text-right">Total : {formatPrice(report.totalAmount)} ({report.totalCount} vente{report.totalCount > 1 ? 's' : ''})</p>
+          <p className="text-white/50 text-xs mt-3 text-right">Total : {formatPrice(report.totalAmount, 'FCFA', '0 FCFA')} ({report.totalCount} vente{report.totalCount > 1 ? 's' : ''})</p>
         </div>
       )}
 
@@ -1189,6 +1189,24 @@ function AgentsPanel({ event, onBack }: { event: OrganizerEventStat; onBack: () 
                   </span>
                 </div>
                 <p className="text-white/30 text-xs mt-1 font-mono">{a.agent.accessCode}</p>
+                {a.sales.totalCount === 0 ? (
+                  <p className="text-white/20 text-xs mt-1.5">Aucune vente</p>
+                ) : (
+                  <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+                    <span className="text-xs px-1.5 py-0.5 rounded-md bg-white/5 text-white/60 font-semibold">
+                      {a.sales.totalCount} vente{a.sales.totalCount > 1 ? 's' : ''} · {formatPrice(a.sales.totalAmount, 'FCFA', '0 FCFA')}
+                    </span>
+                    {a.sales.CASH.count > 0 && (
+                      <span className="text-xs px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400">{a.sales.CASH.count} Cash</span>
+                    )}
+                    {a.sales.AIRTEL_MONEY.count > 0 && (
+                      <span className="text-xs px-1.5 py-0.5 rounded-md bg-red-500/10 text-red-400">{a.sales.AIRTEL_MONEY.count} Airtel</span>
+                    )}
+                    {a.sales.MOOV_MONEY.count > 0 && (
+                      <span className="text-xs px-1.5 py-0.5 rounded-md bg-orange-500/10 text-orange-400">{a.sales.MOOV_MONEY.count} Moov</span>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <button
