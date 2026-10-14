@@ -4640,6 +4640,30 @@ export default function AdminBackoffice() {
                               MDP : <span className="text-white/80">{a.scannerPassword}</span>
                             </p>
                           )}
+                          {a.sales.totalCount === 0 ? (
+                            <p className="text-white/20 text-xs mt-1.5">Aucune vente</p>
+                          ) : (
+                            <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+                              <span className="text-xs px-1.5 py-0.5 rounded-md bg-white/5 text-white/60 font-semibold">
+                                {a.sales.totalCount} vente{a.sales.totalCount > 1 ? 's' : ''} · {formatPrice(a.sales.totalAmount, 'FCFA', '0 FCFA')}
+                              </span>
+                              {a.sales.CASH.count > 0 && (
+                                <span className="text-xs px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400">
+                                  {a.sales.CASH.count} Cash · {formatPrice(a.sales.CASH.totalAmount, 'FCFA', '0 FCFA')}
+                                </span>
+                              )}
+                              {a.sales.AIRTEL_MONEY.count > 0 && (
+                                <span className="text-xs px-1.5 py-0.5 rounded-md bg-red-500/10 text-red-400">
+                                  {a.sales.AIRTEL_MONEY.count} Airtel · {formatPrice(a.sales.AIRTEL_MONEY.totalAmount, 'FCFA', '0 FCFA')}
+                                </span>
+                              )}
+                              {a.sales.MOOV_MONEY.count > 0 && (
+                                <span className="text-xs px-1.5 py-0.5 rounded-md bg-orange-500/10 text-orange-400">
+                                  {a.sales.MOOV_MONEY.count} Moov · {formatPrice(a.sales.MOOV_MONEY.totalAmount, 'FCFA', '0 FCFA')}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </td>
                         <td className="px-5 py-4 hidden md:table-cell">
                           <div className="flex flex-wrap gap-1 max-w-[260px]">
@@ -4665,19 +4689,6 @@ export default function AdminBackoffice() {
                             <p className="text-white font-semibold group-hover:text-violet-neon">{a._count.agentOrders}</p>
                             <p className="text-white/30 text-xs group-hover:text-violet-neon/60">vente{a._count.agentOrders !== 1 ? 's' : ''} →</p>
                           </button>
-                          {a.sales.totalCount > 0 && (
-                            <div className="flex flex-col items-center gap-0.5 mt-1.5">
-                              {a.sales.CASH.count > 0 && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 whitespace-nowrap">{a.sales.CASH.count} Cash · {formatPrice(a.sales.CASH.totalAmount, 'FCFA', '0 FCFA')}</span>
-                              )}
-                              {a.sales.AIRTEL_MONEY.count > 0 && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 whitespace-nowrap">{a.sales.AIRTEL_MONEY.count} Airtel · {formatPrice(a.sales.AIRTEL_MONEY.totalAmount, 'FCFA', '0 FCFA')}</span>
-                              )}
-                              {a.sales.MOOV_MONEY.count > 0 && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-400 whitespace-nowrap">{a.sales.MOOV_MONEY.count} Moov · {formatPrice(a.sales.MOOV_MONEY.totalAmount, 'FCFA', '0 FCFA')}</span>
-                              )}
-                            </div>
-                          )}
                         </td>
                         <td className="px-4 sm:px-5 py-4 text-center">
                           {a.isActive ? (
