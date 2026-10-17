@@ -2246,7 +2246,7 @@ export default function AdminBackoffice() {
 
   const [eventsStatsSearch, setEventsStatsSearch] = useState('');
   const [eventsStatsStatus, setEventsStatsStatus] = useState('');
-  const [eventsStatsSortKey, setEventsStatsSortKey] = useState<'eventDate' | 'volume' | 'commission' | 'totalSold'>('eventDate');
+  const [eventsStatsSortKey, setEventsStatsSortKey] = useState<'eventDate' | 'volume' | 'commission' | 'totalSold' | 'cashCommission'>('eventDate');
   const [eventsStatsSortDir, setEventsStatsSortDir] = useState<'asc' | 'desc'>('desc');
 
   const { data: eventsStatsData, isLoading: eventsStatsLoading } = useQuery(
@@ -2259,6 +2259,7 @@ export default function AdminBackoffice() {
         id: string; title: string; eventDate: string; status: string;
         organizerName: string; ordersCount: number; totalSold: number;
         totalCapacity: number; volume: number; commission: number;
+        cashOrderCount: number; cashAmount: number; cashCommission: number;
       }>;
     },
     { enabled: tab === 'dashboard', staleTime: 60_000 }
@@ -3090,6 +3091,7 @@ export default function AdminBackoffice() {
                         <th className="text-right px-4 py-3 font-semibold uppercase tracking-wider"><SortBtn k="totalSold" label="Billets" /></th>
                         <th className="text-right px-4 py-3 font-semibold uppercase tracking-wider hidden sm:table-cell"><SortBtn k="volume" label="Volume" /></th>
                         <th className="text-right px-4 py-3 font-semibold uppercase tracking-wider"><SortBtn k="commission" label="Commission" /></th>
+                        <th className="text-right px-4 py-3 font-semibold uppercase tracking-wider hidden lg:table-cell"><SortBtn k="cashCommission" label="Comm. espèces" /></th>
                         <th className="text-right px-4 py-3 text-white/40 font-semibold uppercase tracking-wider hidden sm:table-cell">Statut</th>
                       </tr>
                     </thead>
@@ -3121,6 +3123,16 @@ export default function AdminBackoffice() {
                             </td>
                             <td className="px-4 py-3 text-right font-mono text-cyan-neon font-bold hidden sm:table-cell whitespace-nowrap">{formatPrice(ev.volume, 'FCFA', '0')}</td>
                             <td className="px-4 py-3 text-right font-mono text-violet-neon font-bold whitespace-nowrap">{formatPrice(ev.commission, 'FCFA', '0')}</td>
+                            <td className="px-4 py-3 text-right font-mono hidden lg:table-cell whitespace-nowrap">
+                              {ev.cashOrderCount > 0 ? (
+                                <>
+                                  <span className="text-emerald-400 font-bold">{formatPrice(ev.cashCommission, 'FCFA', '0')}</span>
+                                  <span className="text-white/25 ml-1">({ev.cashOrderCount})</span>
+                                </>
+                              ) : (
+                                <span className="text-white/20">—</span>
+                              )}
+                            </td>
                             <td className="px-4 py-3 text-right hidden sm:table-cell">
                               <span className={`font-semibold ${statusColor[ev.status] ?? 'text-white/40'}`}>{statusLabel[ev.status] ?? ev.status}</span>
                             </td>
@@ -3134,6 +3146,7 @@ export default function AdminBackoffice() {
                         <td className="px-4 py-3 text-right font-mono font-bold text-white">{sorted.reduce((s, e) => s + e.totalSold, 0)}</td>
                         <td className="px-4 py-3 text-right font-mono font-bold text-cyan-neon hidden sm:table-cell whitespace-nowrap">{formatPrice(sorted.reduce((s, e) => s + e.volume, 0), 'FCFA', '0')}</td>
                         <td className="px-4 py-3 text-right font-mono font-bold text-violet-neon whitespace-nowrap">{formatPrice(sorted.reduce((s, e) => s + e.commission, 0), 'FCFA', '0')}</td>
+                        <td className="px-4 py-3 text-right font-mono font-bold text-emerald-400 hidden lg:table-cell whitespace-nowrap">{formatPrice(sorted.reduce((s, e) => s + e.cashCommission, 0), 'FCFA', '0')}</td>
                         <td className="hidden sm:table-cell" />
                       </tr>
                     </tfoot>
