@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+  XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
   AreaChart, Area,
 } from 'recharts';
 import {
@@ -574,12 +574,6 @@ export default function OrganizerDashboard() {
     return <PendingApprovalScreen profile={profile} onLogout={async () => { await logout(); navigate('/login'); }} />;
   }
 
-  const chartData = (data?.events ?? []).map((e) => ({
-    name: e.title.length > 16 ? e.title.slice(0, 16) + '…' : e.title,
-    vendus: e.totalSold,
-    revenus: e.totalRevenue,
-  }));
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="flex items-center justify-between mb-8">
@@ -682,33 +676,6 @@ export default function OrganizerDashboard() {
 
       {/* Ventes par catégorie */}
       <CategoryBreakdown events={data?.events ?? []} selectedId={selectedEventId || 'all'} />
-
-      {/* Chart */}
-      {chartData.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="glass-card p-6 mb-8"
-        >
-          <h2 className="font-bebas text-xl tracking-wider text-white mb-6">Ventes par événement</h2>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={chartData} barGap={6}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(123,47,190,0.08)" vertical={false} />
-              <XAxis dataKey="name" stroke="#ffffff30" tick={{ fontSize: 11, fill: '#ffffff60' }} axisLine={false} tickLine={false} />
-              <YAxis stroke="#ffffff20" tick={{ fontSize: 11, fill: '#ffffff40' }} axisLine={false} tickLine={false} />
-              <Tooltip
-                cursor={{ fill: 'rgba(123,47,190,0.08)' }}
-                contentStyle={{ background: '#1A1A35', border: '1px solid rgba(123,47,190,0.3)', borderRadius: 12, fontSize: 12 }}
-                labelStyle={{ color: '#fff', fontWeight: 600 }}
-                itemStyle={{ color: '#ffffff80' }}
-              />
-              <Bar dataKey="vendus" fill="#7B2FBE" radius={[6, 6, 0, 0]} name="Billets vendus" />
-              <Bar dataKey="revenus" fill="#00E5FF" radius={[6, 6, 0, 0]} name="Revenus (FCFA)" />
-            </BarChart>
-          </ResponsiveContainer>
-        </motion.div>
-      )}
 
       {/* Analytics */}
       <AnalyticsSection events={data?.events ?? []} />
