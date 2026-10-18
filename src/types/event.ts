@@ -39,6 +39,7 @@ export interface Event {
   eventDate: string;
   doorsOpenAt: string | null;
   endDate: string | null;
+  scheduledPublishAt: string | null;
   venueName: string;
   venueAddress: string;
   venueCity: string;

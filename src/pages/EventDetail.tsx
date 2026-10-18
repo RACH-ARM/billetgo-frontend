@@ -22,6 +22,7 @@ import type { TicketCategory } from '../types/event';
 import api from '../services/api';
 import { promoService } from '../services/promoService';
 import { categoryAvailabilityLevel } from '../utils/availability';
+import { isEventUnpublished } from '../utils/eventStatus';
 import toast from 'react-hot-toast';
 
 const SITE_URL = 'https://billetgab.com';
@@ -260,6 +261,7 @@ export default function EventDetail() {
   }
 
   const isCompleted = event.status === 'COMPLETED';
+  const isUnpublished = isEventUnpublished(event.status, event.scheduledPublishAt);
 
   const handleAddToCart = (category: TicketCategory) => {
     const qty = quantities[category.id] ?? 0;
@@ -388,6 +390,25 @@ export default function EventDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           {/* ===== LEFT COL ===== */}
           <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
+            {/* Teaser — événement approuvé mais pas encore publié : vente bloquée
+                jusqu'à la bascule automatique (voir jobs/publishScheduledEvents.ts). */}
+            {isUnpublished && event.scheduledPublishAt && (
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="glass-card p-5 border border-violet-neon/30 bg-violet-neon/[0.04] flex flex-wrap items-center gap-4"
+              >
+                <div className="w-10 h-10 rounded-xl bg-violet-neon/15 border border-violet-neon/30 flex items-center justify-center flex-shrink-0">
+                  <Bell className="w-5 h-5 text-violet-neon" />
+                </div>
+                <div className="flex-1 min-w-[180px]">
+                  <p className="text-white font-semibold text-sm">Billets bientôt disponibles</p>
+                  <p className="text-white/40 text-xs mt-0.5">La vente ouvre automatiquement dès la fin du compte à rebours.</p>
+                </div>
+                <CountdownTimer date={event.scheduledPublishAt} />
+              </motion.div>
+            )}
+
             {/* Countdown + date */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
@@ -758,6 +779,21 @@ export default function EventDetail() {
                 <p className="font-bebas text-2xl tracking-wider text-white/40 mb-1">ÉVÉNEMENT TERMINÉ</p>
                 <p className="text-white/30 text-sm">Cet événement s'est déroulé le {new Date(event.eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}.</p>
               </motion.div>
+            ) : isUnpublished ? (
+              <motion.div
+                initial={{ opacity: 0, x: 16 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="glass-card p-6 border border-violet-neon/20 text-center"
+              >
+                <Bell className="w-7 h-7 text-violet-neon/60 mx-auto mb-2" />
+                <p className="font-bebas text-2xl tracking-wider text-white mb-1">VENTE PAS ENCORE OUVERTE</p>
+                <p className="text-white/40 text-sm">
+                  {event.ticketCategories?.length
+                    ? `Billets à partir de ${formatPrice(minPrice)} — `
+                    : ''}
+                  revenez dès la fin du compte à rebours pour réserver.
+                </p>
+              </motion.div>
             ) : (
               <>
                 <motion.h2
@@ -915,7 +951,7 @@ export default function EventDetail() {
 
             {/* Cart summary */}
             <AnimatePresence>
-              {!isCompleted && getTotalItems() > 0 && (
+              {!isCompleted && !isUnpublished && getTotalItems() > 0 && (
                 <motion.div
                   initial={{ opacity: 0, y: 10, scale: 0.97 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}

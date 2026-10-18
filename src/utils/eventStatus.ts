@@ -14,3 +14,10 @@ export function isEventComingSoon(eventDate: string, doorsOpenAt: string | null)
   const doors = new Date(doorsOpenAt).getTime();
   return now >= eventStart && now < doors;
 }
+
+// Fiche visible en avant-première (teaser) : approuvée mais pas encore
+// officiellement publiée — l'achat reste bloqué jusqu'à l'heure programmée
+// (bascule automatique en PUBLISHED, voir jobs/publishScheduledEvents.ts côté backend).
+export function isEventUnpublished(status: string, scheduledPublishAt: string | null): boolean {
+  return status === 'APPROVED' && !!scheduledPublishAt && new Date(scheduledPublishAt).getTime() > Date.now();
+}

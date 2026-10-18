@@ -14,7 +14,7 @@ import Badge from '../common/Badge';
 import CertifiedBadge from '../common/CertifiedBadge';
 import CountdownTimer from './CountdownTimer';
 import LoginWallModal from '../common/LoginWallModal';
-import { isEventLive, isEventComingSoon } from '../../utils/eventStatus';
+import { isEventLive, isEventComingSoon, isEventUnpublished } from '../../utils/eventStatus';
 
 function LiveRemaining({ endDate, eventDate, doorsOpenAt }: { eventDate: string; doorsOpenAt: string | null; endDate: string | null }) {
   const compute = () => {
@@ -49,6 +49,7 @@ export default function EventCard({ event }: { event: Event }) {
   const { isAuthenticated } = useAuthStore();
   const [isLive, setIsLive] = useState(() => isEventLive(event.eventDate, event.doorsOpenAt, event.endDate));
   const [isComingSoon, setIsComingSoon] = useState(() => isEventComingSoon(event.eventDate, event.doorsOpenAt));
+  const [isUnpublished, setIsUnpublished] = useState(() => isEventUnpublished(event.status, event.scheduledPublishAt));
   const [loginWallAction, setLoginWallAction] = useState<'like' | 'follow' | null>(null);
 
   // Like state (initialised from server data)
@@ -79,10 +80,11 @@ export default function EventCard({ event }: { event: Event }) {
     const tick = () => {
       setIsLive(isEventLive(event.eventDate, event.doorsOpenAt, event.endDate));
       setIsComingSoon(isEventComingSoon(event.eventDate, event.doorsOpenAt));
+      setIsUnpublished(isEventUnpublished(event.status, event.scheduledPublishAt));
     };
     const t = setInterval(tick, 60_000);
     return () => clearInterval(t);
-  }, [event.eventDate, event.doorsOpenAt, event.endDate]);
+  }, [event.eventDate, event.doorsOpenAt, event.endDate, event.status, event.scheduledPublishAt]);
 
   const prefetchEvent = () => {
     queryClient.prefetchQuery(
@@ -169,7 +171,17 @@ export default function EventCard({ event }: { event: Event }) {
               </div>
             )}
 
-            {isLive && (
+            {isUnpublished && (
+              <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/70 backdrop-blur-sm px-2.5 py-1 rounded-full border border-violet-neon/50">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-neon opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-neon" />
+                </span>
+                <span className="text-xs font-bold text-violet-neon tracking-wider">BIENTÔT DISPONIBLE</span>
+              </div>
+            )}
+
+            {!isUnpublished && isLive && (
               <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/70 backdrop-blur-sm px-2.5 py-1 rounded-full border border-rose-neon/50">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-neon opacity-75" />
@@ -179,7 +191,7 @@ export default function EventCard({ event }: { event: Event }) {
               </div>
             )}
 
-            {!isLive && isComingSoon && (
+            {!isUnpublished && !isLive && isComingSoon && (
               <div className="absolute top-3 left-3 flex items-center gap-1.5 bg-black/70 backdrop-blur-sm px-2.5 py-1 rounded-full border border-cyan-neon/50">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-neon opacity-75" />
@@ -189,7 +201,7 @@ export default function EventCard({ event }: { event: Event }) {
               </div>
             )}
 
-            {!isLive && !isComingSoon && event.isHot && !isTotallySoldOut && (
+            {!isUnpublished && !isLive && !isComingSoon && event.isHot && !isTotallySoldOut && (
               <div className="absolute top-3 left-3">
                 <Badge variant="rose"><Flame className="w-3 h-3 inline mr-1" />HOT</Badge>
               </div>
@@ -230,12 +242,18 @@ export default function EventCard({ event }: { event: Event }) {
             <p className="text-[11px] sm:text-xs text-white/50 mt-1 truncate">{formatEventDate(event.eventDate)}</p>
 
             <div className="mt-2">
-              {isLive
-                ? <LiveRemaining eventDate={event.eventDate} doorsOpenAt={event.doorsOpenAt} endDate={event.endDate} />
-                : isComingSoon
-                  ? <span className="text-[11px] sm:text-xs font-semibold text-cyan-neon">Ouverture imminente</span>
-                  : <CountdownTimer date={event.eventDate} />
-              }
+              {isUnpublished && event.scheduledPublishAt ? (
+                <div>
+                  <p className="text-[11px] sm:text-xs text-violet-neon/70 font-semibold mb-1">Billets disponibles dans</p>
+                  <CountdownTimer date={event.scheduledPublishAt} />
+                </div>
+              ) : isLive ? (
+                <LiveRemaining eventDate={event.eventDate} doorsOpenAt={event.doorsOpenAt} endDate={event.endDate} />
+              ) : isComingSoon ? (
+                <span className="text-[11px] sm:text-xs font-semibold text-cyan-neon">Ouverture imminente</span>
+              ) : (
+                <CountdownTimer date={event.eventDate} />
+              )}
             </div>
 
             {/* Availability bar — desktop only */}
