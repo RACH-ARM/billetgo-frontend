@@ -170,6 +170,14 @@ export default function AgentPOS() {
     if (events?.length === 1 && !selectedEvent) setSelectedEvent(events[0]);
   }, [events, selectedEvent]);
 
+  // selectedEvent est figé au moment du clic dans le menu — après une vente,
+  // refetchEvents() ramène des stocks à jour dans `events`, mais sans ça
+  // l'écran continuait d'afficher les anciens nombres jusqu'à re-sélection
+  // manuelle de l'événement. On relit toujours les stocks depuis `events`.
+  const selectedEventLive = selectedEvent
+    ? events?.find((e) => e.id === selectedEvent.id) ?? selectedEvent
+    : null;
+
   // Fermer le menu événement au clic en dehors
   useEffect(() => {
     if (!eventMenuOpen) return;
@@ -228,8 +236,8 @@ export default function AgentPOS() {
 
   // ── Calculs ────────────────────────────────────────────────────────────────
 
-  const total = selectedEvent
-    ? selectedEvent.ticketCategories.reduce((s, c) => s + c.price * (quantities[c.id] ?? 0), 0)
+  const total = selectedEventLive
+    ? selectedEventLive.ticketCategories.reduce((s, c) => s + c.price * (quantities[c.id] ?? 0), 0)
     : 0;
   const totalTickets = Object.values(quantities).reduce((s, q) => s + q, 0);
 
@@ -547,26 +555,30 @@ export default function AgentPOS() {
               )}
             </section>
 
-            {selectedEvent && (
+            {selectedEventLive && (
               <>
                 {/* ── Billets ── */}
                 <section>
                   <div className="flex items-center justify-between mb-2">
                     <h2 className="text-xs font-semibold text-white/40 uppercase tracking-wider">Billets</h2>
                     <span className="text-xs text-violet-neon">
-                      {selectedEvent.ticketCategories.reduce((s, c) => s + c.available, 0)} disponibles
+                      {selectedEventLive.ticketCategories.reduce((s, c) => s + c.available, 0)} disponibles
                     </span>
                   </div>
                   <div className="flex flex-col gap-2">
-                    {selectedEvent.ticketCategories.map((cat) => {
+                    {selectedEventLive.ticketCategories.map((cat) => {
                       const qty = quantities[cat.id] ?? 0;
                       const soldOut = cat.available === 0;
                       return (
                         <div key={cat.id} className={`glass-card p-4 flex items-center justify-between gap-3 ${soldOut ? 'opacity-50' : ''}`}>
                           <div className="min-w-0 flex-1">
                             <p className="font-medium">{cat.name}</p>
-                            <p className="text-violet-neon text-sm font-semibold">{formatPrice(cat.price)}</p>
-                            {soldOut && <p className="text-rose-neon text-xs">Épuisé</p>}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-violet-neon text-sm font-semibold">{formatPrice(cat.price)}</p>
+                              <span className={`text-xs ${soldOut ? 'text-rose-neon' : cat.available <= 10 ? 'text-amber-400' : 'text-white/35'}`}>
+                                {soldOut ? 'Épuisé' : `${cat.available} restant${cat.available > 1 ? 's' : ''}`}
+                              </span>
+                            </div>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <button
