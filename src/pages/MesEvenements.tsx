@@ -205,14 +205,14 @@ function EventCard({
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`glass-card overflow-hidden flex flex-col group border ${
+      className={`glass-card flex flex-col group border ${
         isRevision ? 'border-yellow-400/20' : hasPending ? 'border-violet-neon/20' : 'border-white/5'
       }`}
     >
-      {/* Couverture */}
+      {/* Couverture — overflow-hidden limité à cette zone pour ne pas couper le menu "Gérer" plus bas */}
       <div
         onClick={clickable ? onOpen : undefined}
-        className={`relative h-36 sm:h-40 bg-bg-secondary overflow-hidden flex-shrink-0 ${clickable ? 'cursor-pointer' : ''}`}
+        className={`relative h-36 sm:h-40 bg-bg-secondary overflow-hidden rounded-t-2xl flex-shrink-0 ${clickable ? 'cursor-pointer' : ''}`}
       >
         {event.coverImageUrl ? (
           <img
