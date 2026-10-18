@@ -904,27 +904,27 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
                 {/* Période de validité */}
                 <div className="space-y-2">
                   <p className="text-xs text-white/40">Période de validité</p>
-                  {/* Toujours empilés, jamais côte à côte : un <input type="date">
-                      natif refuse de se réduire sous une largeur minimale (segments
-                      jour/mois/année + icône) — en 2 colonnes, ça dépassait du
-                      formulaire dès que la carte n'était pas très large. */}
+                  {/* Un <input type="date"> natif (iOS notamment) peut se peindre plus
+                      large que sa boîte CSS, quelle que soit la largeur donnée — d'où
+                      overflow-hidden sur le conteneur en dernier recours, en plus d'un
+                      padding réduit pour lui laisser le plus de place possible. */}
                   <div className="space-y-3">
-                    <div>
+                    <div className="overflow-hidden rounded-xl">
                       <p className="text-xs text-white/30 mb-1">Du</p>
                       <input
                         type="date"
                         value={form.validFrom}
                         onChange={(e) => setForm((f) => ({ ...f, validFrom: e.target.value }))}
-                        className="w-full max-w-full box-border bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-violet-neon transition-colors"
+                        className="block w-full max-w-full box-border bg-bg-secondary border border-violet-neon/20 rounded-xl px-2 py-2.5 text-white text-sm focus:outline-none focus:border-violet-neon transition-colors"
                       />
                     </div>
-                    <div>
+                    <div className="overflow-hidden rounded-xl">
                       <p className="text-xs text-white/30 mb-1">Au</p>
                       <input
                         type="date"
                         value={form.validUntil}
                         onChange={(e) => setForm((f) => ({ ...f, validUntil: e.target.value }))}
-                        className="w-full max-w-full box-border bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-violet-neon transition-colors"
+                        className="block w-full max-w-full box-border bg-bg-secondary border border-violet-neon/20 rounded-xl px-2 py-2.5 text-white text-sm focus:outline-none focus:border-violet-neon transition-colors"
                       />
                     </div>
                   </div>
@@ -1159,8 +1159,8 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
                       <div className="space-y-1">
                         <p className="text-xs text-white/40">Période de validité</p>
                         <div className="space-y-3">
-                          <div><p className="text-xs text-white/30 mb-1">Du</p><input type="date" value={editForm.validFrom} onChange={(e) => setEditForm((f) => ({ ...f, validFrom: e.target.value }))} className="w-full max-w-full box-border bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-neon" /></div>
-                          <div><p className="text-xs text-white/30 mb-1">Au</p><input type="date" value={editForm.validUntil} onChange={(e) => setEditForm((f) => ({ ...f, validUntil: e.target.value }))} className="w-full max-w-full box-border bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-neon" /></div>
+                          <div className="overflow-hidden rounded-xl"><p className="text-xs text-white/30 mb-1">Du</p><input type="date" value={editForm.validFrom} onChange={(e) => setEditForm((f) => ({ ...f, validFrom: e.target.value }))} className="block w-full max-w-full box-border bg-bg-secondary border border-violet-neon/20 rounded-xl px-2 py-2 text-white text-sm focus:outline-none focus:border-violet-neon" /></div>
+                          <div className="overflow-hidden rounded-xl"><p className="text-xs text-white/30 mb-1">Au</p><input type="date" value={editForm.validUntil} onChange={(e) => setEditForm((f) => ({ ...f, validUntil: e.target.value }))} className="block w-full max-w-full box-border bg-bg-secondary border border-violet-neon/20 rounded-xl px-2 py-2 text-white text-sm focus:outline-none focus:border-violet-neon" /></div>
                         </div>
                       </div>
                       {eventCategories.length > 0 && (
