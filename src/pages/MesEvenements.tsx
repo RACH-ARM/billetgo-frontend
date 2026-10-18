@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CalendarDays, Ticket, Download, Search, QrCode,
@@ -106,6 +107,9 @@ function StatusBadge({ status }: { status: string }) {
 const HISTORY_STATUSES = ['COMPLETED', 'CANCELLED', 'REJECTED'];
 
 // ── Menu "Gérer" — regroupe les actions secondaires d'un événement ─────────────
+// Largeur du panneau (w-48) — utilisée pour garder le menu dans l'écran.
+const MENU_WIDTH = 192;
+
 function EventActionsMenu({
   event, onEdit, onPromo, onScanners, onAgents, onDownloadQR, qrDownloading,
 }: {
@@ -118,15 +122,46 @@ function EventActionsMenu({
   qrDownloading: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Calculé par rapport à la fenêtre (position: fixed) puis rendu via portal
+  // directement sous <body> — le menu ne vit plus dans l'arbre de la carte,
+  // donc aucun contexte d'empilement parent (animation Framer Motion, section
+  // Historique plus bas...) ne peut plus jamais passer devant.
+  const computeCoords = () => {
+    const rect = btnRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const left = Math.min(Math.max(12, rect.left), window.innerWidth - MENU_WIDTH - 12);
+    setCoords({ top: rect.bottom + 6, left });
+  };
+
+  const toggle = () => {
+    if (open) { setOpen(false); return; }
+    computeCoords();
+    setOpen(true);
+  };
 
   useEffect(() => {
     if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        menuRef.current && !menuRef.current.contains(e.target as Node) &&
+        btnRef.current && !btnRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('scroll', computeCoords, true);
+    window.addEventListener('resize', computeCoords);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', computeCoords, true);
+      window.removeEventListener('resize', computeCoords);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const canEdit = !HISTORY_STATUSES.includes(event.status);
@@ -135,22 +170,25 @@ function EventActionsMenu({
   const itemCls = 'w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-white/70 hover:bg-white/5 hover:text-white transition-colors text-left disabled:opacity-40';
 
   return (
-    <div className="relative" ref={ref}>
+    <>
       <button
-        onClick={() => setOpen((v) => !v)}
+        ref={btnRef}
+        onClick={toggle}
         className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-white/5 text-white/60 hover:bg-white/10 hover:text-white border border-white/10 transition-colors"
       >
         Gérer
         <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
-      <AnimatePresence>
-        {open && (
+      {open && coords && createPortal(
+        <AnimatePresence>
           <motion.div
+            ref={menuRef}
             initial={{ opacity: 0, y: -4, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.97 }}
             transition={{ duration: 0.12 }}
-            className="absolute z-20 top-full mt-1.5 left-0 w-48 glass-card border border-white/10 overflow-hidden py-1 shadow-xl"
+            style={{ position: 'fixed', top: coords.top, left: coords.left, width: MENU_WIDTH }}
+            className="z-[100] glass-card border border-white/10 overflow-hidden py-1 shadow-xl"
           >
             {canEdit && (
               <button onClick={() => { onEdit(); setOpen(false); }} className={itemCls}>
@@ -175,9 +213,10 @@ function EventActionsMenu({
               </button>
             )}
           </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+        </AnimatePresence>,
+        document.body
+      )}
+    </>
   );
 }
 
