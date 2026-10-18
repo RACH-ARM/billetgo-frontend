@@ -824,6 +824,44 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
             })()}
           </div>
 
+          {/* ── Catégories ciblées — indispensable à la création, pas une option ── */}
+          {eventCategories.length > 0 && (
+            <div className="space-y-2 pt-5 border-t border-white/5">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-white/40 uppercase tracking-wider">Catégories ciblées</p>
+                <button
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, allCategories: !f.allCategories, categoryIds: [] }))}
+                  className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${form.allCategories ? 'border-violet-neon/40 text-violet-neon bg-violet-neon/10' : 'border-white/10 text-white/30'}`}
+                >
+                  Toutes
+                </button>
+              </div>
+              {!form.allCategories && (
+                <div className="flex flex-wrap gap-2">
+                  {eventCategories.map((cat) => {
+                    const selected = form.categoryIds.includes(cat.id);
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => setForm((f) => ({
+                          ...f,
+                          categoryIds: selected
+                            ? f.categoryIds.filter((id) => id !== cat.id)
+                            : [...f.categoryIds, cat.id],
+                        }))}
+                        className={`text-xs px-3 py-1.5 rounded-lg border transition-colors max-w-full break-words ${selected ? 'border-violet-neon/50 text-violet-neon bg-violet-neon/10' : 'border-white/10 text-white/30 hover:border-white/20'}`}
+                      >
+                        {cat.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* ── Options avancées (repliées par défaut) ── */}
           <div className="pt-5 border-t border-white/5">
             <button
@@ -866,23 +904,27 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
                 {/* Période de validité */}
                 <div className="space-y-2">
                   <p className="text-xs text-white/40">Période de validité</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="min-w-0">
+                  {/* Toujours empilés, jamais côte à côte : un <input type="date">
+                      natif refuse de se réduire sous une largeur minimale (segments
+                      jour/mois/année + icône) — en 2 colonnes, ça dépassait du
+                      formulaire dès que la carte n'était pas très large. */}
+                  <div className="space-y-3">
+                    <div>
                       <p className="text-xs text-white/30 mb-1">Du</p>
                       <input
                         type="date"
                         value={form.validFrom}
                         onChange={(e) => setForm((f) => ({ ...f, validFrom: e.target.value }))}
-                        className="w-full min-w-0 bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-violet-neon transition-colors"
+                        className="w-full max-w-full box-border bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-violet-neon transition-colors"
                       />
                     </div>
-                    <div className="min-w-0">
+                    <div>
                       <p className="text-xs text-white/30 mb-1">Au</p>
                       <input
                         type="date"
                         value={form.validUntil}
                         onChange={(e) => setForm((f) => ({ ...f, validUntil: e.target.value }))}
-                        className="w-full min-w-0 bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-violet-neon transition-colors"
+                        className="w-full max-w-full box-border bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-violet-neon transition-colors"
                       />
                     </div>
                   </div>
@@ -899,44 +941,6 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
                     className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors"
                   />
                 </div>
-
-                {/* Catégories ciblées */}
-                {eventCategories.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs text-white/40">Catégories ciblées</p>
-                      <button
-                        type="button"
-                        onClick={() => setForm((f) => ({ ...f, allCategories: !f.allCategories, categoryIds: [] }))}
-                        className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${form.allCategories ? 'border-violet-neon/40 text-violet-neon bg-violet-neon/10' : 'border-white/10 text-white/30'}`}
-                      >
-                        Toutes
-                      </button>
-                    </div>
-                    {!form.allCategories && (
-                      <div className="flex flex-wrap gap-2">
-                        {eventCategories.map((cat) => {
-                          const selected = form.categoryIds.includes(cat.id);
-                          return (
-                            <button
-                              key={cat.id}
-                              type="button"
-                              onClick={() => setForm((f) => ({
-                                ...f,
-                                categoryIds: selected
-                                  ? f.categoryIds.filter((id) => id !== cat.id)
-                                  : [...f.categoryIds, cat.id],
-                              }))}
-                              className={`text-xs px-3 py-1.5 rounded-lg border transition-colors max-w-full break-words ${selected ? 'border-violet-neon/50 text-violet-neon bg-violet-neon/10' : 'border-white/10 text-white/30 hover:border-white/20'}`}
-                            >
-                              {cat.name}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             )}
           </div>
@@ -1154,9 +1158,9 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
                       </div>
                       <div className="space-y-1">
                         <p className="text-xs text-white/40">Période de validité</p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <div><p className="text-xs text-white/30 mb-1">Du</p><input type="date" value={editForm.validFrom} onChange={(e) => setEditForm((f) => ({ ...f, validFrom: e.target.value }))} className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-neon" /></div>
-                          <div><p className="text-xs text-white/30 mb-1">Au</p><input type="date" value={editForm.validUntil} onChange={(e) => setEditForm((f) => ({ ...f, validUntil: e.target.value }))} className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-neon" /></div>
+                        <div className="space-y-3">
+                          <div><p className="text-xs text-white/30 mb-1">Du</p><input type="date" value={editForm.validFrom} onChange={(e) => setEditForm((f) => ({ ...f, validFrom: e.target.value }))} className="w-full max-w-full box-border bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-neon" /></div>
+                          <div><p className="text-xs text-white/30 mb-1">Au</p><input type="date" value={editForm.validUntil} onChange={(e) => setEditForm((f) => ({ ...f, validUntil: e.target.value }))} className="w-full max-w-full box-border bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-neon" /></div>
                         </div>
                       </div>
                       {eventCategories.length > 0 && (
