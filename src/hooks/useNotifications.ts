@@ -19,6 +19,8 @@ export interface AppNotification {
   amount?: number;
   eventTitle?: string;
   orderId?: string;
+  // données brutes (eventId, payoutId...) — utilisées pour la navigation au clic
+  data?: Record<string, unknown>;
 }
 
 export function useNotifications() {

@@ -1,73 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Bell, ArrowLeft, CheckCheck, CheckCircle, XCircle,
-  CreditCard, AlertTriangle, Info, Ticket, CalendarDays,
-} from 'lucide-react';
+import { Bell, ArrowLeft, CheckCheck, ArrowUpRight } from 'lucide-react';
 import { useNotifications, useMarkNotificationsRead, useMarkNotificationRead, type OrganizerNotification } from '../hooks/useOrganizer';
 import { useAuthStore } from '../stores/authStore';
 import { SkeletonCard } from '../components/common/Skeleton';
-
-// ── Config par type de notification ───────────────────────────
-const TYPE_CONFIG: Record<string, {
-  Icon: React.ComponentType<{ className?: string }>;
-  color: string;
-  bg: string;
-  border: string;
-  label: string;
-}> = {
-  EVENT_VALIDATED: {
-    Icon: CheckCircle,
-    color: 'text-green-400',
-    bg: 'bg-green-500/10',
-    border: 'border-green-500/20',
-    label: 'Validation',
-  },
-  EVENT_REJECTED: {
-    Icon: XCircle,
-    color: 'text-rose-neon',
-    bg: 'bg-rose-neon/10',
-    border: 'border-rose-neon/20',
-    label: 'Refus',
-  },
-  PAYMENT: {
-    Icon: CreditCard,
-    color: 'text-cyan-neon',
-    bg: 'bg-cyan-neon/10',
-    border: 'border-cyan-neon/20',
-    label: 'Paiement',
-  },
-  TICKET_TRANSFERRED: {
-    Icon: Ticket,
-    color: 'text-violet-neon',
-    bg: 'bg-violet-neon/10',
-    border: 'border-violet-neon/20',
-    label: 'Transfert',
-  },
-  REFUND: {
-    Icon: AlertTriangle,
-    color: 'text-yellow-400',
-    bg: 'bg-yellow-400/10',
-    border: 'border-yellow-400/20',
-    label: 'Remboursement',
-  },
-  EVENT_REMINDER: {
-    Icon: CalendarDays,
-    color: 'text-cyan-neon',
-    bg: 'bg-cyan-neon/10',
-    border: 'border-cyan-neon/20',
-    label: 'Rappel',
-  },
-};
-
-const DEFAULT_TYPE = {
-  Icon: Info,
-  color: 'text-white/60',
-  bg: 'bg-white/5',
-  border: 'border-white/10',
-  label: 'Notification',
-};
+import { getNotificationTypeConfig, getNotificationLink } from '../utils/notificationTypes';
 
 // ── Grouper par date ───────────────────────────────────────────
 function groupByDate(notifs: OrganizerNotification[]) {
@@ -113,12 +51,16 @@ function formatTime(dateStr: string) {
 function NotifCard({ notif, index }: { notif: OrganizerNotification; index: number }) {
   const [expanded, setExpanded] = useState(false);
   const markOne = useMarkNotificationRead();
-  const cfg = TYPE_CONFIG[notif.type] ?? DEFAULT_TYPE;
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const cfg = getNotificationTypeConfig(notif.type);
   const { Icon } = cfg;
+  const link = getNotificationLink(notif, user?.role);
 
   const handleClick = () => {
-    setExpanded(v => !v);
     if (!notif.isRead) markOne.mutate(notif.id);
+    if (link) navigate(link);
+    else setExpanded(v => !v);
   };
 
   return (
@@ -153,6 +95,7 @@ function NotifCard({ notif, index }: { notif: OrganizerNotification; index: numb
               {cfg.label}
             </span>
             <span className="text-xs text-white/25">{formatTime(notif.createdAt)}</span>
+            {link && <ArrowUpRight className="w-3 h-3 text-white/20 ml-auto flex-shrink-0" />}
           </div>
           <p className={`text-sm font-semibold mb-1 ${notif.isRead ? 'text-white/60' : 'text-white'}`}>
             {notif.title}
