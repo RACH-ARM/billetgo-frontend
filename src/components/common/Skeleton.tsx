@@ -136,3 +136,166 @@ export function SkeletonTable({ rows = 5 }: { rows?: number }) {
     </div>
   );
 }
+
+// ─── Mes Événements — carte événement (grille "à venir / en cours") ───────────
+
+export function SkeletonEventCard() {
+  return (
+    <div className="glass-card flex flex-col border border-white/5 overflow-hidden">
+      <div className="h-36 sm:h-40 flex-shrink-0 bg-white/[0.06] animate-pulse" />
+      <div className="p-4 flex-1 flex flex-col gap-3">
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-3 w-1/3" />
+        </div>
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-4 w-14" />
+          <Skeleton className="h-4 w-20" />
+        </div>
+        <Skeleton className="h-1 w-full rounded-full" />
+        <div className="flex items-center gap-2 pt-3 border-t border-white/5 mt-auto">
+          <Skeleton className="h-7 w-20 rounded-lg" />
+          <Skeleton className="h-7 w-20 rounded-lg ml-auto" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function SkeletonEventCardGrid({ count = 3 }: { count?: number }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {Array.from({ length: count }).map((_, i) => (
+        <SkeletonEventCard key={i} />
+      ))}
+    </div>
+  );
+}
+
+// ─── Mes Événements — ligne compacte historique ──────────────────────────────
+
+export function SkeletonEventHistoryRow() {
+  return (
+    <div className="flex items-center gap-3 px-5 py-3.5">
+      <Skeleton className="w-10 h-10 rounded-lg flex-shrink-0" />
+      <div className="flex-1 space-y-1.5">
+        <Skeleton className="h-4 w-40" />
+        <Skeleton className="h-3 w-24" />
+      </div>
+      <Skeleton className="h-3 w-20 hidden sm:block flex-shrink-0" />
+      <Skeleton className="h-5 w-16 rounded-full flex-shrink-0" />
+    </div>
+  );
+}
+
+// ─── Tableau acheteurs ────────────────────────────────────────────────────────
+
+export function SkeletonBuyersTable({ rows = 6 }: { rows?: number }) {
+  return (
+    <div className="glass-card overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <tbody>
+            {Array.from({ length: rows }).map((_, i) => (
+              <tr key={i} className="border-b border-white/5 last:border-0">
+                <td className="px-5 py-4"><Skeleton className="h-4 w-28" /></td>
+                <td className="px-5 py-4">
+                  <div className="space-y-1.5">
+                    <Skeleton className="h-3 w-24" />
+                    <Skeleton className="h-3 w-32 hidden sm:block" />
+                  </div>
+                </td>
+                <td className="px-5 py-4"><Skeleton className="h-3 w-20" /></td>
+                <td className="px-5 py-4 flex justify-end"><Skeleton className="h-4 w-16" /></td>
+                <td className="px-5 py-4 hidden sm:table-cell"><Skeleton className="h-3 w-14" /></td>
+                <td className="px-5 py-4 hidden sm:table-cell"><Skeleton className="h-3 w-16" /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ─── Codes promo / scanners / agents — lignes "poste" ────────────────────────
+
+export function SkeletonAccessRow() {
+  return (
+    <div className="glass-card p-4 flex items-center justify-between gap-3 flex-wrap">
+      <div className="flex-1 min-w-0 space-y-1.5">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-4 w-12 rounded-md" />
+        </div>
+        <Skeleton className="h-3 w-32" />
+      </div>
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <Skeleton className="h-7 w-[72px] rounded-lg" />
+        <Skeleton className="h-7 w-9 rounded-lg" />
+        <Skeleton className="h-7 w-20 rounded-lg" />
+      </div>
+    </div>
+  );
+}
+
+export function SkeletonAccessList({ count = 3 }: { count?: number }) {
+  return (
+    <div className="space-y-2">
+      {Array.from({ length: count }).map((_, i) => (
+        <SkeletonAccessRow key={i} />
+      ))}
+    </div>
+  );
+}
+
+export function SkeletonPromoCodeRow() {
+  return (
+    <div className="glass-card p-4 flex items-center justify-between gap-4">
+      <div className="flex-1 min-w-0 space-y-1.5">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-4 w-16 rounded-md" />
+        </div>
+        <Skeleton className="h-3 w-40" />
+      </div>
+      <div className="flex items-center gap-4 flex-shrink-0">
+        <div className="space-y-1.5 text-right hidden sm:block">
+          <Skeleton className="h-2.5 w-10 ml-auto" />
+          <Skeleton className="h-4 w-8 ml-auto" />
+        </div>
+        <div className="space-y-1.5 text-right">
+          <Skeleton className="h-2.5 w-16 ml-auto" />
+          <Skeleton className="h-4 w-14 ml-auto" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function SkeletonPromoCodeList({ count = 3 }: { count?: number }) {
+  return (
+    <div className="space-y-2">
+      {Array.from({ length: count }).map((_, i) => (
+        <SkeletonPromoCodeRow key={i} />
+      ))}
+    </div>
+  );
+}
+
+// ─── Formulaire événement (édition) ───────────────────────────────────────────
+
+export function SkeletonForm() {
+  return (
+    <div className="space-y-5">
+      <Skeleton className="h-10 w-full" />
+      <Skeleton className="h-10 w-full" />
+      <Skeleton className="h-28 w-full" />
+      <div className="grid grid-cols-2 gap-4">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+      <Skeleton className="h-40 w-full rounded-2xl" />
+    </div>
+  );
+}

@@ -14,8 +14,11 @@ import { promoService } from '../services/promoService';
 import type { PromoCode } from '../types/promo';
 import { formatPrice } from '../utils/formatPrice';
 import { formatEventDate } from '../utils/formatDate';
-import Spinner from '../components/common/Spinner';
 import Button from '../components/common/Button';
+import {
+  Skeleton, SkeletonEventCardGrid, SkeletonBuyersTable,
+  SkeletonAccessList, SkeletonPromoCodeList, SkeletonForm,
+} from '../components/common/Skeleton';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 
@@ -482,7 +485,7 @@ function BuyersPanel({ event, onBack }: { event: OrganizerEventStat; onBack: () 
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-20"><Spinner size="lg" /></div>
+        <SkeletonBuyersTable />
       ) : filtered.length === 0 ? (
         <div className="text-center py-20 text-white/30">
           {search ? 'Aucun résultat' : 'Aucun acheteur pour cet événement'}
@@ -938,7 +941,7 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
       )}
 
       {isLoading ? (
-        <Spinner />
+        <SkeletonPromoCodeList />
       ) : codes.length === 0 ? (
         <div className="glass-card p-10 text-center text-white/30">
           <Ticket className="w-8 h-8 mx-auto mb-3 opacity-30" />
@@ -1296,7 +1299,7 @@ function ScannersPanel({ event, onBack }: { event: OrganizerEventStat; onBack: (
       )}
 
       {isLoading ? (
-        <Spinner />
+        <SkeletonAccessList />
       ) : scanners.length === 0 ? (
         <div className="glass-card p-10 text-center text-white/30">
           <ScanLine className="w-8 h-8 mx-auto mb-3 opacity-30" />
@@ -1501,7 +1504,7 @@ function AgentsPanel({ event, onBack }: { event: OrganizerEventStat; onBack: () 
       )}
 
       {isLoading ? (
-        <Spinner />
+        <SkeletonAccessList />
       ) : agents.length === 0 ? (
         <div className="glass-card p-10 text-center text-white/30">
           <ShoppingBag className="w-8 h-8 mx-auto mb-3 opacity-30" />
@@ -2216,11 +2219,7 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
   const isSubmitting = updateEvent.isLoading || resubmitEvent.isLoading || proposeChanges.isLoading;
 
   if (loadingEvent || !initialized) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="w-8 h-8 border-2 border-violet-neon/30 border-t-violet-neon rounded-full animate-spin" />
-      </div>
-    );
+    return <SkeletonForm />;
   }
 
   return (
@@ -2533,8 +2532,15 @@ export default function MesEvenements() {
   // Redirect if profile not loaded or not approved — dashboard handles that guard
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex justify-center">
-        <Spinner size="lg" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="flex items-center justify-between mb-8">
+          <div className="space-y-2">
+            <Skeleton className="h-9 w-64" />
+            <Skeleton className="h-3 w-40" />
+          </div>
+          <Skeleton className="h-9 w-36 rounded-xl" />
+        </div>
+        <SkeletonEventCardGrid count={3} />
       </div>
     );
   }
