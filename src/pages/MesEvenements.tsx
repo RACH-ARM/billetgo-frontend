@@ -867,22 +867,22 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
                 <div className="space-y-2">
                   <p className="text-xs text-white/40">Période de validité</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-xs text-white/30 mb-1">Du</p>
                       <input
                         type="date"
                         value={form.validFrom}
                         onChange={(e) => setForm((f) => ({ ...f, validFrom: e.target.value }))}
-                        className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-violet-neon transition-colors"
+                        className="w-full min-w-0 bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-violet-neon transition-colors"
                       />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-xs text-white/30 mb-1">Au</p>
                       <input
                         type="date"
                         value={form.validUntil}
                         onChange={(e) => setForm((f) => ({ ...f, validUntil: e.target.value }))}
-                        className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-violet-neon transition-colors"
+                        className="w-full min-w-0 bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-violet-neon transition-colors"
                       />
                     </div>
                   </div>
@@ -927,7 +927,7 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
                                   ? f.categoryIds.filter((id) => id !== cat.id)
                                   : [...f.categoryIds, cat.id],
                               }))}
-                              className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${selected ? 'border-violet-neon/50 text-violet-neon bg-violet-neon/10' : 'border-white/10 text-white/30 hover:border-white/20'}`}
+                              className={`text-xs px-3 py-1.5 rounded-lg border transition-colors max-w-full break-words ${selected ? 'border-violet-neon/50 text-violet-neon bg-violet-neon/10' : 'border-white/10 text-white/30 hover:border-white/20'}`}
                             >
                               {cat.name}
                             </button>
