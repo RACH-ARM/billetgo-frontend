@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CalendarDays, Ticket, Download, Search, QrCode,
   ChevronRight, ChevronDown, ChevronUp, ArrowLeft, Phone, Mail, CreditCard,
   Plus, Trash2, AlertTriangle, Check, Copy, ScanLine, RefreshCw, ShoppingBag,
-  Clock, Ban, X, Banknote, Images, ImagePlus, MapPin, Heart,
+  Clock, Ban, X, Banknote, Images, ImagePlus, MapPin, Heart, Pencil,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useOrganizerStats, useEventBuyers, useCreateEvent, useUpdateEvent, useProposeChanges, useResubmitEvent, useCancelEvent, useOrganizerProfile, useEventDetails, useUploadEventGallery, useDeleteEventGalleryPhoto } from '../hooks/useOrganizer';
@@ -99,6 +99,269 @@ function StatusBadge({ status }: { status: string }) {
     <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${cfg.className}`}>
       {cfg.label}
     </span>
+  );
+}
+
+// Statuts qui ne demandent plus aucune action — l'événement a vécu.
+const HISTORY_STATUSES = ['COMPLETED', 'CANCELLED', 'REJECTED'];
+
+// ── Menu "Gérer" — regroupe les actions secondaires d'un événement ─────────────
+function EventActionsMenu({
+  event, onEdit, onPromo, onScanners, onAgents, onDownloadQR, qrDownloading,
+}: {
+  event: OrganizerEventStat;
+  onEdit: () => void;
+  onPromo: () => void;
+  onScanners: () => void;
+  onAgents: () => void;
+  onDownloadQR: () => void;
+  qrDownloading: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const canEdit = !HISTORY_STATUSES.includes(event.status);
+  const canQR = ['PUBLISHED', 'APPROVED', 'COMPLETED'].includes(event.status);
+
+  const itemCls = 'w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-white/70 hover:bg-white/5 hover:text-white transition-colors text-left disabled:opacity-40';
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-white/5 text-white/60 hover:bg-white/10 hover:text-white border border-white/10 transition-colors"
+      >
+        Gérer
+        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.97 }}
+            transition={{ duration: 0.12 }}
+            className="absolute z-20 top-full mt-1.5 left-0 w-48 glass-card border border-white/10 overflow-hidden py-1 shadow-xl"
+          >
+            {canEdit && (
+              <button onClick={() => { onEdit(); setOpen(false); }} className={itemCls}>
+                <Pencil className="w-3.5 h-3.5 text-violet-neon flex-shrink-0" /> Modifier
+              </button>
+            )}
+            <button onClick={() => { onPromo(); setOpen(false); }} className={itemCls}>
+              <Ticket className="w-3.5 h-3.5 text-violet-neon flex-shrink-0" /> Codes promo
+            </button>
+            <button onClick={() => { onScanners(); setOpen(false); }} className={itemCls}>
+              <ScanLine className="w-3.5 h-3.5 text-cyan-neon flex-shrink-0" /> Scanners
+            </button>
+            <button onClick={() => { onAgents(); setOpen(false); }} className={itemCls}>
+              <ShoppingBag className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" /> Vendeurs
+            </button>
+            {canQR && (
+              <button onClick={() => { onDownloadQR(); setOpen(false); }} disabled={qrDownloading} className={itemCls}>
+                {qrDownloading
+                  ? <span className="w-3.5 h-3.5 border border-current border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                  : <QrCode className="w-3.5 h-3.5 text-violet-neon flex-shrink-0" />}
+                QR flyer
+              </button>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ── Carte événement — vue "à venir / en cours" ──────────────────────────────────
+function EventCard({
+  event, onOpen, onEdit, onPromo, onScanners, onAgents, onDownloadQR, onCancel, qrDownloading,
+}: {
+  event: OrganizerEventStat;
+  onOpen: () => void;
+  onEdit: () => void;
+  onPromo: () => void;
+  onScanners: () => void;
+  onAgents: () => void;
+  onDownloadQR: () => void;
+  onCancel: () => void;
+  qrDownloading: boolean;
+}) {
+  const isRevision = event.status === 'NEEDS_REVISION';
+  const hasPending = (event as any).pendingStatus === 'PENDING';
+  const pendingRejected = (event as any).pendingStatus === 'REJECTED';
+  const canCancel = ['PUBLISHED', 'APPROVED'].includes(event.status);
+  const clickable = !isRevision && !hasPending;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`glass-card overflow-hidden flex flex-col group border ${
+        isRevision ? 'border-yellow-400/20' : hasPending ? 'border-violet-neon/20' : 'border-white/5'
+      }`}
+    >
+      {/* Couverture */}
+      <div
+        onClick={clickable ? onOpen : undefined}
+        className={`relative h-36 sm:h-40 bg-bg-secondary overflow-hidden flex-shrink-0 ${clickable ? 'cursor-pointer' : ''}`}
+      >
+        {event.coverImageUrl ? (
+          <img
+            src={event.coverImageUrl}
+            alt=""
+            className={`w-full h-full object-cover opacity-90 transition-transform duration-300 ${clickable ? 'group-hover:scale-105' : ''}`}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#2D1060,#0D0D1A 60%,#003060)' }}>
+            <Ticket className="w-8 h-8 text-white/15" />
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-bg/70 via-transparent to-transparent" />
+        <div className="absolute top-3 right-3"><StatusBadge status={event.status} /></div>
+      </div>
+
+      <div className="p-4 flex-1 flex flex-col">
+        <div onClick={clickable ? onOpen : undefined} className={clickable ? 'cursor-pointer' : ''}>
+          <p className={`font-semibold text-sm leading-snug line-clamp-1 ${isRevision ? 'text-yellow-300' : 'text-white group-hover:text-violet-neon transition-colors'}`}>
+            {event.title}
+          </p>
+          <div className="flex items-center gap-2 mt-1 flex-wrap">
+            <span className="text-white/35 text-xs">{formatEventDate(event.eventDate)}</span>
+            {event.category && (
+              <span className="text-xs text-white/25 bg-white/5 px-2 py-0.5 rounded-full border border-white/5">
+                {event.category}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Messages contextuels */}
+        {isRevision && event.adminNote && (
+          <p className="text-xs text-yellow-400/70 mt-2 line-clamp-2 leading-relaxed">{event.adminNote}</p>
+        )}
+        {isRevision && event.rejectionReason && (
+          <p className="text-xs text-rose-neon/60 mt-1 flex items-center gap-1"><X className="w-3 h-3 flex-shrink-0" /> {event.rejectionReason}</p>
+        )}
+        {hasPending && (
+          <p className="text-xs text-violet-neon/60 mt-2 flex items-center gap-1"><Clock className="w-3 h-3 flex-shrink-0" /> Modifications en attente d'approbation</p>
+        )}
+        {pendingRejected && (
+          <p className="text-xs text-rose-neon/60 mt-2 flex items-center gap-1"><X className="w-3 h-3 flex-shrink-0" /> Modifications refusées{(event as any).pendingAdminNote ? ` — ${(event as any).pendingAdminNote}` : ''}</p>
+        )}
+        {event.status === 'APPROVED' && event.scheduledPublishAt && (
+          <p className="text-xs text-white/30 mt-2 flex items-center gap-1">
+            <Clock className="w-3 h-3 flex-shrink-0" />
+            Publication prévue le {new Date(event.scheduledPublishAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+          </p>
+        )}
+
+        {/* Métriques */}
+        <div className="flex items-center gap-3 mt-3 flex-wrap">
+          <div className="flex items-center gap-1.5">
+            <span className="font-mono font-bold text-cyan-neon text-sm">{event.totalSold}</span>
+            <span className="text-white/25 text-xs">/ {event.totalTickets}</span>
+          </div>
+          <span className="font-mono font-bold text-green-400 text-sm">{formatPrice(event.totalRevenue, 'FCFA', '0 FCFA')}</span>
+          {(event.likeCount ?? 0) > 0 && (
+            <span className="flex items-center gap-1 text-xs text-rose-neon/80">
+              <Heart className="w-3 h-3 fill-rose-neon text-rose-neon" /> {event.likeCount}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2 mt-2">
+          <div className="flex-1 h-1 bg-bg-secondary rounded-full overflow-hidden">
+            <div className="h-full bg-neon-gradient rounded-full transition-all" style={{ width: `${event.occupancyRate}%` }} />
+          </div>
+          <span className="text-xs text-white/30 tabular-nums w-8 text-right flex-shrink-0">{event.occupancyRate}%</span>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-2 mt-4 pt-3 border-t border-white/5" onClick={(e) => e.stopPropagation()}>
+          {isRevision ? (
+            <Button variant="primary" size="sm" onClick={onEdit} className="flex-1">
+              <Pencil className="w-3.5 h-3.5" /> Modifier et resoumettre
+            </Button>
+          ) : hasPending ? (
+            <span className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-violet-neon/10 text-violet-neon/60 border border-violet-neon/20">
+              <Clock className="w-3.5 h-3.5" /> En attente de validation
+            </span>
+          ) : (
+            <>
+              <EventActionsMenu
+                event={event}
+                onEdit={onEdit}
+                onPromo={onPromo}
+                onScanners={onScanners}
+                onAgents={onAgents}
+                onDownloadQR={onDownloadQR}
+                qrDownloading={qrDownloading}
+              />
+              {canCancel && (
+                <button
+                  onClick={onCancel}
+                  className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-rose-neon/10 text-rose-neon hover:bg-rose-neon/20 border border-rose-neon/20 transition-colors ml-auto"
+                >
+                  <Ban className="w-3.5 h-3.5" /> Annuler
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// ── Ligne compacte — historique (terminé / annulé / refusé) ────────────────────
+function EventHistoryRow({ event, onOpen, onDownloadQR, qrDownloading }: {
+  event: OrganizerEventStat;
+  onOpen: () => void;
+  onDownloadQR: () => void;
+  qrDownloading: boolean;
+}) {
+  const canQR = event.status === 'COMPLETED';
+  return (
+    <div
+      onClick={onOpen}
+      className="flex items-center gap-3 px-5 py-3.5 hover:bg-white/[0.03] cursor-pointer transition-colors group"
+    >
+      <div className="w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden bg-bg-secondary border border-white/5">
+        {event.coverImageUrl
+          ? <img src={event.coverImageUrl} alt="" className="w-full h-full object-cover opacity-60" />
+          : <div className="w-full h-full flex items-center justify-center"><Ticket className="w-4 h-4 text-white/15" /></div>}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm text-white/70 group-hover:text-white truncate transition-colors">{event.title}</p>
+        <p className="text-white/30 text-xs mt-0.5">{formatEventDate(event.eventDate)}</p>
+      </div>
+      <div className="hidden sm:flex items-center gap-3 flex-shrink-0">
+        <span className="font-mono text-xs text-white/40">{event.totalSold} billets</span>
+        <span className="font-mono text-xs font-semibold text-white/50">{formatPrice(event.totalRevenue, 'FCFA', '0 FCFA')}</span>
+      </div>
+      <div className="flex-shrink-0"><StatusBadge status={event.status} /></div>
+      {canQR && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onDownloadQR(); }}
+          disabled={qrDownloading}
+          title="Télécharger le QR flyer"
+          className="text-white/30 hover:text-violet-neon transition-colors flex-shrink-0 disabled:opacity-50"
+        >
+          {qrDownloading
+            ? <span className="w-3.5 h-3.5 border border-current border-t-transparent rounded-full animate-spin block" />
+            : <QrCode className="w-3.5 h-3.5" />}
+        </button>
+      )}
+      <ChevronRight className="w-4 h-4 text-white/15 group-hover:text-violet-neon transition-colors flex-shrink-0 hidden sm:block" />
+    </div>
   );
 }
 
@@ -2180,6 +2443,7 @@ export default function MesEvenements() {
   const [scannersEvent, setScannersEvent] = useState<OrganizerEventStat | null>(null);
   const [agentsEvent, setAgentsEvent] = useState<OrganizerEventStat | null>(null);
   const [qrDownloading, setQrDownloading] = useState<string | null>(null);
+  const [historyCollapsed, setHistoryCollapsed] = useState(true);
   const cancelEvent = useCancelEvent();
 
   const downloadEventQR = async (eventId: string, title: string) => {
@@ -2284,22 +2548,14 @@ export default function MesEvenements() {
         </Button>
       </div>
 
-      {/* Events table */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.05 }}
-        className="glass-card overflow-hidden"
-      >
-        <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Ticket className="w-4 h-4 text-violet-neon" />
-            <h2 className="font-bebas text-xl tracking-wider text-white">Tous les événements</h2>
-          </div>
-          <p className="text-xs text-white/30 hidden sm:block">Appuyez sur un événement pour voir les acheteurs</p>
-        </div>
-
-        {!data?.events?.length ? (
+      {/* Événements — vide */}
+      {!data?.events?.length ? (
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="glass-card overflow-hidden"
+        >
           <div className="flex flex-col items-center justify-center py-20 px-6 text-center gap-5">
             <div className="w-14 h-14 rounded-2xl bg-violet-neon/10 border border-violet-neon/20 flex items-center justify-center">
               <Ticket className="w-7 h-7 text-violet-neon/60" />
@@ -2312,147 +2568,96 @@ export default function MesEvenements() {
               <Plus className="w-4 h-4" /> Créer votre premier événement
             </Button>
           </div>
-        ) : (
-          <div className="divide-y divide-white/5">
-            {data.events.map((event) => {
-              const isRevision = event.status === 'NEEDS_REVISION';
-              const hasPending = (event as any).pendingStatus === 'PENDING';
-              const pendingRejected = (event as any).pendingStatus === 'REJECTED';
-              return (
-                <div
-                  key={event.eventId}
-                  onClick={isRevision || hasPending ? undefined : () => setSelectedEvent(event)}
-                  className={`flex items-start gap-4 px-5 py-4 transition-colors group ${isRevision || hasPending ? 'cursor-default' : 'hover:bg-white/[0.03] cursor-pointer'} ${isRevision ? 'bg-yellow-400/[0.02]' : hasPending ? 'bg-violet-neon/[0.02]' : ''}`}
-                >
-                  {/* Vignette cover */}
-                  <div className="w-14 h-14 flex-shrink-0 rounded-xl overflow-hidden bg-bg-secondary border border-white/5">
-                    {event.coverImageUrl
-                      ? <img src={event.coverImageUrl} alt="" className="w-full h-full object-cover opacity-80" />
-                      : <div className="w-full h-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#2D1060,#0D0D1A 60%,#003060)' }}>
-                          <Ticket className="w-5 h-5 text-white/20" />
-                        </div>
-                    }
-                  </div>
+        </motion.div>
+      ) : (() => {
+        const activeEvents  = data.events.filter((e) => !HISTORY_STATUSES.includes(e.status));
+        const historyEvents = data.events.filter((e) => HISTORY_STATUSES.includes(e.status));
+        const openEdit = (event: OrganizerEventStat) => {
+          setEditingEventId(event.eventId);
+          setEditingEventNote(event.adminNote ?? null);
+          setEditingEventStatus(event.status);
+        };
 
-                  {/* Infos principales */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-3 flex-wrap">
-                      <div className="min-w-0">
-                        <p className={`font-semibold text-sm leading-snug truncate ${isRevision ? 'text-yellow-300' : 'text-white group-hover:text-violet-neon transition-colors'}`}>
-                          {event.title}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1 flex-wrap">
-                          <span className="text-white/35 text-xs">{formatEventDate(event.eventDate)}</span>
-                          {event.category && (
-                            <span className="text-xs text-white/25 bg-white/5 px-2 py-0.5 rounded-full border border-white/5">
-                              {event.category}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <StatusBadge status={event.status} />
-                    </div>
+        return (
+          <>
+            {/* ── À venir / en cours ── */}
+            <div className="mb-8">
+              <div className="flex items-center gap-2 mb-4">
+                <Ticket className="w-4 h-4 text-violet-neon" />
+                <h2 className="font-bebas text-xl tracking-wider text-white">À venir / en cours</h2>
+              </div>
 
-                    {/* Messages contextuels */}
-                    {isRevision && event.adminNote && (
-                      <p className="text-xs text-yellow-400/70 mt-1.5 line-clamp-2 leading-relaxed">{event.adminNote}</p>
-                    )}
-                    {isRevision && event.rejectionReason && (
-                      <p className="text-xs text-rose-neon/60 mt-1 flex items-center gap-1"><X className="w-3 h-3 flex-shrink-0" /> {event.rejectionReason}</p>
-                    )}
-                    {hasPending && (
-                      <p className="text-xs text-violet-neon/60 mt-1.5 flex items-center gap-1"><Clock className="w-3 h-3 flex-shrink-0" /> Modifications en attente d'approbation</p>
-                    )}
-                    {pendingRejected && (
-                      <p className="text-xs text-rose-neon/60 mt-1.5 flex items-center gap-1"><X className="w-3 h-3 flex-shrink-0" /> Modifications refusées{(event as any).pendingAdminNote ? ` — ${(event as any).pendingAdminNote}` : ''}</p>
-                    )}
-                    {event.status === 'APPROVED' && event.scheduledPublishAt && (
-                      <p className="text-xs text-white/30 mt-1.5 flex items-center gap-1">
-                        <Clock className="w-3 h-3 flex-shrink-0" />
-                        Publication prévue le {new Date(event.scheduledPublishAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    )}
-                    {/* Métriques + barre de remplissage */}
-                    <div className="flex items-center gap-4 mt-3 flex-wrap">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-mono font-bold text-cyan-neon text-sm">{event.totalSold}</span>
-                        <span className="text-white/25 text-xs">/ {event.totalTickets} billets</span>
-                      </div>
-                      <span className="font-mono font-bold text-green-400 text-sm">{formatPrice(event.totalRevenue, 'FCFA', '0 FCFA')}</span>
-                      {(event.likeCount ?? 0) > 0 && (
-                        <span className="flex items-center gap-1 text-xs text-rose-neon/80">
-                          <Heart className="w-3 h-3 fill-rose-neon text-rose-neon" />
-                          {event.likeCount}
-                        </span>
-                      )}
-                      <div className="flex items-center gap-2 min-w-[90px]">
-                        <div className="flex-1 h-1 bg-bg-secondary rounded-full overflow-hidden min-w-[60px]">
-                          <div className="h-full bg-neon-gradient rounded-full transition-all" style={{ width: `${event.occupancyRate}%` }} />
-                        </div>
-                        <span className="text-xs text-white/30 tabular-nums w-7 text-right">{event.occupancyRate}%</span>
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-1.5 mt-3 flex-wrap" onClick={(e) => e.stopPropagation()}>
-                      {hasPending && (
-                        <span className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-violet-neon/10 text-violet-neon/60 border border-violet-neon/20">
-                          <Clock className="w-3.5 h-3.5" /> En attente
-                        </span>
-                      )}
-                      <button
-                        onClick={() => setPromoEvent(event)}
-                        className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-white/5 text-white/40 hover:bg-violet-neon/10 hover:text-violet-neon border border-white/5 hover:border-violet-neon/20 transition-colors"
-                      >
-                        <Ticket className="w-3 h-3" /> Codes promo
-                      </button>
-                      <button
-                        onClick={() => setScannersEvent(event)}
-                        className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-white/5 text-white/40 hover:bg-cyan-neon/10 hover:text-cyan-neon border border-white/5 hover:border-cyan-neon/20 transition-colors"
-                      >
-                        <ScanLine className="w-3 h-3" /> Scanners
-                      </button>
-                      <button
-                        onClick={() => setAgentsEvent(event)}
-                        className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-white/5 text-white/40 hover:bg-emerald-500/10 hover:text-emerald-400 border border-white/5 hover:border-emerald-500/20 transition-colors"
-                      >
-                        <ShoppingBag className="w-3 h-3" /> Vendeurs
-                      </button>
-                      {['PUBLISHED', 'APPROVED', 'COMPLETED'].includes(event.status) && (
-                        <button
-                          onClick={() => downloadEventQR(event.eventId, event.title)}
-                          disabled={qrDownloading === event.eventId}
-                          className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-white/5 text-white/40 hover:bg-violet-neon/10 hover:text-violet-neon border border-white/5 hover:border-violet-neon/20 transition-colors disabled:opacity-50"
-                        >
-                          {qrDownloading === event.eventId ? (
-                            <span className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin flex-shrink-0" />
-                          ) : (
-                            <QrCode className="w-3 h-3" />
-                          )}
-                          QR flyer
-                        </button>
-                      )}
-                      {['PUBLISHED', 'APPROVED'].includes(event.status) && (
-                        <button
-                          onClick={() => setCancelTarget({ id: event.eventId, title: event.title })}
-                          className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-rose-neon/10 text-rose-neon hover:bg-rose-neon/20 border border-rose-neon/20 transition-colors"
-                        >
-                          <Ban className="w-3 h-3" /> Annuler
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Chevron */}
-                  {!isRevision && !hasPending && (
-                    <ChevronRight className="w-4 h-4 text-white/15 group-hover:text-violet-neon transition-colors flex-shrink-0 mt-1 hidden sm:block" />
-                  )}
+              {activeEvents.length === 0 ? (
+                <div className="glass-card p-8 text-center">
+                  <p className="text-white/30 text-sm">Aucun événement actif — créez-en un ou consultez votre historique ci-dessous.</p>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </motion.div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {activeEvents.map((event) => (
+                    <EventCard
+                      key={event.eventId}
+                      event={event}
+                      onOpen={() => setSelectedEvent(event)}
+                      onEdit={() => openEdit(event)}
+                      onPromo={() => setPromoEvent(event)}
+                      onScanners={() => setScannersEvent(event)}
+                      onAgents={() => setAgentsEvent(event)}
+                      onDownloadQR={() => downloadEventQR(event.eventId, event.title)}
+                      onCancel={() => setCancelTarget({ id: event.eventId, title: event.title })}
+                      qrDownloading={qrDownloading === event.eventId}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* ── Historique ── */}
+            {historyEvents.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.08 }}
+                className="glass-card overflow-hidden"
+              >
+                <button
+                  onClick={() => setHistoryCollapsed((v) => !v)}
+                  className="w-full px-5 py-4 flex items-center justify-between gap-3 hover:bg-white/[0.02] transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-white/30" />
+                    <h2 className="font-bebas text-xl tracking-wider text-white">Historique</h2>
+                    <span className="text-xs text-white/30 bg-white/5 px-2 py-0.5 rounded-full">{historyEvents.length}</span>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 text-white/30 transition-transform ${historyCollapsed ? '' : 'rotate-180'}`} />
+                </button>
+                <AnimatePresence initial={false}>
+                  {!historyCollapsed && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="divide-y divide-white/5 border-t border-white/5">
+                        {historyEvents.map((event) => (
+                          <EventHistoryRow
+                            key={event.eventId}
+                            event={event}
+                            onOpen={() => setSelectedEvent(event)}
+                            onDownloadQR={() => downloadEventQR(event.eventId, event.title)}
+                            qrDownloading={qrDownloading === event.eventId}
+                          />
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            )}
+          </>
+        );
+      })()}
 
       {/* ── Modale annulation ── */}
       <AnimatePresence>
