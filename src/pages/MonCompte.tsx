@@ -787,6 +787,41 @@ function TabSecurite() {
   );
 }
 
+// ── En-tête d'identité persistant ──────────────────────────────
+// Reste visible quel que soit l'onglet actif — sans ça, passer sur
+// "Sécurité" ou "Mes commandes" fait perdre tout repère de qui est
+// le compte affiché (l'avatar n'existait jusque-là que dans l'onglet
+// "Mon profil").
+function ProfileHeader() {
+  const { data: me, isLoading } = useMe();
+  if (isLoading || !me) return null;
+
+  const initials = `${me.firstName?.[0] ?? ''}${me.lastName?.[0] ?? ''}`.toUpperCase();
+
+  return (
+    <div className="glass-card p-4 flex items-center gap-4 mb-6">
+      {me.avatarUrl ? (
+        <img
+          src={me.avatarUrl}
+          alt="Avatar"
+          className="w-14 h-14 rounded-2xl object-cover border-2 border-violet-neon/30 flex-shrink-0"
+        />
+      ) : (
+        <div className="w-14 h-14 rounded-2xl bg-violet-neon/20 border-2 border-violet-neon/30 flex items-center justify-center flex-shrink-0">
+          <span className="font-bebas text-lg text-violet-neon tracking-widest">{initials || '?'}</span>
+        </div>
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="text-white font-semibold text-base truncate">{me.firstName} {me.lastName}</p>
+        <p className="text-white/40 text-sm mt-0.5 truncate">{me.email ?? me.phone ?? '—'}</p>
+      </div>
+      <span className="text-xs px-2.5 py-1 rounded-lg bg-violet-neon/10 text-violet-neon border border-violet-neon/20 flex-shrink-0">
+        {me.role}
+      </span>
+    </div>
+  );
+}
+
 // ── Page principale ───────────────────────────────────────────
 
 export default function MonCompte() {
@@ -819,6 +854,8 @@ export default function MonCompte() {
         <div className="flex items-center justify-between mb-6">
           <h1 className="font-bebas text-4xl sm:text-5xl tracking-wider text-gradient">Mon Compte</h1>
         </div>
+
+        <ProfileHeader />
 
         {/* Onglets */}
         <div className="flex gap-1 mb-6 flex-wrap">
