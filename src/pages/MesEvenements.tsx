@@ -701,7 +701,9 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
         queryClient.invalidateQueries('organizer-stats');
         toast.success(data.promoEnabled ? 'Codes promo activés pour cet événement' : 'Codes promo désactivés');
       },
-      onError: () => toast.error('Erreur lors de la mise à jour'),
+      onError: () => {
+        toast.error('Erreur lors de la mise à jour');
+      },
     }
   );
 
