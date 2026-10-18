@@ -143,13 +143,6 @@ function GuestOrderGroups({ tickets }: { tickets: any[] }) {
                 publicQrUrl={order?.qrPublicUrl}
                 usedCount={usedCount}
                 totalCount={totalCount || 1}
-                eventTitle={event?.title ?? ''}
-                categoryName={categoryLabel}
-                eventDate={event?.eventDate ?? ''}
-                venueName={event?.venueName ?? ''}
-                coverImageUrl={event?.coverImageUrl ?? null}
-                buyerName={order?.buyerName}
-                price={ticketsSubtotal}
               />
             )}
           </motion.div>
@@ -523,14 +516,6 @@ function AuthenticatedMyTickets() {
                     ticketId={ticket.id}
                     usedCount={ticket.status === 'USED' ? 1 : 0}
                     totalCount={1}
-                    eventTitle={ticket.category.event.title}
-                    categoryName={ticket.category.name}
-                    eventDate={ticket.category.event.eventDate}
-                    venueName={ticket.category.event.venueName}
-                    coverImageUrl={ticket.category.event.coverImageUrl}
-                    buyerName={user ? `${user.firstName} ${user.lastName}` : undefined}
-                    buyerEmail={user?.email ?? undefined}
-                    price={ticket.category.price}
                     disabled={ticket.status === 'REFUNDED' || ticket.status === 'CANCELLED'}
                   />
                 </div>
@@ -643,22 +628,6 @@ function AuthenticatedMyTickets() {
                           orderId={order.id}
                           usedCount={usedTickets}
                           totalCount={activeTickets}
-                          eventTitle={order.event.title}
-                          categoryName={Object.entries(
-                            myTickets
-                              .filter((t: any) => t.status !== 'REFUNDED' && t.status !== 'CANCELLED')
-                              .reduce((acc: Record<string, number>, t: any) => {
-                                const name = t.category?.name ?? '';
-                                acc[name] = (acc[name] ?? 0) + 1;
-                                return acc;
-                              }, {})
-                          ).map(([name, qty]) => `${qty}× ${name}`).join(', ')}
-                          eventDate={order.event.eventDate}
-                          venueName={order.event.venueName}
-                          coverImageUrl={order.event.coverImageUrl}
-                          buyerName={user ? `${user.firstName} ${user.lastName}` : undefined}
-                          buyerEmail={user?.email ?? undefined}
-                          price={ticketsSubtotal}
                           disabled={
                             order.status === 'REFUNDED' ||
                             (order.tickets ?? []).every((t: any) => t.status === 'REFUNDED' || t.status === 'CANCELLED')

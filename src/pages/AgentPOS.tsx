@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation } from 'react-query';
 import {
   ShoppingBag, Minus, Plus, Phone, CheckCircle,
-  QrCode, LogOut, BarChart3, Ticket, RefreshCw,
+  LogOut, BarChart3, Ticket, RefreshCw,
   Banknote, Smartphone, Loader2, XCircle, ChevronDown,
   AlertCircle, Send, Search, History, ChevronLeft, ChevronRight,
 } from 'lucide-react';
@@ -67,10 +67,6 @@ interface HistoryOrder {
   orderItems: { quantity: number; category: { name: string } }[];
 }
 
-const API_URL = import.meta.env.VITE_API_URL || '/api/v1';
-function getQRImageUrl(orderId: string, qrToken: string) {
-  return `${API_URL}/orders/${orderId}/qr-public?token=${qrToken}`;
-}
 
 // ─── Page principale ──────────────────────────────────────────────────────────
 
@@ -807,17 +803,10 @@ export default function AgentPOS() {
                   style={{ aspectRatio: '900/380' }}
                 />
               ) : (
-                <>
-                  <div className="flex items-center gap-2 mb-3 text-violet-neon">
-                    <QrCode className="w-4 h-4" />
-                    <p className="text-sm font-medium">QR Code d'entrée</p>
-                  </div>
-                  <img
-                    src={getQRImageUrl(saleResult.orderId, saleResult.qrToken)}
-                    alt="QR Code"
-                    className="w-48 h-48 mx-auto rounded-xl bg-white p-2"
-                  />
-                </>
+                <div className="flex items-center justify-center gap-2 py-10 text-white/25">
+                  <Ticket className="w-4 h-4" />
+                  <span className="text-sm">Aperçu indisponible — le billet a bien été envoyé</span>
+                </div>
               )}
 
             </div>

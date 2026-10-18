@@ -1,17 +1,17 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import api, { NGROK_SKIP_HEADER } from '../../services/api';
 import Button from '../common/Button';
 import Spinner from '../common/Spinner';
 import toast from 'react-hot-toast';
 import { WifiOff, ImageDown } from 'lucide-react';
-import { generateTicketCanvas, blobToBase64 } from '../../utils/ticketCanvas';
+import { blobToBase64 } from '../../utils/ticketCanvas';
 
-// Incrémenter cette version à chaque changement visuel du rendu du QR côté serveur —
-// ça change la clé de cache, donc les anciennes images (ex: QR noir uni d'avant la
-// refonte dégradé+logo) sont automatiquement ignorées et redemandées au serveur,
-// sans qu'aucun utilisateur n'ait besoin de vider son cache manuellement.
-const QR_CACHE_VERSION = 'v2';
-const CACHE_KEY = (id: string) => `qr-cache-${QR_CACHE_VERSION}-${id}`;
+// Incrémenter cette version à chaque changement visuel du rendu du billet côté serveur —
+// ça change la clé de cache, donc les anciennes images (ex: QR nu d'avant l'unification
+// du design billet) sont automatiquement ignorées et redemandées au serveur, sans
+// qu'aucun utilisateur n'ait besoin de vider son cache manuellement.
+const TICKET_CACHE_VERSION = 'v3';
+const CACHE_KEY = (id: string) => `qr-cache-${TICKET_CACHE_VERSION}-${id}`;
 
 interface Props {
   // Mode groupe (une commande = un QR)
@@ -20,17 +20,8 @@ interface Props {
   totalCount?: number;
   // Mode individuel (legacy)
   ticketId?: string;
-  // Infos d'affichage communes
-  eventTitle?: string;
-  categoryName?: string;
-  eventDate?: string;
-  venueName?: string;
-  coverImageUrl?: string;
-  // Infos acheteur
-  buyerName?: string;
-  buyerEmail?: string;
-  price?: number;
-  // URL publique (guest) — contourne l'auth
+  // URL publique (guest) — contourne l'auth, pointe vers l'endpoint QR nu ;
+  // l'équivalent "billet complet" est dérivé automatiquement (même token).
   publicQrUrl?: string;
   // Désactivé si billet remboursé / annulé
   disabled?: boolean;
@@ -40,21 +31,26 @@ interface Props {
 export default function QRCodeDisplay({
   orderId, usedCount = 0, totalCount = 1,
   ticketId,
-  eventTitle, categoryName, eventDate, venueName, coverImageUrl,
-  buyerName, buyerEmail, price,
   publicQrUrl,
   disabled = false,
   disabledLabel = 'Billet remboursé',
 }: Props) {
   const cacheId = orderId ?? ticketId ?? '';
-  const apiPath = orderId ? `/orders/${orderId}/qr` : `/tickets/${ticketId}/qr`;
+  // Billet complet (même rendu que WhatsApp/le téléchargement du site) — un seul
+  // fetch sert à la fois l'affichage à l'écran et l'enregistrement, plus besoin de
+  // reconstruire quoi que ce soit côté client (voir pdfService.generateTicketPNG).
+  const apiPath = orderId ? `/orders/${orderId}/ticket-image` : `/tickets/${ticketId}/ticket-image`;
+  const publicTicketImageUrl = publicQrUrl?.includes('/qr-public?')
+    ? publicQrUrl.replace('/qr-public?', '/ticket-image-public?')
+    : publicQrUrl?.includes('/qr?')
+      ? publicQrUrl.replace('/qr?', '/ticket-image?')
+      : undefined;
 
   const [show, setShow] = useState(false);
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [cached, setCached] = useState(false);
   const [saving, setSaving] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     if (disabled) {
@@ -75,9 +71,9 @@ export default function QRCodeDisplay({
     setLoading(true);
     try {
       let rawBlob: Blob;
-      if (publicQrUrl) {
-        const res = await fetch(publicQrUrl, { headers: NGROK_SKIP_HEADER });
-        if (!res.ok) throw new Error('QR fetch failed');
+      if (publicTicketImageUrl) {
+        const res = await fetch(publicTicketImageUrl, { headers: NGROK_SKIP_HEADER });
+        if (!res.ok) throw new Error('ticket image fetch failed');
         rawBlob = await res.blob();
       } else {
         const response = await api.get(apiPath, { responseType: 'blob' });
@@ -88,16 +84,16 @@ export default function QRCodeDisplay({
         localStorage.setItem(CACHE_KEY(cacheId), base64);
         setCached(true);
       } catch {
-        // localStorage plein — on affiche quand même le QR, juste sans cache hors ligne
+        // localStorage plein — on affiche quand même le billet, juste sans cache hors ligne
       }
       setDataUrl(base64); setShow(true);
     } catch {
       const saved = localStorage.getItem(CACHE_KEY(cacheId));
       if (saved) {
         setDataUrl(saved); setCached(true); setShow(true);
-        toast('QR Code chargé hors ligne', { icon: '📶' });
+        toast('Billet chargé hors ligne', { icon: '📶' });
       } else {
-        toast.error('Impossible de charger le QR Code — connexion requise');
+        toast.error('Impossible de charger le billet — connexion requise');
       }
     } finally {
       setLoading(false);
@@ -108,24 +104,8 @@ export default function QRCodeDisplay({
     if (!dataUrl) return;
     setSaving(true);
     try {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const displayCategoryName = orderId
-        ? `${totalCount} billet${totalCount > 1 ? 's' : ''} — ${categoryName || ''}`
-        : categoryName;
-      await generateTicketCanvas(canvas, dataUrl, {
-        ticketId: cacheId,
-        eventTitle,
-        categoryName: displayCategoryName,
-        eventDate,
-        venueName,
-        coverImageUrl,
-        buyerName,
-        buyerEmail,
-        price,
-      });
-
-      const blob: Blob = await new Promise(res => canvas.toBlob(b => res(b!), 'image/png'));
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
       const file = new File([blob], 'billet-billetgab.png', { type: 'image/png' });
 
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
@@ -146,7 +126,7 @@ export default function QRCodeDisplay({
       }
     } catch (err) {
       if (err instanceof Error && err.name !== 'AbortError') {
-        toast.error('Erreur lors de la génération');
+        toast.error('Erreur lors de l\'enregistrement');
       }
     } finally {
       setSaving(false);
@@ -162,28 +142,24 @@ export default function QRCodeDisplay({
 
   if (disabled) {
     return (
-      <div className="w-48 h-48 bg-bg-secondary rounded-2xl flex items-center justify-center border border-rose-neon/20">
+      <div className="w-full max-w-sm aspect-[900/380] bg-bg-secondary rounded-2xl flex items-center justify-center border border-rose-neon/20">
         <span className="text-rose-neon/60 text-sm text-center px-4">{disabledLabel}</span>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center gap-3">
-      <canvas ref={canvasRef} className="hidden" />
-
-      <div className="relative">
+    <div className="flex flex-col items-center gap-3 w-full">
+      <div className="relative w-full max-w-sm">
         {show && dataUrl ? (
-          <div className="bg-white p-4 rounded-2xl">
-            <img src={dataUrl} alt="QR Code" className="w-48 h-48" />
-          </div>
+          <img src={dataUrl} alt="Billet BilletGab" className="w-full rounded-2xl border border-violet-neon/20" />
         ) : (
-          <div className="w-48 h-48 bg-bg-secondary rounded-2xl flex items-center justify-center border border-violet-neon/20">
-            {loading ? <Spinner size="md" /> : <span className="text-white/30 text-sm">QR Code masqué</span>}
+          <div className="w-full aspect-[900/380] bg-bg-secondary rounded-2xl flex items-center justify-center border border-violet-neon/20">
+            {loading ? <Spinner size="md" /> : <span className="text-white/30 text-sm">Billet masqué</span>}
           </div>
         )}
 
-        {/* Compteur X/Y sur le QR (mode groupe uniquement) */}
+        {/* Compteur X/Y sur le billet (mode groupe uniquement) */}
         {orderId && (
           <div className={`absolute -top-2 -right-2 text-xs font-mono font-bold px-2 py-0.5 rounded-full border ${counterColor}`}>
             {usedCount}/{totalCount}
@@ -204,7 +180,7 @@ export default function QRCodeDisplay({
 
       <div className="flex gap-2 flex-wrap justify-center">
         <Button variant="secondary" size="sm" onClick={handleToggle} disabled={loading}>
-          {show ? 'Masquer' : 'Afficher le QR Code'}
+          {show ? 'Masquer' : 'Afficher le billet'}
         </Button>
         {(show || cached) && (
           <Button variant="secondary" size="sm" onClick={handleSaveImage} isLoading={saving} disabled={!dataUrl}>

@@ -245,23 +245,24 @@ function OrderConfirmationInner({ initialState }: { initialState: NavState }) {
   const confirmationStateRef = useRef<ConfirmationState>('WAITING');
   const currentPaymentIdRef = useRef<string | null>(state?.paymentId ?? null);
   const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
-  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [ticketDataUrl, setTicketDataUrl] = useState<string | null>(null);
   const [qrSaving, setQrSaving] = useState(false);
   // Même rendu backend (pdfService.generateTicketPNG) que le billet envoyé sur WhatsApp —
   // dérivé de qrImageUrl pour réutiliser le même token HMAC sans aller-retour serveur.
   const ticketImageUrl = qrImageUrl ? qrImageUrl.replace('/qr-public?', '/ticket-image-public?') : null;
 
-  // Fetch QR as base64 when URL is known (CSP-safe + needed for canvas generation)
+  // Fetch le billet complet en base64 dès que l'URL est connue — sert à la fois
+  // l'aperçu à l'écran et l'enregistrement (CSP-safe, un seul aller-retour serveur).
   useEffect(() => {
-    if (!qrImageUrl) return;
+    if (!ticketImageUrl) return;
     let cancelled = false;
-    fetch(qrImageUrl, { headers: NGROK_SKIP_HEADER })
+    fetch(ticketImageUrl, { headers: NGROK_SKIP_HEADER })
       .then(r => r.blob())
       .then(blob => blobToBase64(blob))
-      .then(b64 => { if (!cancelled) setQrDataUrl(b64); })
+      .then(b64 => { if (!cancelled) setTicketDataUrl(b64); })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, [qrImageUrl]);
+  }, [ticketImageUrl]);
 
   // Retry form state
   const [retryProvider, setRetryProvider] = useState<'AIRTEL_MONEY' | 'MOOV_MONEY' | null>(state?.provider ?? null);
@@ -558,31 +559,27 @@ function OrderConfirmationInner({ initialState }: { initialState: NavState }) {
                 </div>
               )}
 
-              {/* QR Code — téléchargeable dans la galerie */}
+              {/* Billet — même rendu que WhatsApp, téléchargeable dans la galerie */}
               {qrImageUrl && (
                 <div className="glass-card p-5 border border-violet-neon/20 space-y-4">
                   <h3 className="font-bebas text-lg tracking-wider text-violet-neon text-center flex items-center justify-center gap-2">
                     <Ticket className="w-5 h-5" />
-                    QR Code d'entrée
+                    Mon billet
                   </h3>
                   <div className="flex flex-col items-center gap-4">
-                    <div className="bg-white p-3 rounded-2xl" style={{ boxShadow: '0 0 24px rgba(224,64,251,0.25)' }}>
-                      {qrDataUrl
-                        ? <img src={qrDataUrl} alt="QR Code BilletGab" className="w-40 h-40 block rounded" />
-                        : <div className="w-40 h-40 bg-gray-100 rounded animate-pulse" />
-                      }
-                    </div>
+                    {ticketDataUrl
+                      ? <img src={ticketDataUrl} alt="Billet BilletGab" className="w-full max-w-sm rounded-2xl border border-violet-neon/20" />
+                      : <div className="w-full max-w-sm aspect-[900/380] bg-white/5 rounded-2xl animate-pulse" />
+                    }
                     <button
-                      disabled={!ticketImageUrl}
+                      disabled={!ticketDataUrl}
                       onClick={async () => {
-                        if (qrSaving || !ticketImageUrl) return;
+                        if (qrSaving || !ticketDataUrl) return;
                         setQrSaving(true);
                         try {
-                          // Même image PNG (rendu backend) que celle envoyée sur WhatsApp —
-                          // plus de rendu canvas séparé côté frontend, donc plus aucune
-                          // divergence visuelle possible entre les deux.
-                          const res = await fetch(ticketImageUrl, { headers: NGROK_SKIP_HEADER });
-                          if (!res.ok) throw new Error('fetch failed');
+                          // Déjà en mémoire (même image que l'aperçu ci-dessus) — pas
+                          // besoin d'un second aller-retour serveur pour l'enregistrer.
+                          const res = await fetch(ticketDataUrl);
                           const blob = await res.blob();
                           const file = new File([blob], 'billet-billetgab.png', { type: 'image/png' });
                           if (navigator.share && navigator.canShare?.({ files: [file] })) {
