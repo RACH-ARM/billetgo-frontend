@@ -5,7 +5,7 @@ import {
   CalendarDays, Ticket, Download, Search, QrCode,
   ChevronRight, ChevronDown, ChevronUp, ArrowLeft, Phone, Mail, CreditCard,
   Plus, Trash2, AlertTriangle, Check, Copy, ScanLine, RefreshCw, ShoppingBag,
-  Clock, Ban, X, Banknote, Images, ImagePlus, MapPin, Heart, Pencil,
+  Clock, Ban, X, Banknote, Images, ImagePlus, MapPin, Heart,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useOrganizerStats, useEventBuyers, useCreateEvent, useUpdateEvent, useProposeChanges, useResubmitEvent, useCancelEvent, useOrganizerProfile, useEventDetails, useUploadEventGallery, useDeleteEventGalleryPhoto } from '../hooks/useOrganizer';
@@ -111,10 +111,9 @@ const HISTORY_STATUSES = ['COMPLETED', 'CANCELLED', 'REJECTED'];
 const MENU_WIDTH = 192;
 
 function EventActionsMenu({
-  event, onEdit, onPromo, onScanners, onAgents, onDownloadQR, qrDownloading,
+  event, onPromo, onScanners, onAgents, onDownloadQR, qrDownloading,
 }: {
   event: OrganizerEventStat;
-  onEdit: () => void;
   onPromo: () => void;
   onScanners: () => void;
   onAgents: () => void;
@@ -125,16 +124,28 @@ function EventActionsMenu({
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const canQR = ['PUBLISHED', 'APPROVED', 'COMPLETED'].includes(event.status);
+  // Codes promo + Scanners + Vendeurs (+ QR flyer si applicable) — utilisé pour
+  // estimer la hauteur du panneau et décider s'il doit s'ouvrir vers le haut.
+  const itemCount = 3 + (canQR ? 1 : 0);
+  const estimatedHeight = itemCount * 40 + 16;
 
   // Calculé par rapport à la fenêtre (position: fixed) puis rendu via portal
   // directement sous <body> — le menu ne vit plus dans l'arbre de la carte,
   // donc aucun contexte d'empilement parent (animation Framer Motion, section
-  // Historique plus bas...) ne peut plus jamais passer devant.
+  // Historique plus bas...) ne peut plus jamais passer devant. S'ouvre vers le
+  // haut si l'espace sous le bouton est insuffisant (ex. bouton proche du bas
+  // de l'écran), pour que le dernier élément (QR flyer) reste toujours visible.
   const computeCoords = () => {
     const rect = btnRef.current?.getBoundingClientRect();
     if (!rect) return;
     const left = Math.min(Math.max(12, rect.left), window.innerWidth - MENU_WIDTH - 12);
-    setCoords({ top: rect.bottom + 6, left });
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openUpward = spaceBelow < estimatedHeight + 12 && rect.top > estimatedHeight + 12;
+    const top = openUpward
+      ? Math.max(12, rect.top - estimatedHeight - 6)
+      : Math.min(rect.bottom + 6, window.innerHeight - estimatedHeight - 12);
+    setCoords({ top, left });
   };
 
   const toggle = () => {
@@ -164,9 +175,6 @@ function EventActionsMenu({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  const canEdit = !HISTORY_STATUSES.includes(event.status);
-  const canQR = ['PUBLISHED', 'APPROVED', 'COMPLETED'].includes(event.status);
-
   const itemCls = 'w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-white/70 hover:bg-white/5 hover:text-white transition-colors text-left disabled:opacity-40';
 
   return (
@@ -190,11 +198,6 @@ function EventActionsMenu({
             style={{ position: 'fixed', top: coords.top, left: coords.left, width: MENU_WIDTH }}
             className="z-[100] glass-card border border-white/10 overflow-hidden py-1 shadow-xl"
           >
-            {canEdit && (
-              <button onClick={() => { onEdit(); setOpen(false); }} className={itemCls}>
-                <Pencil className="w-3.5 h-3.5 text-violet-neon flex-shrink-0" /> Modifier
-              </button>
-            )}
             <button onClick={() => { onPromo(); setOpen(false); }} className={itemCls}>
               <Ticket className="w-3.5 h-3.5 text-violet-neon flex-shrink-0" /> Codes promo
             </button>
@@ -222,11 +225,10 @@ function EventActionsMenu({
 
 // ── Carte événement — vue "à venir / en cours" ──────────────────────────────────
 function EventCard({
-  event, onOpen, onEdit, onPromo, onScanners, onAgents, onDownloadQR, onCancel, qrDownloading,
+  event, onOpen, onPromo, onScanners, onAgents, onDownloadQR, onCancel, qrDownloading,
 }: {
   event: OrganizerEventStat;
   onOpen: () => void;
-  onEdit: () => void;
   onPromo: () => void;
   onScanners: () => void;
   onAgents: () => void;
@@ -325,11 +327,7 @@ function EventCard({
 
         {/* Actions */}
         <div className="flex items-center gap-2 mt-4 pt-3 border-t border-white/5" onClick={(e) => e.stopPropagation()}>
-          {isRevision ? (
-            <Button variant="primary" size="sm" onClick={onEdit} className="flex-1">
-              <Pencil className="w-3.5 h-3.5" /> Modifier et resoumettre
-            </Button>
-          ) : hasPending ? (
+          {hasPending ? (
             <span className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-violet-neon/10 text-violet-neon/60 border border-violet-neon/20">
               <Clock className="w-3.5 h-3.5" /> En attente de validation
             </span>
@@ -337,7 +335,6 @@ function EventCard({
             <>
               <EventActionsMenu
                 event={event}
-                onEdit={onEdit}
                 onPromo={onPromo}
                 onScanners={onScanners}
                 onAgents={onAgents}
@@ -2611,11 +2608,6 @@ export default function MesEvenements() {
       ) : (() => {
         const activeEvents  = data.events.filter((e) => !HISTORY_STATUSES.includes(e.status));
         const historyEvents = data.events.filter((e) => HISTORY_STATUSES.includes(e.status));
-        const openEdit = (event: OrganizerEventStat) => {
-          setEditingEventId(event.eventId);
-          setEditingEventNote(event.adminNote ?? null);
-          setEditingEventStatus(event.status);
-        };
 
         return (
           <>
@@ -2637,7 +2629,6 @@ export default function MesEvenements() {
                       key={event.eventId}
                       event={event}
                       onOpen={() => setSelectedEvent(event)}
-                      onEdit={() => openEdit(event)}
                       onPromo={() => setPromoEvent(event)}
                       onScanners={() => setScannersEvent(event)}
                       onAgents={() => setAgentsEvent(event)}
