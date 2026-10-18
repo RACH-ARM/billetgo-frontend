@@ -6,7 +6,12 @@ import toast from 'react-hot-toast';
 import { WifiOff, ImageDown } from 'lucide-react';
 import { generateTicketCanvas, blobToBase64 } from '../../utils/ticketCanvas';
 
-const CACHE_KEY = (id: string) => `qr-cache-${id}`;
+// Incrémenter cette version à chaque changement visuel du rendu du QR côté serveur —
+// ça change la clé de cache, donc les anciennes images (ex: QR noir uni d'avant la
+// refonte dégradé+logo) sont automatiquement ignorées et redemandées au serveur,
+// sans qu'aucun utilisateur n'ait besoin de vider son cache manuellement.
+const QR_CACHE_VERSION = 'v2';
+const CACHE_KEY = (id: string) => `qr-cache-${QR_CACHE_VERSION}-${id}`;
 
 interface Props {
   // Mode groupe (une commande = un QR)
