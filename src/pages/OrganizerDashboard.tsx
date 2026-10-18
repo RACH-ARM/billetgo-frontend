@@ -8,7 +8,7 @@ import {
 import {
   CalendarDays, Ticket, TrendingUp, TrendingDown,
   LogOut, Check, Clock, Upload, FileCheck,
-  UserCircle, Minus, Banknote, Heart, Users, Globe, ShoppingBag, ChevronDown,
+  UserCircle, Minus, Banknote, Heart, Users, Globe, ShoppingBag, ChevronDown, ArrowRight,
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useOrganizerStats, useOrganizerProfile, useOrganizerAnalytics, useUploadKYC, useOrganizerPayouts } from '../hooks/useOrganizer';
@@ -19,15 +19,19 @@ import { SkeletonKpiGrid, SkeletonCard, SkeletonTable } from '../components/comm
 import toast from 'react-hot-toast';
 
 // ── KPI Card ──────────────────────────────────────────────────
+// size "hero"    : métrique principale (une seule par page), grande typo + mini-tendance.
+// size "compact" : métriques secondaires, rangées en grille dense.
 function KpiCard({
-  title, value, subtitle, Icon, color, trend,
+  title, value, subtitle, Icon, color, trend, sparkline, size = 'compact',
 }: {
   title: string;
   value: string | number;
   subtitle?: string;
   Icon: React.ComponentType<{ className?: string }>;
   color: 'violet' | 'rose' | 'cyan' | 'green';
-  trend?: number; // % change vs previous period, undefined = no data
+  trend?: number; // % change vs previous période, undefined = pas de donnée
+  sparkline?: { value: number }[];
+  size?: 'hero' | 'compact';
 }) {
   const colors = {
     violet: { text: 'text-violet-neon', bg: 'bg-violet-neon/10', border: 'border-violet-neon/20' },
@@ -38,31 +42,103 @@ function KpiCard({
   const c = colors[color];
   const TrendIcon = trend === undefined || trend === 0 ? Minus : trend > 0 ? TrendingUp : TrendingDown;
   const trendColor = trend === undefined || trend === 0 ? 'text-white/20' : trend > 0 ? 'text-green-400' : 'text-rose-neon';
+  const trendBadge = trend !== undefined && (
+    <span className={`inline-flex items-center gap-0.5 font-semibold ${trendColor} ${size === 'hero' ? 'text-xs' : 'text-[10px]'}`}>
+      <TrendIcon className={size === 'hero' ? 'w-3.5 h-3.5' : 'w-2.5 h-2.5'} />
+      {trend === 0 ? '—' : `${trend > 0 ? '+' : ''}${trend}%`}
+    </span>
+  );
+
+  if (size === 'hero') {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={`glass-card h-full p-6 border ${c.border} flex flex-col justify-between`}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs text-white/50 uppercase tracking-widest mb-2">{title}</p>
+            <p className={`font-bebas text-4xl sm:text-5xl ${c.text} tabular-nums leading-none`}>{value}</p>
+            <div className="flex items-center gap-2 mt-2.5">
+              {trendBadge}
+              {subtitle && <p className="text-xs text-white/30">{subtitle}</p>}
+            </div>
+          </div>
+          <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${c.bg}`}>
+            <Icon className={`w-5 h-5 ${c.text}`} />
+          </div>
+        </div>
+        {sparkline && sparkline.length > 1 && (
+          <div className={`h-14 -mx-1 -mb-1 mt-4 ${c.text}`}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={sparkline} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="grad-hero-spark" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="currentColor" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="currentColor" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <Area type="monotone" dataKey="value" stroke="currentColor" strokeWidth={1.5} fill="url(#grad-hero-spark)" dot={false} isAnimationActive={false} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`glass-card p-5 border ${c.border}`}
+      className={`glass-card h-full p-4 border ${c.border} flex items-center gap-3`}
     >
-      <div className="flex items-start justify-between">
-        <div className="flex-1 min-w-0">
-          <p className="text-xs text-white/50 uppercase tracking-widest mb-1">{title}</p>
-          <p className={`font-bebas text-3xl sm:text-4xl ${c.text}`}>{value}</p>
-          {subtitle && <p className="text-xs text-white/30 mt-1">{subtitle}</p>}
-        </div>
-        <div className="flex flex-col items-end gap-2 flex-shrink-0 ml-2">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${c.bg}`}>
-            <Icon className={`w-5 h-5 ${c.text}`} />
-          </div>
-          {trend !== undefined && (
-            <span className={`flex items-center gap-0.5 text-[10px] font-semibold ${trendColor}`}>
-              <TrendIcon className="w-3 h-3" />
-              {trend === 0 ? '—' : `${trend > 0 ? '+' : ''}${trend}%`}
-            </span>
-          )}
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${c.bg}`}>
+        <Icon className={`w-4.5 h-4.5 ${c.text}`} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] text-white/40 uppercase tracking-widest truncate">{title}</p>
+        <div className="flex items-baseline gap-1.5">
+          <p className={`font-bebas text-2xl ${c.text} tabular-nums leading-none`}>{value}</p>
+          {trendBadge}
         </div>
       </div>
     </motion.div>
+  );
+}
+
+// ── Carte d'action — solde à verser ─────────────────────────────
+// Traitement visuel distinct des KPI passifs : c'est une action à faire
+// (aller demander un virement), pas juste une donnée à lire.
+function BalanceDueCard({ amount }: { amount: number }) {
+  return (
+    <Link to="/versements" className="block h-full group">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative h-full glass-card p-6 border border-rose-neon/25 overflow-hidden transition-colors group-hover:border-rose-neon/50"
+      >
+        <div className="absolute -right-10 -top-10 w-36 h-36 rounded-full bg-rose-neon/10 blur-2xl transition-colors group-hover:bg-rose-neon/20" />
+        <div className="relative flex flex-col justify-between h-full">
+          <div className="flex items-start justify-between">
+            <p className="text-xs text-white/50 uppercase tracking-widest">Solde à verser</p>
+            <div className="w-11 h-11 rounded-xl bg-rose-neon/10 flex items-center justify-center flex-shrink-0">
+              <Banknote className="w-5 h-5 text-rose-neon" />
+            </div>
+          </div>
+          <div>
+            <p className="font-bebas text-4xl sm:text-5xl text-rose-neon tabular-nums leading-none mb-3">
+              {formatPrice(amount, 'FCFA', '0 FCFA')}
+            </p>
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-rose-neon/80 transition-colors group-hover:text-rose-neon">
+              Voir mes versements
+              <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+            </span>
+          </div>
+        </div>
+      </motion.div>
+    </Link>
   );
 }
 
@@ -558,12 +634,13 @@ export default function OrganizerDashboard() {
   };
   const trendTickets = computeTrend('tickets');
   const trendRevenue = computeTrend('revenue');
+  const revenueSparkline = (analytics60?.dailySales as Array<{ revenue: number }> | undefined)?.map((d) => ({ value: d.revenue }));
 
   if (isLoading || profileLoading) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-6">
+        <SkeletonKpiGrid count={2} />
         <SkeletonKpiGrid count={4} />
-        <SkeletonKpiGrid count={3} />
         <SkeletonCard lines={5} />
         <SkeletonTable rows={4} />
       </div>
@@ -608,38 +685,29 @@ export default function OrganizerDashboard() {
         </div>
       </div>
 
-      {/* KPIs — ventes */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-        <KpiCard title="Événements" value={data?.eventsCount ?? 0} subtitle="Total créés" Icon={CalendarDays} color="violet" />
-        <KpiCard title="Billets vendus" value={(data?.globalSold ?? 0).toLocaleString('fr-FR')} subtitle="vs 30j précédents" Icon={Ticket} color="cyan" trend={trendTickets} />
-        <KpiCard title="Revenus nets" value={formatPrice(data?.globalRevenue ?? 0, 'FCFA', '0 FCFA')} subtitle="vs 30j précédents" Icon={TrendingUp} color="green" trend={trendRevenue} />
-        <Link to="/versements" className="block group">
+      {/* Vue d'ensemble — revenus (métrique principale) + solde à verser (action) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+        <div className="lg:col-span-2">
           <KpiCard
-            title="Solde à verser"
-            value={formatPrice(payoutsData?.balanceDue ?? 0, 'FCFA', '0 FCFA')}
-            subtitle="Voir mes versements"
-            Icon={Banknote}
-            color="rose"
+            size="hero"
+            title="Revenus nets"
+            value={formatPrice(data?.globalRevenue ?? 0, 'FCFA', '0 FCFA')}
+            subtitle="vs 30 jours précédents"
+            Icon={TrendingUp}
+            color="green"
+            trend={trendRevenue}
+            sparkline={revenueSparkline}
           />
-        </Link>
+        </div>
+        <BalanceDueCard amount={payoutsData?.balanceDue ?? 0} />
       </div>
 
-      {/* KPIs — engagement */}
-      <div className="grid grid-cols-2 gap-4 mb-8">
-        <KpiCard
-          title="Abonnés"
-          value={(data?.totalFollowers ?? 0).toLocaleString('fr-FR')}
-          subtitle="Followers de votre page"
-          Icon={Users}
-          color="violet"
-        />
-        <KpiCard
-          title="Total likes"
-          value={(data?.totalLikes ?? 0).toLocaleString('fr-FR')}
-          subtitle="Likes sur vos événements"
-          Icon={Heart}
-          color="rose"
-        />
+      {/* Métriques secondaires */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <KpiCard title="Événements" value={data?.eventsCount ?? 0} Icon={CalendarDays} color="violet" />
+        <KpiCard title="Billets vendus" value={(data?.globalSold ?? 0).toLocaleString('fr-FR')} Icon={Ticket} color="cyan" trend={trendTickets} />
+        <KpiCard title="Abonnés" value={(data?.totalFollowers ?? 0).toLocaleString('fr-FR')} Icon={Users} color="violet" />
+        <KpiCard title="Total likes" value={(data?.totalLikes ?? 0).toLocaleString('fr-FR')} Icon={Heart} color="rose" />
       </div>
 
       {/* Filtre événement global */}
