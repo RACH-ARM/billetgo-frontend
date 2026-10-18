@@ -4,7 +4,7 @@ import {
   Banknote, Check, Mail, Wallet,
   TrendingUp, TrendingDown, CheckCheck,
   History, CalendarDays, Clock, XCircle, AlertTriangle,
-  Smartphone, ArrowDownLeft, Ticket, ChevronLeft, ChevronRight,
+  Smartphone, ArrowDownLeft, ArrowRight, Ticket, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 
 const PAGE_SIZE = 10;
@@ -142,7 +142,9 @@ function Pagination({ page, total, onPrev, onNext }: {
   );
 }
 
-// ─── Operator balance card ────────────────────────────────────────────────────
+// ─── Operator balance card — carte héros/action ───────────────────────────────
+// C'est la raison d'être de cette page : combien l'organisateur peut retirer,
+// maintenant, par opérateur. Traitement visuel fort, pas un simple KPI passif.
 
 function OperatorBalanceCard({
   operator,
@@ -155,12 +157,12 @@ function OperatorBalanceCard({
   phone: string | null;
   onClick: () => void;
 }) {
-  const isAirtel    = operator === 'AIRTEL_MONEY';
-  const label       = isAirtel ? 'Airtel Money' : 'Moov Money';
-  const color       = isAirtel ? 'text-rose-neon'  : 'text-cyan-neon';
-  const border      = isAirtel ? 'border-rose-neon' : 'border-cyan-neon';
-  const bg          = isAirtel ? 'bg-rose-neon/10'  : 'bg-cyan-neon/10';
-  const iconColor   = isAirtel ? 'text-rose-neon'   : 'text-cyan-neon';
+  const isAirtel  = operator === 'AIRTEL_MONEY';
+  const label     = isAirtel ? 'Airtel Money' : 'Moov Money';
+  const color     = isAirtel ? 'text-rose-neon'   : 'text-cyan-neon';
+  const border    = isAirtel ? 'border-rose-neon'  : 'border-cyan-neon';
+  const bg        = isAirtel ? 'bg-rose-neon/10'   : 'bg-cyan-neon/10';
+  const glow      = isAirtel ? 'bg-rose-neon/15'   : 'bg-cyan-neon/15';
 
   const canWithdraw = balance > 0;
 
@@ -168,26 +170,52 @@ function OperatorBalanceCard({
     <button
       onClick={onClick}
       disabled={!canWithdraw}
-      className={`glass-card p-4 border text-left transition-all active:scale-95 disabled:cursor-default w-full ${
-        canWithdraw
-          ? `${border}/40 ${bg} hover:opacity-90 cursor-pointer`
-          : 'border-white/[0.06]'
+      className={`relative overflow-hidden glass-card p-5 border text-left w-full transition-colors active:scale-[0.98] disabled:cursor-default ${
+        canWithdraw ? `${border}/30 hover:${border}/50` : 'border-white/[0.06]'
       }`}
     >
-      <div className="flex items-center gap-2 mb-3">
-        <div className={`w-7 h-7 rounded-full flex items-center justify-center ${bg}`}>
-          <Smartphone className={`w-3.5 h-3.5 ${iconColor}`} />
+      {canWithdraw && (
+        <div className={`absolute -right-8 -top-8 w-32 h-32 rounded-full ${glow} blur-2xl`} />
+      )}
+      <div className="relative flex items-start justify-between gap-2 mb-4">
+        <div className="flex items-center gap-2.5">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${canWithdraw ? bg : 'bg-white/5'}`}>
+            <Smartphone className={`w-4.5 h-4.5 ${canWithdraw ? color : 'text-white/20'}`} />
+          </div>
+          <span className={`font-bebas text-base tracking-wider ${canWithdraw ? color : 'text-white/30'}`}>
+            {label}
+          </span>
         </div>
-        <span className={`font-bebas text-sm tracking-wider ${canWithdraw ? color : 'text-white/30'}`}>
-          {label}
-        </span>
+        {canWithdraw && <ArrowRight className={`w-4 h-4 ${color} opacity-60`} />}
       </div>
-      <p className={`font-mono font-bold text-xl leading-tight ${canWithdraw ? color : 'text-white/20'}`}>
+      <p className={`relative font-bebas text-3xl sm:text-4xl tabular-nums leading-none ${canWithdraw ? color : 'text-white/20'}`}>
         {formatPrice(balance, 'FCFA', '0 FCFA')}
       </p>
-      {phone && <p className="text-[11px] text-white/30 mt-1 font-mono truncate">{phone}</p>}
-      {canWithdraw && <p className={`text-[10px] mt-1.5 ${color}/60`}>Appuyer pour retirer</p>}
+      {phone && <p className="relative text-[11px] text-white/30 mt-2.5 font-mono truncate">{phone}</p>}
+      <p className={`relative text-[11px] mt-1 font-semibold ${canWithdraw ? `${color}/70` : 'text-white/20'}`}>
+        {canWithdraw ? 'Appuyer pour retirer' : 'Aucun solde disponible'}
+      </p>
     </button>
+  );
+}
+
+// ─── Mini stat — récapitulatif financier (secondaire) ─────────────────────────
+
+function MiniStat({ label, value, Icon, color, bg }: {
+  label: string; value: string;
+  Icon: React.ComponentType<{ className?: string }>;
+  color: string; bg: string;
+}) {
+  return (
+    <div className="glass-card p-4 border border-white/[0.06] flex items-center gap-3">
+      <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${bg}`}>
+        <Icon className={`w-4 h-4 ${color}`} />
+      </div>
+      <div className="min-w-0">
+        <p className="text-[10px] text-white/40 uppercase tracking-widest truncate leading-none mb-1">{label}</p>
+        <p className="font-mono font-bold text-sm text-white tabular-nums leading-none">{value}</p>
+      </div>
+    </div>
   );
 }
 
@@ -260,28 +288,8 @@ export default function Versements() {
         )}
       </motion.div>
 
-      {/* ── KPIs ── */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }}>
-        {payoutsLoading ? <SkeletonKpiGrid count={4} /> : (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {([
-              { label: 'Total collecté',   value: formatPrice(totalCollected,   'FCFA', '0 FCFA'), Icon: TrendingUp,  color: 'border-cyan-neon/20 bg-cyan-neon/5',     icon: 'text-cyan-neon'   },
-              { label: 'Commission',       value: formatPrice(totalPlatformFee, 'FCFA', '0 FCFA'), Icon: TrendingDown,color: 'border-rose-neon/20 bg-rose-neon/5',     icon: 'text-rose-neon'   },
-              { label: 'Net organisateur', value: formatPrice(totalNetAmount,   'FCFA', '0 FCFA'), Icon: Banknote,    color: 'border-violet-neon/20 bg-violet-neon/5', icon: 'text-violet-neon' },
-              { label: 'Déjà retiré',      value: formatPrice(totalPaid,        'FCFA', '0 FCFA'), Icon: CheckCheck,  color: 'border-green-500/20 bg-green-500/5',     icon: 'text-green-400'   },
-            ] as const).map(({ label, value, Icon, color, icon }) => (
-              <div key={label} className={`glass-card p-4 border ${color}`}>
-                <Icon className={`w-4 h-4 mb-2 ${icon}`} />
-                <p className="text-[11px] text-white/40 uppercase tracking-widest leading-none mb-1">{label}</p>
-                <p className="font-mono font-bold text-base text-white leading-tight">{value}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </motion.div>
-
-      {/* ── Solde par opérateur ── */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }} className="space-y-3">
+      {/* ── Solde disponible — l'action principale de cette page ── */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }} className="space-y-3">
         <div className="flex items-center gap-2">
           <Wallet className="w-4 h-4 text-white/30" />
           <h2 className="font-bebas text-2xl tracking-wider text-white leading-none">Solde disponible</h2>
@@ -303,7 +311,18 @@ export default function Versements() {
             />
           </div>
         )}
+      </motion.div>
 
+      {/* ── Récapitulatif financier (secondaire) ── */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }}>
+        {payoutsLoading ? <SkeletonKpiGrid count={4} /> : (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <MiniStat label="Total collecté"   value={formatPrice(totalCollected,   'FCFA', '0 FCFA')} Icon={TrendingUp}   color="text-cyan-neon"   bg="bg-cyan-neon/10" />
+            <MiniStat label="Commission"       value={formatPrice(totalPlatformFee, 'FCFA', '0 FCFA')} Icon={TrendingDown} color="text-rose-neon"   bg="bg-rose-neon/10" />
+            <MiniStat label="Net organisateur" value={formatPrice(totalNetAmount,   'FCFA', '0 FCFA')} Icon={Banknote}     color="text-violet-neon" bg="bg-violet-neon/10" />
+            <MiniStat label="Déjà retiré"      value={formatPrice(totalPaid,        'FCFA', '0 FCFA')} Icon={CheckCheck}   color="text-green-400"   bg="bg-green-500/10" />
+          </div>
+        )}
       </motion.div>
 
       {/* ── Gains par événement ── */}
