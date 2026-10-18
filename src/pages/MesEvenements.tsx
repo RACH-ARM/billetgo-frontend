@@ -801,14 +801,16 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
                 <div className={`rounded-xl border p-3 space-y-2 ${hasNegative ? 'bg-rose-neon/5 border-rose-neon/30' : 'bg-white/[0.02] border-white/10'}`}>
                   <p className="text-xs text-white/40 font-semibold uppercase tracking-widest">Aperçu de marge par billet</p>
                   {rows.map((r) => (
-                    <div key={r.id} className="flex items-center justify-between text-xs gap-2">
-                      <span className="text-white/50 truncate">{r.name}</span>
-                      <span className="text-white/30 font-mono whitespace-nowrap">
-                        {formatPrice(r.price, 'FCFA', '0 FCFA')} − {formatPrice(r.discountAmount, 'FCFA', '0 FCFA')} (réduc.) − {formatPrice(r.commissionAmount, 'FCFA', '0 FCFA')} (comm.) =
-                      </span>
-                      <span className={`font-mono font-semibold whitespace-nowrap ${r.margin < 0 ? 'text-rose-neon' : 'text-emerald-400'}`}>
-                        {formatPrice(r.margin, 'FCFA', '0 FCFA')}
-                      </span>
+                    <div key={r.id} className="text-xs">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-white/50 truncate min-w-0">{r.name}</span>
+                        <span className={`font-mono font-semibold flex-shrink-0 ${r.margin < 0 ? 'text-rose-neon' : 'text-emerald-400'}`}>
+                          {formatPrice(r.margin, 'FCFA', '0 FCFA')}
+                        </span>
+                      </div>
+                      <p className="text-white/25 font-mono text-[11px] mt-0.5">
+                        {formatPrice(r.price, 'FCFA', '0 FCFA')} − {formatPrice(r.discountAmount, 'FCFA', '0 FCFA')} (réduc.) − {formatPrice(r.commissionAmount, 'FCFA', '0 FCFA')} (comm.)
+                      </p>
                     </div>
                   ))}
                   {hasNegative && (
