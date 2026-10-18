@@ -6,6 +6,7 @@ import {
   ChevronRight, ChevronDown, ChevronUp, ArrowLeft, Phone, Mail, CreditCard,
   Plus, Trash2, AlertTriangle, Check, Copy, ScanLine, RefreshCw, ShoppingBag,
   Clock, Ban, X, Banknote, Images, ImagePlus, MapPin, Heart,
+  User, Tag, Percent, SlidersHorizontal,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useOrganizerStats, useEventBuyers, useCreateEvent, useUpdateEvent, useProposeChanges, useResubmitEvent, useCancelEvent, useOrganizerProfile, useEventDetails, useUploadEventGallery, useDeleteEventGalleryPhoto } from '../hooks/useOrganizer';
@@ -574,6 +575,7 @@ function BuyersPanel({ event, onBack }: { event: OrganizerEventStat; onBack: () 
 function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack: () => void }) {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const { data: eventDetails } = useEventDetails(event.eventId);
   const eventCategories: { id: string; name: string; price: number }[] = eventDetails?.ticketCategories ?? [];
@@ -645,6 +647,7 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
       onSuccess: () => {
         queryClient.invalidateQueries(['promo-codes', event.eventId]);
         setShowForm(false);
+        setShowAdvanced(false);
         setForm(emptyForm);
         toast.success('Code créé — invitation envoyée à l\'influenceur');
       },
@@ -697,19 +700,6 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
     }
   );
 
-  const togglePromoEnabledMutation = useMutation(
-    (enabled: boolean) => organizerService.togglePromoEnabled(event.eventId, enabled),
-    {
-      onSuccess: (data) => {
-        queryClient.invalidateQueries('organizer-stats');
-        toast.success(data.promoEnabled ? 'Codes promo activés pour cet événement' : 'Codes promo désactivés');
-      },
-      onError: () => {
-        toast.error('Erreur lors de la mise à jour');
-      },
-    }
-  );
-
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -728,207 +718,229 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
         </button>
       </div>
 
-      {!event.promoEnabled ? (
-        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-3 flex-wrap">
-          <p className="text-amber-400 text-sm">Les codes promo ne sont pas activés pour cet événement.</p>
-          <button
-            onClick={() => togglePromoEnabledMutation.mutate(true)}
-            disabled={togglePromoEnabledMutation.isLoading}
-            className="flex-shrink-0 px-3.5 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-semibold hover:bg-amber-500/30 transition-colors disabled:opacity-50"
-          >
-            {togglePromoEnabledMutation.isLoading ? 'Activation...' : 'Activer les codes promo'}
-          </button>
-        </div>
-      ) : (
-        <div className="p-3 rounded-xl bg-green-500/5 border border-green-500/20 flex items-center justify-between gap-3 flex-wrap">
-          <p className="text-green-400/80 text-xs flex items-center gap-1.5"><Check className="w-3.5 h-3.5" /> Codes promo activés pour cet événement</p>
-          <button
-            onClick={() => togglePromoEnabledMutation.mutate(false)}
-            disabled={togglePromoEnabledMutation.isLoading}
-            className="flex-shrink-0 text-white/30 hover:text-rose-neon text-xs transition-colors disabled:opacity-50"
-          >
-            Désactiver
-          </button>
-        </div>
-      )}
-
       {showForm && (
-        <div className="glass-card p-4 sm:p-5 space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <input value={form.influencerFirstName} onChange={(e) => setForm((f) => ({ ...f, influencerFirstName: e.target.value }))} placeholder="Prénom influenceur" className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors" />
-            <input value={form.influencerLastName} onChange={(e) => setForm((f) => ({ ...f, influencerLastName: e.target.value }))} placeholder="Nom influenceur" className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors" />
-            <input value={form.influencerEmail} onChange={(e) => setForm((f) => ({ ...f, influencerEmail: e.target.value }))} placeholder="Email influenceur *" type="email" className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors" />
+        <div className="glass-card p-5 sm:p-6 space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="font-bebas text-lg tracking-wider text-white">Nouveau code promo</h3>
+            <button type="button" onClick={() => { setShowForm(false); setShowAdvanced(false); }} className="text-white/30 hover:text-white transition-colors">
+              <X className="w-4 h-4" />
+            </button>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <input value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))} placeholder="Code (ex. INSTA20) *" className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white font-mono placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors" />
-            <input value={form.label} onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))} placeholder="Libellé (ex. Campagne Instagram)" className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors" />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <p className="text-xs text-white/40">Réduction acheteur</p>
-              <div className="flex gap-2">
-                <select value={form.discountType} onChange={(e) => setForm((f) => ({ ...f, discountType: e.target.value as 'PERCENTAGE' | 'FIXED' | 'NONE' }))} className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-2 py-2 text-white text-xs focus:outline-none focus:border-violet-neon">
-                  <option value="NONE">Aucune</option>
-                  <option value="PERCENTAGE">%</option>
-                  <option value="FIXED">FCFA fixe</option>
-                </select>
-                {form.discountType !== 'NONE' && (
-                  <input type="number" value={form.discountValue} onChange={(e) => setForm((f) => ({ ...f, discountValue: e.target.value }))} placeholder={form.discountType === 'PERCENTAGE' ? '20' : '1000'} className="flex-1 bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon" />
-                )}
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <p className="text-xs text-white/40">Commission influenceur</p>
-              <div className="flex gap-2">
-                <select value={form.commissionType} onChange={(e) => setForm((f) => ({ ...f, commissionType: e.target.value as 'PERCENTAGE' | 'FIXED' | 'NONE', commissionValue: e.target.value === 'NONE' ? '0' : f.commissionValue }))} className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-2 py-2 text-white text-xs focus:outline-none focus:border-violet-neon">
-                  <option value="NONE">Aucune</option>
-                  <option value="PERCENTAGE">%</option>
-                  <option value="FIXED">FCFA/billet</option>
-                </select>
-                {form.commissionType !== 'NONE' && (
-                  <input type="number" value={form.commissionValue} onChange={(e) => setForm((f) => ({ ...f, commissionValue: e.target.value }))} placeholder={form.commissionType === 'PERCENTAGE' ? '5' : '500'} className="flex-1 bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon" />
-                )}
-              </div>
+
+          {/* ── Influenceur ── */}
+          <div className="space-y-2.5">
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-white/40 uppercase tracking-wider">
+              <User className="w-3.5 h-3.5" /> Influenceur
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <input value={form.influencerFirstName} onChange={(e) => setForm((f) => ({ ...f, influencerFirstName: e.target.value }))} placeholder="Prénom" className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors" />
+              <input value={form.influencerLastName} onChange={(e) => setForm((f) => ({ ...f, influencerLastName: e.target.value }))} placeholder="Nom" className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors" />
+              <input value={form.influencerEmail} onChange={(e) => setForm((f) => ({ ...f, influencerEmail: e.target.value }))} placeholder="Email *" type="email" className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors" />
             </div>
           </div>
 
-          {(() => {
-            const targetCats = form.allCategories ? eventCategories : eventCategories.filter((c) => form.categoryIds.includes(c.id));
-            if (targetCats.length === 0 || (form.discountType === 'NONE' && form.commissionType === 'NONE')) return null;
-            const discountValue = Number(form.discountValue) || 0;
-            const commissionValue = Number(form.commissionValue) || 0;
-            const rows = targetCats.map((cat) => {
-              const discountAmount = form.discountType === 'PERCENTAGE' ? Math.round(cat.price * discountValue / 100) : form.discountType === 'FIXED' ? discountValue : 0;
-              const priceAfterDiscount = Math.max(0, cat.price - discountAmount);
-              const commissionAmount = form.commissionType === 'PERCENTAGE' ? Math.round(cat.price * commissionValue / 100) : form.commissionType === 'FIXED' ? commissionValue : 0;
-              const margin = priceAfterDiscount - commissionAmount;
-              return { ...cat, discountAmount, commissionAmount, margin };
-            });
-            const hasNegative = rows.some((r) => r.margin < 0);
-            return (
-              <div className={`rounded-xl border p-3 space-y-2 ${hasNegative ? 'bg-rose-neon/5 border-rose-neon/30' : 'bg-white/[0.02] border-white/10'}`}>
-                <p className="text-xs text-white/40 font-semibold uppercase tracking-widest">Aperçu de marge par billet</p>
-                {rows.map((r) => (
-                  <div key={r.id} className="flex items-center justify-between text-xs gap-2">
-                    <span className="text-white/50 truncate">{r.name}</span>
-                    <span className="text-white/30 font-mono whitespace-nowrap">
-                      {formatPrice(r.price, 'FCFA', '0 FCFA')} − {formatPrice(r.discountAmount, 'FCFA', '0 FCFA')} (réduc.) − {formatPrice(r.commissionAmount, 'FCFA', '0 FCFA')} (comm.) =
-                    </span>
-                    <span className={`font-mono font-semibold whitespace-nowrap ${r.margin < 0 ? 'text-rose-neon' : 'text-emerald-400'}`}>
-                      {formatPrice(r.margin, 'FCFA', '0 FCFA')}
-                    </span>
+          {/* ── Code ── */}
+          <div className="space-y-2.5 pt-5 border-t border-white/5">
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-white/40 uppercase tracking-wider">
+              <Tag className="w-3.5 h-3.5" /> Code
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <input value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))} placeholder="INSTA20 *" className="bg-bg-secondary border border-violet-neon/30 rounded-xl px-3 py-2.5 text-white font-mono font-bold tracking-widest placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors" />
+              <input value={form.label} onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))} placeholder="Libellé — ex. Campagne Instagram" className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors" />
+            </div>
+          </div>
+
+          {/* ── Réduction & commission ── */}
+          <div className="space-y-3 pt-5 border-t border-white/5">
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-white/40 uppercase tracking-wider">
+              <Percent className="w-3.5 h-3.5" /> Réduction &amp; commission
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 space-y-1.5">
+                <p className="text-xs text-white/40">Réduction acheteur</p>
+                <div className="flex gap-2">
+                  <select value={form.discountType} onChange={(e) => setForm((f) => ({ ...f, discountType: e.target.value as 'PERCENTAGE' | 'FIXED' | 'NONE' }))} className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-2 py-2 text-white text-xs focus:outline-none focus:border-violet-neon">
+                    <option value="NONE">Aucune</option>
+                    <option value="PERCENTAGE">%</option>
+                    <option value="FIXED">FCFA fixe</option>
+                  </select>
+                  {form.discountType !== 'NONE' && (
+                    <input type="number" value={form.discountValue} onChange={(e) => setForm((f) => ({ ...f, discountValue: e.target.value }))} placeholder={form.discountType === 'PERCENTAGE' ? '20' : '1000'} className="flex-1 min-w-0 bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon" />
+                  )}
+                </div>
+              </div>
+              <div className="bg-white/[0.02] border border-white/5 rounded-xl p-3 space-y-1.5">
+                <p className="text-xs text-white/40">Commission influenceur</p>
+                <div className="flex gap-2">
+                  <select value={form.commissionType} onChange={(e) => setForm((f) => ({ ...f, commissionType: e.target.value as 'PERCENTAGE' | 'FIXED' | 'NONE', commissionValue: e.target.value === 'NONE' ? '0' : f.commissionValue }))} className="bg-bg-secondary border border-violet-neon/20 rounded-xl px-2 py-2 text-white text-xs focus:outline-none focus:border-violet-neon">
+                    <option value="NONE">Aucune</option>
+                    <option value="PERCENTAGE">%</option>
+                    <option value="FIXED">FCFA/billet</option>
+                  </select>
+                  {form.commissionType !== 'NONE' && (
+                    <input type="number" value={form.commissionValue} onChange={(e) => setForm((f) => ({ ...f, commissionValue: e.target.value }))} placeholder={form.commissionType === 'PERCENTAGE' ? '5' : '500'} className="flex-1 min-w-0 bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon" />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {(() => {
+              const targetCats = form.allCategories ? eventCategories : eventCategories.filter((c) => form.categoryIds.includes(c.id));
+              if (targetCats.length === 0 || (form.discountType === 'NONE' && form.commissionType === 'NONE')) return null;
+              const discountValue = Number(form.discountValue) || 0;
+              const commissionValue = Number(form.commissionValue) || 0;
+              const rows = targetCats.map((cat) => {
+                const discountAmount = form.discountType === 'PERCENTAGE' ? Math.round(cat.price * discountValue / 100) : form.discountType === 'FIXED' ? discountValue : 0;
+                const priceAfterDiscount = Math.max(0, cat.price - discountAmount);
+                const commissionAmount = form.commissionType === 'PERCENTAGE' ? Math.round(cat.price * commissionValue / 100) : form.commissionType === 'FIXED' ? commissionValue : 0;
+                const margin = priceAfterDiscount - commissionAmount;
+                return { ...cat, discountAmount, commissionAmount, margin };
+              });
+              const hasNegative = rows.some((r) => r.margin < 0);
+              return (
+                <div className={`rounded-xl border p-3 space-y-2 ${hasNegative ? 'bg-rose-neon/5 border-rose-neon/30' : 'bg-white/[0.02] border-white/10'}`}>
+                  <p className="text-xs text-white/40 font-semibold uppercase tracking-widest">Aperçu de marge par billet</p>
+                  {rows.map((r) => (
+                    <div key={r.id} className="flex items-center justify-between text-xs gap-2">
+                      <span className="text-white/50 truncate">{r.name}</span>
+                      <span className="text-white/30 font-mono whitespace-nowrap">
+                        {formatPrice(r.price, 'FCFA', '0 FCFA')} − {formatPrice(r.discountAmount, 'FCFA', '0 FCFA')} (réduc.) − {formatPrice(r.commissionAmount, 'FCFA', '0 FCFA')} (comm.) =
+                      </span>
+                      <span className={`font-mono font-semibold whitespace-nowrap ${r.margin < 0 ? 'text-rose-neon' : 'text-emerald-400'}`}>
+                        {formatPrice(r.margin, 'FCFA', '0 FCFA')}
+                      </span>
+                    </div>
+                  ))}
+                  {hasNegative && (
+                    <p className="text-rose-neon text-xs flex items-center gap-1.5 pt-1 border-t border-rose-neon/20">
+                      <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                      Cette configuration fait perdre de l'argent : la réduction + commission dépasse le prix du billet.
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* ── Options avancées (repliées par défaut) ── */}
+          <div className="pt-5 border-t border-white/5">
+            <button
+              type="button"
+              onClick={() => setShowAdvanced((v) => !v)}
+              className="w-full flex items-center justify-between text-xs font-semibold text-white/40 uppercase tracking-wider hover:text-white/60 transition-colors"
+            >
+              <span className="flex items-center gap-1.5">
+                <SlidersHorizontal className="w-3.5 h-3.5" /> Options avancées
+                <span className="normal-case font-normal text-white/25">(optionnel)</span>
+              </span>
+              <ChevronDown className={`w-4 h-4 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showAdvanced && (
+              <div className="space-y-5 mt-4">
+                {/* Limite d'utilisations */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-white/40">Limite d'utilisations</p>
+                    <button
+                      type="button"
+                      onClick={() => setForm((f) => ({ ...f, unlimited: !f.unlimited, maxUses: '' }))}
+                      className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${form.unlimited ? 'border-violet-neon/40 text-violet-neon bg-violet-neon/10' : 'border-white/10 text-white/30'}`}
+                    >
+                      Illimité
+                    </button>
                   </div>
-                ))}
-                {hasNegative && (
-                  <p className="text-rose-neon text-xs flex items-center gap-1.5 pt-1 border-t border-rose-neon/20">
-                    <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-                    Cette configuration fait perdre de l'argent : la réduction + commission dépasse le prix du billet.
-                  </p>
+                  {!form.unlimited && (
+                    <input
+                      type="number" min="1"
+                      value={form.maxUses}
+                      onChange={(e) => setForm((f) => ({ ...f, maxUses: e.target.value }))}
+                      placeholder="ex. 50"
+                      className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors"
+                    />
+                  )}
+                </div>
+
+                {/* Période de validité */}
+                <div className="space-y-2">
+                  <p className="text-xs text-white/40">Période de validité</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-xs text-white/30 mb-1">Du</p>
+                      <input
+                        type="date"
+                        value={form.validFrom}
+                        onChange={(e) => setForm((f) => ({ ...f, validFrom: e.target.value }))}
+                        className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-violet-neon transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <p className="text-xs text-white/30 mb-1">Au</p>
+                      <input
+                        type="date"
+                        value={form.validUntil}
+                        onChange={(e) => setForm((f) => ({ ...f, validUntil: e.target.value }))}
+                        className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-violet-neon transition-colors"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Montant minimum */}
+                <div className="space-y-2">
+                  <p className="text-xs text-white/40">Montant minimum d'achat</p>
+                  <input
+                    type="number" min="0"
+                    value={form.minPurchaseAmount}
+                    onChange={(e) => setForm((f) => ({ ...f, minPurchaseAmount: e.target.value }))}
+                    placeholder="ex. 60000 FCFA"
+                    className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors"
+                  />
+                </div>
+
+                {/* Catégories ciblées */}
+                {eventCategories.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-white/40">Catégories ciblées</p>
+                      <button
+                        type="button"
+                        onClick={() => setForm((f) => ({ ...f, allCategories: !f.allCategories, categoryIds: [] }))}
+                        className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${form.allCategories ? 'border-violet-neon/40 text-violet-neon bg-violet-neon/10' : 'border-white/10 text-white/30'}`}
+                      >
+                        Toutes
+                      </button>
+                    </div>
+                    {!form.allCategories && (
+                      <div className="flex flex-wrap gap-2">
+                        {eventCategories.map((cat) => {
+                          const selected = form.categoryIds.includes(cat.id);
+                          return (
+                            <button
+                              key={cat.id}
+                              type="button"
+                              onClick={() => setForm((f) => ({
+                                ...f,
+                                categoryIds: selected
+                                  ? f.categoryIds.filter((id) => id !== cat.id)
+                                  : [...f.categoryIds, cat.id],
+                              }))}
+                              className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${selected ? 'border-violet-neon/50 text-violet-neon bg-violet-neon/10' : 'border-white/10 text-white/30 hover:border-white/20'}`}
+                            >
+                              {cat.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
-            );
-          })()}
-
-          {/* Limite d'utilisations */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-white/40">Limite d'utilisations</p>
-              <button
-                type="button"
-                onClick={() => setForm((f) => ({ ...f, unlimited: !f.unlimited, maxUses: '' }))}
-                className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${form.unlimited ? 'border-violet-neon/40 text-violet-neon bg-violet-neon/10' : 'border-white/10 text-white/30'}`}
-              >
-                Illimité
-              </button>
-            </div>
-            {!form.unlimited && (
-              <input
-                type="number" min="1"
-                value={form.maxUses}
-                onChange={(e) => setForm((f) => ({ ...f, maxUses: e.target.value }))}
-                placeholder="ex. 50"
-                className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors"
-              />
             )}
           </div>
 
-          {/* Période de validité */}
-          <div className="space-y-2">
-            <p className="text-xs text-white/40">Période de validité <span className="text-white/20">(optionnel)</span></p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <p className="text-xs text-white/30 mb-1">Du</p>
-                <input
-                  type="date"
-                  value={form.validFrom}
-                  onChange={(e) => setForm((f) => ({ ...f, validFrom: e.target.value }))}
-                  className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-violet-neon transition-colors"
-                />
-              </div>
-              <div>
-                <p className="text-xs text-white/30 mb-1">Au</p>
-                <input
-                  type="date"
-                  value={form.validUntil}
-                  onChange={(e) => setForm((f) => ({ ...f, validUntil: e.target.value }))}
-                  className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-violet-neon transition-colors"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Montant minimum */}
-          <div className="space-y-2">
-            <p className="text-xs text-white/40">Montant minimum d'achat <span className="text-white/20">(optionnel)</span></p>
-            <input
-              type="number" min="0"
-              value={form.minPurchaseAmount}
-              onChange={(e) => setForm((f) => ({ ...f, minPurchaseAmount: e.target.value }))}
-              placeholder="ex. 60000 FCFA"
-              className="w-full bg-bg-secondary border border-violet-neon/20 rounded-xl px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none focus:border-violet-neon transition-colors"
-            />
-          </div>
-
-          {/* Catégories ciblées */}
-          {eventCategories.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-white/40">Catégories ciblées</p>
-                <button
-                  type="button"
-                  onClick={() => setForm((f) => ({ ...f, allCategories: !f.allCategories, categoryIds: [] }))}
-                  className={`text-xs px-2.5 py-1 rounded-lg border transition-colors ${form.allCategories ? 'border-violet-neon/40 text-violet-neon bg-violet-neon/10' : 'border-white/10 text-white/30'}`}
-                >
-                  Toutes
-                </button>
-              </div>
-              {!form.allCategories && (
-                <div className="flex flex-wrap gap-2">
-                  {eventCategories.map((cat) => {
-                    const selected = form.categoryIds.includes(cat.id);
-                    return (
-                      <button
-                        key={cat.id}
-                        type="button"
-                        onClick={() => setForm((f) => ({
-                          ...f,
-                          categoryIds: selected
-                            ? f.categoryIds.filter((id) => id !== cat.id)
-                            : [...f.categoryIds, cat.id],
-                        }))}
-                        className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${selected ? 'border-violet-neon/50 text-violet-neon bg-violet-neon/10' : 'border-white/10 text-white/30 hover:border-white/20'}`}
-                      >
-                        {cat.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-
           <div className="flex gap-3">
-            <button onClick={() => setShowForm(false)} className="flex-1 py-2.5 rounded-xl border border-white/10 text-white/40 text-sm hover:border-white/20 transition-colors">Annuler</button>
+            <button onClick={() => { setShowForm(false); setShowAdvanced(false); }} className="flex-1 py-2.5 rounded-xl border border-white/10 text-white/40 text-sm hover:border-white/20 transition-colors">Annuler</button>
             <button
               onClick={() => createMutation.mutate()}
               disabled={!form.influencerEmail || !form.code || createMutation.isLoading}

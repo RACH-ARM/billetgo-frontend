@@ -317,11 +317,6 @@ export const organizerService = {
     return data.data;
   },
 
-  togglePromoEnabled: async (eventId: string, enabled: boolean): Promise<{ promoEnabled: boolean }> => {
-    const { data } = await api.patch(`/organizer/events/${eventId}/promo-enabled`, { enabled });
-    return data.data;
-  },
-
   getPosPaymentReport: async (eventId?: string): Promise<PosPaymentReport> => {
     const { data } = await api.get('/organizer/pos-report', { params: eventId ? { eventId } : {} });
     return data.data;
