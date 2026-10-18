@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation, useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, X, ArrowRight, Minus, Plus, MapPin, Share2, Copy, Check as CheckIcon, Star, MessageSquare, Bell, BellOff, Heart, UserCheck, UserPlus } from 'lucide-react';
+import { ChevronLeft, X, ArrowRight, Minus, Plus, MapPin, Share2, Copy, Check as CheckIcon, Star, MessageSquare, Bell, BellOff, Heart, UserCheck, UserPlus, Lock } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { Helmet } from 'react-helmet-async';
 import { useEvent } from '../hooks/useEvents';
@@ -780,20 +780,46 @@ export default function EventDetail() {
                 <p className="text-white/30 text-sm">Cet événement s'est déroulé le {new Date(event.eventDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}.</p>
               </motion.div>
             ) : isUnpublished ? (
-              <motion.div
-                initial={{ opacity: 0, x: 16 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="glass-card p-6 border border-violet-neon/20 text-center"
-              >
-                <Bell className="w-7 h-7 text-violet-neon/60 mx-auto mb-2" />
-                <p className="font-bebas text-2xl tracking-wider text-white mb-1">VENTE PAS ENCORE OUVERTE</p>
-                <p className="text-white/40 text-sm">
-                  {event.ticketCategories?.length
-                    ? `Billets à partir de ${formatPrice(minPrice)} — `
-                    : ''}
-                  revenez dès la fin du compte à rebours pour réserver.
-                </p>
-              </motion.div>
+              <>
+                <motion.div
+                  initial={{ opacity: 0, x: 16 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="glass-card p-4 border border-violet-neon/20 flex items-center gap-3"
+                >
+                  <Bell className="w-5 h-5 text-violet-neon/70 flex-shrink-0" />
+                  <div>
+                    <p className="text-white text-sm font-semibold">Vente pas encore ouverte</p>
+                    <p className="text-white/40 text-xs">Les billets ci-dessous se débloquent à la fin du compte à rebours.</p>
+                  </div>
+                </motion.div>
+
+                {/* Catégories visibles mais verrouillées — même liste que lorsque l'événement
+                    est publié, pour que l'acheteur sache déjà ce qu'il pourra réserver. */}
+                {event.ticketCategories
+                  .filter((cat) => cat.isVisible)
+                  .sort((a, b) => a.sortOrder - b.sortOrder)
+                  .map((cat, i) => (
+                    <motion.div
+                      key={cat.id}
+                      initial={{ opacity: 0, x: 16 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.08 }}
+                      className="glass-card p-4 border border-white/10"
+                    >
+                      <div className="flex justify-between items-start mb-1">
+                        <h3 className="font-semibold text-white">{cat.name}</h3>
+                        <span className="font-mono font-bold text-cyan-neon text-sm">{formatPrice(cat.price)}</span>
+                      </div>
+                      {cat.description && (
+                        <p className="text-xs text-white/50 mb-3">{cat.description}</p>
+                      )}
+                      <div className="flex items-center gap-1.5 text-white/30 text-xs pt-2 border-t border-white/5">
+                        <Lock className="w-3 h-3 flex-shrink-0" />
+                        Disponible à la publication
+                      </div>
+                    </motion.div>
+                  ))}
+              </>
             ) : (
               <>
                 <motion.h2
