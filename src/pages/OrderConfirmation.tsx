@@ -17,7 +17,7 @@ import { formatPrice } from '../utils/formatPrice';
 import { normalizeGabonPhone, isValidGabonPhone, isPhoneMatchingProvider } from '../utils/phone';
 import Button from '../components/common/Button';
 import type { PaymentProvider } from '../types/ticket';
-import { generateTicketCanvas, blobToBase64 } from '../utils/ticketCanvas';
+import { blobToBase64 } from '../utils/ticketCanvas';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 type ConfirmationState = 'WAITING' | 'SUCCESS' | 'FAILURE' | 'RETRYABLE_FAILURE' | 'TIMEOUT' | 'UNAUTHORIZED';
@@ -232,7 +232,7 @@ function OrderConfirmationInner({ initialState }: { initialState: NavState }) {
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
 
   const state = initialState;
 
@@ -247,7 +247,9 @@ function OrderConfirmationInner({ initialState }: { initialState: NavState }) {
   const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [qrSaving, setQrSaving] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  // Même rendu backend (pdfService.generateTicketPNG) que le billet envoyé sur WhatsApp —
+  // dérivé de qrImageUrl pour réutiliser le même token HMAC sans aller-retour serveur.
+  const ticketImageUrl = qrImageUrl ? qrImageUrl.replace('/qr-public?', '/ticket-image-public?') : null;
 
   // Fetch QR as base64 when URL is known (CSP-safe + needed for canvas generation)
   useEffect(() => {
@@ -559,7 +561,6 @@ function OrderConfirmationInner({ initialState }: { initialState: NavState }) {
               {/* QR Code — téléchargeable dans la galerie */}
               {qrImageUrl && (
                 <div className="glass-card p-5 border border-violet-neon/20 space-y-4">
-                  <canvas ref={canvasRef} className="hidden" />
                   <h3 className="font-bebas text-lg tracking-wider text-violet-neon text-center flex items-center justify-center gap-2">
                     <Ticket className="w-5 h-5" />
                     QR Code d'entrée
@@ -572,28 +573,17 @@ function OrderConfirmationInner({ initialState }: { initialState: NavState }) {
                       }
                     </div>
                     <button
-                      disabled={!qrDataUrl}
+                      disabled={!ticketImageUrl}
                       onClick={async () => {
-                        if (qrSaving || !qrDataUrl || !canvasRef.current) return;
+                        if (qrSaving || !ticketImageUrl) return;
                         setQrSaving(true);
-                        // Céder un frame au browser pour peindre le spinner avant le travail canvas
-                        await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
                         try {
-                          const categoryLabel = state?.orderItems.length === 1
-                            ? `${state.ticketsCount} billet${state.ticketsCount > 1 ? 's' : ''} — ${state.orderItems[0].name}`
-                            : `${state?.ticketsCount ?? 1} billet${(state?.ticketsCount ?? 1) > 1 ? 's' : ''}`;
-                          await generateTicketCanvas(canvasRef.current, qrDataUrl, {
-                            ticketId: orderId ?? 'billetgab',
-                            eventTitle: state?.eventName,
-                            categoryName: categoryLabel,
-                            eventDate: state?.eventDate,
-                            venueName: state?.venueName,
-                            coverImageUrl: state?.coverImageUrl || undefined,
-                            buyerName: user ? `${user.firstName} ${user.lastName}`.trim() : undefined,
-                            buyerEmail: user?.email ?? undefined,
-                            price: state?.baseAmount ?? state?.amount,
-                          });
-                          const blob: Blob = await new Promise(res => canvasRef.current!.toBlob(b => res(b!), 'image/png'));
+                          // Même image PNG (rendu backend) que celle envoyée sur WhatsApp —
+                          // plus de rendu canvas séparé côté frontend, donc plus aucune
+                          // divergence visuelle possible entre les deux.
+                          const res = await fetch(ticketImageUrl, { headers: NGROK_SKIP_HEADER });
+                          if (!res.ok) throw new Error('fetch failed');
+                          const blob = await res.blob();
                           const file = new File([blob], 'billet-billetgab.png', { type: 'image/png' });
                           if (navigator.share && navigator.canShare?.({ files: [file] })) {
                             await navigator.share({ files: [file], title: 'Mon billet BilletGab' });
