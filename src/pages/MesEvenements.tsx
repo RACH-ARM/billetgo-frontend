@@ -694,6 +694,17 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
     }
   );
 
+  const togglePromoEnabledMutation = useMutation(
+    (enabled: boolean) => organizerService.togglePromoEnabled(event.eventId, enabled),
+    {
+      onSuccess: (data) => {
+        queryClient.invalidateQueries('organizer-stats');
+        toast.success(data.promoEnabled ? 'Codes promo activés pour cet événement' : 'Codes promo désactivés');
+      },
+      onError: () => toast.error('Erreur lors de la mise à jour'),
+    }
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -712,9 +723,27 @@ function PromoCodesPanel({ event, onBack }: { event: OrganizerEventStat; onBack:
         </button>
       </div>
 
-      {!event.promoEnabled && (
-        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-sm">
-          Les codes promo ne sont pas activés pour cet événement. Contactez l'admin BilletGab pour les activer.
+      {!event.promoEnabled ? (
+        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-3 flex-wrap">
+          <p className="text-amber-400 text-sm">Les codes promo ne sont pas activés pour cet événement.</p>
+          <button
+            onClick={() => togglePromoEnabledMutation.mutate(true)}
+            disabled={togglePromoEnabledMutation.isLoading}
+            className="flex-shrink-0 px-3.5 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-semibold hover:bg-amber-500/30 transition-colors disabled:opacity-50"
+          >
+            {togglePromoEnabledMutation.isLoading ? 'Activation...' : 'Activer les codes promo'}
+          </button>
+        </div>
+      ) : (
+        <div className="p-3 rounded-xl bg-green-500/5 border border-green-500/20 flex items-center justify-between gap-3 flex-wrap">
+          <p className="text-green-400/80 text-xs flex items-center gap-1.5"><Check className="w-3.5 h-3.5" /> Codes promo activés pour cet événement</p>
+          <button
+            onClick={() => togglePromoEnabledMutation.mutate(false)}
+            disabled={togglePromoEnabledMutation.isLoading}
+            className="flex-shrink-0 text-white/30 hover:text-rose-neon text-xs transition-colors disabled:opacity-50"
+          >
+            Désactiver
+          </button>
         </div>
       )}
 
