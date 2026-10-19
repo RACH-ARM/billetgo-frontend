@@ -11,6 +11,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useOrganizerStats, useEventBuyers, useCreateEvent, useUpdateEvent, useProposeChanges, useResubmitEvent, useCancelEvent, useOrganizerProfile, useEventDetails, useUploadEventGallery, useDeleteEventGalleryPhoto } from '../hooks/useOrganizer';
 import { organizerService, type OrganizerEventStat, type CreateEventTicketCategory } from '../services/organizerService';
+import { compressImage } from '../utils/compressImage';
 import { promoService } from '../services/promoService';
 import type { PromoCode } from '../types/promo';
 import { formatPrice } from '../utils/formatPrice';
@@ -1678,11 +1679,12 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
     }
   };
 
-  const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setCoverImage(file);
     setCoverPreview(URL.createObjectURL(file));
+    const compressed = await compressImage(file);
+    setCoverImage(compressed);
   };
 
   const setField = (field: string, value: string | number) =>
@@ -1740,14 +1742,21 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
       toast.success('Événement soumis — en attente de validation admin');
       onSuccess();
     } catch (err: unknown) {
-      const res = (err as { response?: { data?: { message?: string; errors?: { field: string; message: string }[] } } })?.response?.data;
+      const response = (err as { response?: { data?: { message?: string; errors?: { field: string; message: string }[] } } })?.response;
+      const res = response?.data;
       if (res?.errors?.length) {
         const first = res.errors[0];
         toast.error(first.message, { duration: 6000 });
         const fieldId = FIELD_IDS[first.field] ?? FIELD_IDS[first.field.replace(/\.\d+.*/, '')];
         if (fieldId) scrollTo(fieldId);
+      } else if (res?.message) {
+        toast.error(res.message);
+      } else if (!response) {
+        // Pas de réponse du serveur (coupure réseau, ou requête rejetée avant
+        // d'atteindre l'API — ex. image trop lourde malgré la compression).
+        toast.error("Échec de l'envoi — vérifiez votre connexion ou réessayez avec une image de couverture plus légère.", { duration: 7000 });
       } else {
-        toast.error(res?.message || 'Erreur lors de la création');
+        toast.error('Erreur lors de la création');
       }
     }
   };
@@ -2144,11 +2153,12 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
   const addCategory = () => setCategories((cats) => [...cats, { ...EMPTY_CATEGORY }]);
   const removeCategory = (i: number) => setCategories((cats) => cats.filter((_, idx) => idx !== i));
 
-  const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setCoverImage(file);
     setCoverPreview(URL.createObjectURL(file));
+    const compressed = await compressImage(file);
+    setCoverImage(compressed);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -2216,7 +2226,7 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
     const remaining = 10 - galleryUrls.length;
-    const toUpload = files.slice(0, remaining);
+    const toUpload = await Promise.all(files.slice(0, remaining).map(compressImage));
     try {
       await uploadGallery.mutateAsync({ eventId, photos: toUpload });
       toast.success(`${toUpload.length} photo${toUpload.length > 1 ? 's' : ''} ajoutée${toUpload.length > 1 ? 's' : ''}`);
