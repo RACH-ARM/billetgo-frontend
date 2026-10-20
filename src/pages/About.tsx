@@ -1,10 +1,14 @@
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import {
   Ticket, Users, ShieldCheck, Zap, MapPin, Heart,
   Clock, Smartphone, TrendingUp, Mic2, Tent, Headphones, Trophy, ArrowRight,
 } from 'lucide-react';
+import { useEvents } from '../hooks/useEvents';
+import { formatPrice } from '../utils/formatPrice';
+import BilletGabLogo from '../components/common/BilletGabLogo';
 
 const VALUES = [
   { icon: Zap,        title: 'Simplicité',      desc: 'Acheter un billet en moins de 2 minutes, depuis ton téléphone, sans compte bancaire.' },
@@ -40,36 +44,100 @@ const CATEGORY_TILES = [
   { value: 'SPORT', label: 'Sport', Icon: Trophy, gradient: 'from-violet-light via-rose-neon/40 to-transparent' },
 ];
 
+// Le QR est un motif décoratif (jamais un vrai code scannable) — on affiche
+// de vraies données d'événement mais pas un billet réellement acheté, pour
+// ne jamais exposer un QR utilisable ni les infos d'un acheteur.
+const DECORATIVE_QR_CELLS = [1, 2, 4, 5, 7, 8, 10, 13, 14];
+
 function TicketMockup() {
-  const qrCells = [1, 2, 4, 5, 7, 8, 10, 13, 14];
+  const { data } = useEvents({ limit: 6 });
+  const event = useMemo(() => {
+    const events = data?.events ?? [];
+    if (!events.length) return null;
+    return events.find((e) => e.isFeatured) ?? events[0];
+  }, [data]);
+
+  const cheapestCategory = useMemo(() => {
+    if (!event?.ticketCategories?.length) return null;
+    return [...event.ticketCategories].sort((a, b) => a.price - b.price)[0];
+  }, [event]);
+
+  const title = event?.title ?? 'Festival Ogooué';
+  const dateLabel = event
+    ? new Date(event.eventDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }).toUpperCase()
+    : '14 DÉC';
+  const city = event?.venueCity ?? 'Libreville';
+  const categoryName = cheapestCategory?.name ?? 'VIP';
+  const priceLabel = cheapestCategory ? formatPrice(cheapestCategory.price) : '25 000 FCFA';
+
+  // Flip au scroll — une rotation complète sur les 1400 premiers px de la page.
+  const { scrollY } = useScroll();
+  const scrollRotateY = useTransform(scrollY, [0, 1400], [0, 360], { clamp: true });
+
+  // Léger tilt au survol du curseur (desktop) — s'additionne au flip de scroll.
+  const tiltX = useMotionValue(0);
+  const tiltY = useMotionValue(0);
+  const springTiltX = useSpring(tiltX, { stiffness: 150, damping: 15 });
+  const springTiltY = useSpring(tiltY, { stiffness: 150, damping: 15 });
+  const tiltRotateX = useTransform(springTiltX, (v) => v * -8);
+  const tiltRotateY = useTransform(springTiltY, (v) => v * 8);
+  const rotateY = useTransform([scrollRotateY, tiltRotateY], ([a, b]: number[]) => a + b);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    tiltY.set((e.clientX - rect.left) / rect.width - 0.5);
+    tiltX.set((e.clientY - rect.top) / rect.height - 0.5);
+  };
+  const handleMouseLeave = () => {
+    tiltX.set(0);
+    tiltY.set(0);
+  };
+
   return (
-    <div className="relative mx-auto w-full max-w-sm">
-      <div className="absolute inset-0 bg-neon-gradient opacity-25 blur-3xl rounded-full" />
+    <div className="relative mx-auto w-full max-w-sm" style={{ perspective: 1200 }}>
+      <div className="absolute inset-0 bg-neon-gradient opacity-25 blur-3xl rounded-full pointer-events-none" />
       <motion.div
-        initial={{ opacity: 0, y: 20, rotate: -4 }}
-        animate={{ opacity: 1, y: 0, rotate: -2 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        whileHover={{ rotate: 0, scale: 1.02 }}
-        className="relative glass-card rounded-2xl p-5 border border-violet-neon/30 shadow-neon"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        style={{ rotateX: tiltRotateX, rotateY, transformStyle: 'preserve-3d' }}
+        className="relative"
       >
-        <div className="flex items-center justify-between mb-5">
-          <span className="font-bebas text-lg text-gradient tracking-wider">BILLETGAB</span>
-          <Ticket className="w-5 h-5 text-cyan-neon" />
+        {/* Face avant */}
+        <div
+          style={{ backfaceVisibility: 'hidden' }}
+          className="glass-card rounded-2xl p-5 border border-violet-neon/30 shadow-neon"
+        >
+          <div className="flex items-center justify-between mb-5">
+            <span className="font-bebas text-lg text-gradient tracking-wider">BILLETGAB</span>
+            <Ticket className="w-5 h-5 text-cyan-neon" />
+          </div>
+          <p className="font-bebas text-2xl text-white tracking-wide leading-tight line-clamp-1">{title}</p>
+          <p className="text-white/40 text-xs mt-1 font-mono">{dateLabel} · {city.toUpperCase()}, GABON</p>
+          <div className="border-t border-dashed border-white/15 my-4" />
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-white/30 text-[10px] uppercase tracking-widest">Catégorie</p>
+              <p className="text-white text-sm font-semibold">{categoryName}</p>
+              <p className="text-cyan-neon text-xs font-mono mt-1">{priceLabel}</p>
+            </div>
+            <div className="w-16 h-16 rounded-lg bg-white grid grid-cols-4 grid-rows-4 gap-[2px] p-2 flex-shrink-0">
+              {Array.from({ length: 16 }).map((_, i) => (
+                <div key={i} className={`rounded-[1px] ${DECORATIVE_QR_CELLS.includes(i) ? 'bg-bg' : 'bg-transparent'}`} />
+              ))}
+            </div>
+          </div>
         </div>
-        <p className="font-bebas text-2xl text-white tracking-wide leading-tight">Festival Ogooué</p>
-        <p className="text-white/40 text-xs mt-1 font-mono">14 DÉC · LIBREVILLE, GABON</p>
-        <div className="border-t border-dashed border-white/15 my-4" />
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-white/30 text-[10px] uppercase tracking-widest">Catégorie</p>
-            <p className="text-white text-sm font-semibold">VIP</p>
-            <p className="text-cyan-neon text-xs font-mono mt-1">25 000 FCFA</p>
-          </div>
-          <div className="w-16 h-16 rounded-lg bg-white grid grid-cols-4 grid-rows-4 gap-[2px] p-2 flex-shrink-0">
-            {Array.from({ length: 16 }).map((_, i) => (
-              <div key={i} className={`rounded-[1px] ${qrCells.includes(i) ? 'bg-bg' : 'bg-transparent'}`} />
-            ))}
-          </div>
+
+        {/* Face arrière */}
+        <div
+          style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+          className="absolute inset-0 glass-card rounded-2xl p-5 border border-violet-neon/30 shadow-neon flex flex-col items-center justify-center gap-4 text-center"
+        >
+          <BilletGabLogo height={36} />
+          <p className="text-white/50 text-sm max-w-[220px]">Ton événement. Ton ticket. Maintenant.</p>
         </div>
       </motion.div>
     </div>
