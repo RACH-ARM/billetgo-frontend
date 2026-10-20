@@ -13,13 +13,6 @@ const VALUES = [
   { icon: Users,      title: 'Communauté',      desc: 'On croit en la culture, le sport et la fête à Libreville. On construit ça ensemble.' },
 ];
 
-const STATS = [
-  { value: '500+', label: 'Billets vendus' },
-  { value: '20+',  label: 'Événements publiés' },
-  { value: '10+',  label: 'Organisateurs partenaires' },
-  { value: '100%', label: 'Mobile Money' },
-];
-
 const STORY = [
   {
     icon: Clock,
@@ -149,19 +142,6 @@ export default function About() {
               ))}
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Stats */}
-      <section className="py-10 px-4">
-        <div className="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {STATS.map((s) => (
-            <motion.div key={s.label} whileHover={{ scale: 1.03 }}
-              className="glass-card rounded-xl p-6 text-center border border-violet-neon/20">
-              <div className="font-bebas text-4xl text-gradient">{s.value}</div>
-              <div className="text-white/50 text-sm mt-1">{s.label}</div>
-            </motion.div>
-          ))}
         </div>
       </section>
 
