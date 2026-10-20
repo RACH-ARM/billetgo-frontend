@@ -1615,10 +1615,11 @@ const isoToLocal = (iso: string) => {
 const localToISO = (val: string) => val ? new Date(val).toISOString() : val;
 
 const DRAFT_KEY = 'billetgab_create_event_draft';
+const editDraftKey = (eventId: string) => `billetgab_edit_event_draft_${eventId}`;
 
-function loadDraft() {
+function loadDraft(key: string = DRAFT_KEY) {
   try {
-    const raw = sessionStorage.getItem(DRAFT_KEY);
+    const raw = localStorage.getItem(key);
     return raw ? JSON.parse(raw) : null;
   } catch { return null; }
 }
@@ -1642,13 +1643,14 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [removeCatIndex, setRemoveCatIndex] = useState<number | null>(null);
 
-  const clearDraft = () => sessionStorage.removeItem(DRAFT_KEY);
+  const clearDraft = () => localStorage.removeItem(DRAFT_KEY);
 
-  // Sauvegarde automatique du brouillon à chaque modification
+  // Sauvegarde automatique du brouillon à chaque modification — en localStorage
+  // pour survivre à la fermeture de l'onglet/navigateur, pas seulement au refresh.
   useEffect(() => {
     try {
-      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ form, categories, mapsUrl }));
-    } catch { /* sessionStorage indisponible */ }
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, categories, mapsUrl }));
+    } catch { /* localStorage indisponible */ }
   }, [form, categories, mapsUrl]);
 
   // Toast de restauration au premier rendu si un brouillon existe
@@ -1693,7 +1695,15 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
   const setCategoryField = (i: number, field: keyof CreateEventTicketCategory, value: string | number) =>
     setCategories((cats) => cats.map((c, idx) => idx === i ? { ...c, [field]: value } : c));
 
-  const addCategory = () => setCategories((cats) => [...cats, { ...EMPTY_CATEGORY }]);
+  const [justAddedCat, setJustAddedCat] = useState<number | null>(null);
+  const addCategory = () => setCategories((cats) => {
+    const next = [...cats, { ...EMPTY_CATEGORY }];
+    const newIndex = next.length - 1;
+    setJustAddedCat(newIndex);
+    setTimeout(() => document.getElementById(`cf-cat-${newIndex}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+    setTimeout(() => setJustAddedCat((cur) => (cur === newIndex ? null : cur)), 1600);
+    return next;
+  });
   const removeCategory = (i: number) => setCategories((cats) => cats.filter((_, idx) => idx !== i));
 
   const scrollTo = (id: string) =>
@@ -1768,7 +1778,7 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
       exit={{ opacity: 0, x: 20 }}
     >
       <div className="flex items-center gap-4 mb-6">
-        <button onClick={() => { clearDraft(); onClose(); }} className="flex items-center gap-1.5 text-white/50 hover:text-white transition-colors text-sm">
+        <button onClick={onClose} className="flex items-center gap-1.5 text-white/50 hover:text-white transition-colors text-sm">
           <ArrowLeft className="w-4 h-4" /> Retour
         </button>
         <h2 className="font-bebas text-3xl tracking-wider text-gradient">NOUVEL ÉVÉNEMENT</h2>
@@ -1890,15 +1900,15 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
               <input type="datetime-local" value={form.eventDate} onChange={(e) => setField('eventDate', e.target.value)} className={inputCls} />
               <p className="text-xs text-white/30 mt-1">Heure à laquelle l'événement commence officiellement.</p>
             </div>
-            <div id="cf-endDate">
-              <label className={labelCls}>Date & heure de fin <span className="text-rose-neon">*</span></label>
-              <input type="datetime-local" value={form.endDate} onChange={(e) => setField('endDate', e.target.value)} className={inputCls} />
-              <p className="text-xs text-white/30 mt-1">Heure de fermeture de l'événement. Détermine quand l'indicateur "EN COURS" s'éteint sur la carte.</p>
-            </div>
             <div id="cf-doorsOpenAt">
               <label className={labelCls}>Ouverture des portes</label>
               <input type="datetime-local" value={form.doorsOpenAt} onChange={(e) => setField('doorsOpenAt', e.target.value)} className={inputCls} />
               <p className="text-xs text-white/30 mt-1">Heure à partir de laquelle les acheteurs peuvent entrer. Affiché sur le billet.</p>
+            </div>
+            <div id="cf-endDate">
+              <label className={labelCls}>Date & heure de fin <span className="text-rose-neon">*</span></label>
+              <input type="datetime-local" value={form.endDate} onChange={(e) => setField('endDate', e.target.value)} className={inputCls} />
+              <p className="text-xs text-white/30 mt-1">Heure de fermeture de l'événement. Détermine quand l'indicateur "EN COURS" s'éteint sur la carte.</p>
             </div>
             <div id="cf-scheduledPublishAt">
               <label className={labelCls}>Publication programmée <span className="text-white/30 font-normal">(optionnel)</span></label>
@@ -1972,7 +1982,11 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
             </Button>
           </div>
           {categories.map((cat, i) => (
-            <div key={i} className="bg-bg-secondary rounded-xl p-4 border border-violet-neon/10 space-y-3">
+            <div
+              key={i}
+              id={`cf-cat-${i}`}
+              className={`bg-bg-secondary rounded-xl p-4 border space-y-3 transition-all duration-500 ${justAddedCat === i ? 'border-violet-neon ring-2 ring-violet-neon/40' : 'border-violet-neon/10'}`}
+            >
               <div className="flex items-center justify-between">
                 <span className="text-xs text-violet-neon font-semibold uppercase tracking-widest">Catégorie {i + 1}</span>
                 {categories.length > 1 && (
@@ -2026,7 +2040,7 @@ function CreateEventForm({ onClose, onSuccess }: { onClose: () => void; onSucces
         </label>
 
         <div className="flex gap-3 pb-8">
-          <Button type="button" variant="secondary" size="lg" onClick={() => { clearDraft(); onClose(); }} className="flex-1">
+          <Button type="button" variant="secondary" size="lg" onClick={onClose} className="flex-1">
             Annuler
           </Button>
           <Button
@@ -2074,6 +2088,8 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
   const deleteGalleryPhoto = useDeleteEventGalleryPhoto();
   const isDraft = eventStatus === 'DRAFT';
   const isPropose = ['PUBLISHED', 'APPROVED'].includes(eventStatus);
+  const [editDraft] = useState(() => loadDraft(editDraftKey(eventId)));
+  const clearEditDraft = () => localStorage.removeItem(editDraftKey(eventId));
   const [initialized, setInitialized] = useState(false);
   const [form, setForm] = useState<CreateEventFormState>({
     title: '', subtitle: '', description: '', category: 'AUTRE',
@@ -2117,6 +2133,17 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
     if (eventData && !initialized) {
       const ed = eventData as Record<string, unknown>;
       setGalleryUrls((ed.galleryUrls as string[]) ?? []);
+      if (ed.coverImageUrl) setCoverPreview(ed.coverImageUrl as string);
+      if (editDraft) {
+        // Un brouillon local existe pour cet événement — on le restaure
+        // plutôt que d'écraser avec les données serveur (progression non perdue).
+        setForm(editDraft.form);
+        setCategories(editDraft.categories);
+        setMapsUrl(editDraft.mapsUrl ?? '');
+        toast.success('Brouillon restauré', { duration: 3000 });
+        setInitialized(true);
+        return;
+      }
       setForm({
         title: (ed.title as string) ?? '',
         subtitle: (ed.subtitle as string) ?? '',
@@ -2138,19 +2165,35 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
       if (Array.isArray(cats) && cats.length > 0) {
         setCategories(cats.map((c) => ({ id: c.id, name: c.name, description: c.description, price: c.price, quantityTotal: c.quantityTotal, maxPerOrder: c.maxPerOrder ?? 10 })));
       }
-      if (ed.coverImageUrl) setCoverPreview(ed.coverImageUrl as string);
       setInitialized(true);
     } else if (eventData && initialized) {
       // Sync gallery when cache updates (after upload/delete)
       const ed = eventData as Record<string, unknown>;
       setGalleryUrls((ed.galleryUrls as string[]) ?? []);
     }
-  }, [eventData, initialized]);
+  }, [eventData, initialized, editDraft]);
+
+  // Sauvegarde automatique du brouillon d'édition à chaque modification,
+  // une fois le formulaire initialisé (évite d'écraser avec un état vide avant chargement).
+  useEffect(() => {
+    if (!initialized) return;
+    try {
+      localStorage.setItem(editDraftKey(eventId), JSON.stringify({ form, categories, mapsUrl }));
+    } catch { /* localStorage indisponible */ }
+  }, [form, categories, mapsUrl, initialized, eventId]);
 
   const setField = (field: string, value: string | number) => setForm((f) => ({ ...f, [field]: value }));
   const setCategoryField = (i: number, field: keyof CreateEventTicketCategory, value: string | number) =>
     setCategories((cats) => cats.map((c, idx) => idx === i ? { ...c, [field]: value } : c));
-  const addCategory = () => setCategories((cats) => [...cats, { ...EMPTY_CATEGORY }]);
+  const [justAddedCat, setJustAddedCat] = useState<number | null>(null);
+  const addCategory = () => setCategories((cats) => {
+    const next = [...cats, { ...EMPTY_CATEGORY }];
+    const newIndex = next.length - 1;
+    setJustAddedCat(newIndex);
+    setTimeout(() => document.getElementById(`edit-cat-${newIndex}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+    setTimeout(() => setJustAddedCat((cur) => (cur === newIndex ? null : cur)), 1600);
+    return next;
+  });
   const removeCategory = (i: number) => setCategories((cats) => cats.filter((_, idx) => idx !== i));
 
   const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2211,6 +2254,7 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
           toast.success('Brouillon sauvegardé');
         }
       }
+      clearEditDraft();
       onSuccess();
     } catch (err: unknown) {
       const res = (err as { response?: { data?: { message?: string; errors?: { field: string; message: string }[] } } })?.response?.data;
@@ -2394,12 +2438,12 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
               <input type="datetime-local" value={form.eventDate} onChange={(e) => setField('eventDate', e.target.value)} className={inputCls} />
             </div>
             <div>
-              <label className={labelCls}>Fin de l'événement <span className="text-rose-neon">*</span></label>
-              <input type="datetime-local" value={form.endDate} onChange={(e) => setField('endDate', e.target.value)} className={inputCls} />
-            </div>
-            <div>
               <label className={labelCls}>Ouverture des portes</label>
               <input type="datetime-local" value={form.doorsOpenAt} onChange={(e) => setField('doorsOpenAt', e.target.value)} className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>Fin de l'événement <span className="text-rose-neon">*</span></label>
+              <input type="datetime-local" value={form.endDate} onChange={(e) => setField('endDate', e.target.value)} className={inputCls} />
             </div>
             {!isPropose && (
               <div id="cf-scheduledPublishAt">
@@ -2477,7 +2521,11 @@ function EditEventForm({ eventId, eventStatus, adminNote, onClose, onSuccess }: 
             </Button>
           </div>
           {categories.map((cat, i) => (
-            <div key={i} className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-white/[0.03] rounded-xl border border-white/5">
+            <div
+              key={i}
+              id={`edit-cat-${i}`}
+              className={`grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-white/[0.03] rounded-xl border transition-all duration-500 ${justAddedCat === i ? 'border-violet-neon ring-2 ring-violet-neon/40' : 'border-white/5'}`}
+            >
               <div className="sm:col-span-2">
                 <label className={labelCls}>Nom</label>
                 <input value={cat.name} onChange={(e) => setCategoryField(i, 'name', e.target.value)} placeholder="VIP, Standard…" className={inputCls} />
