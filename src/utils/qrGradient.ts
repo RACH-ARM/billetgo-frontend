@@ -1,16 +1,30 @@
 import QRCode from 'qrcode';
+import { blobToBase64 } from './ticketCanvas';
 
 // Port frontend du vrai style de QR de la plateforme — voir
 // billetgab-backend/src/lib/qrGradient.ts (source de vérité pour les billets
 // réels). Même dégradé de marque, même grille de modules, même logo centré.
-// Le logo utilise directement /favicon.png (asset public) au lieu d'un base64
-// recadré côté serveur (sharp n'existe pas côté navigateur) — légère marge
-// blanche en plus autour du "B", sans impact visuel notable à cette taille.
+// Le logo utilise directement /favicon.png (asset public, légère marge
+// blanche en plus autour du "B" vs. le recadrage sharp côté serveur — sans
+// impact visuel notable à cette taille) mais inliné en base64 dans le SVG :
+// un <image href="/favicon.png"> relatif ne se résout pas une fois le SVG
+// encodé en data: URI (pas d'URL de base à cette étape), donc le logo
+// restait invisible (case blanche vide) sans cet inlining.
 const QR_GRADIENT_TOP = '#7B2FBE';    // violet-neon
 const QR_GRADIENT_BOTTOM = '#00E5FF'; // cyan-neon
 const QR_QUIET_MODULES = 2;
 const LOGO_FILL_RATIO = 0.92;
 const LOGO_SRC = '/favicon.png';
+
+let logoDataUrlPromise: Promise<string> | null = null;
+function getLogoDataUrl(): Promise<string> {
+  if (!logoDataUrlPromise) {
+    logoDataUrlPromise = fetch(LOGO_SRC)
+      .then((res) => res.blob())
+      .then((blob) => blobToBase64(blob));
+  }
+  return logoDataUrlPromise;
+}
 
 export async function buildGradientQRDataUrl(qrPayload: string, targetPixelSize: number): Promise<string> {
   const qr = QRCode.create(qrPayload, { errorCorrectionLevel: 'H' });
@@ -40,6 +54,7 @@ export async function buildGradientQRDataUrl(qrPayload: string, targetPixelSize:
 
   const logoPixels = Math.round(excludeCount * moduleSize * LOGO_FILL_RATIO);
   const logoOffset = Math.round((actualSize - logoPixels) / 2);
+  const logoDataUrl = await getLogoDataUrl();
 
   const svg = `<svg width="${actualSize}" height="${actualSize}" viewBox="0 0 ${actualSize} ${actualSize}" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">` +
     `<defs><linearGradient id="qrGrad" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="${actualSize}">` +
@@ -48,7 +63,7 @@ export async function buildGradientQRDataUrl(qrPayload: string, targetPixelSize:
     `</linearGradient></defs>` +
     `<rect width="${actualSize}" height="${actualSize}" fill="#FFFFFF"/>` +
     rects +
-    `<image href="${LOGO_SRC}" x="${logoOffset}" y="${logoOffset}" width="${logoPixels}" height="${logoPixels}"/>` +
+    `<image href="${logoDataUrl}" x="${logoOffset}" y="${logoOffset}" width="${logoPixels}" height="${logoPixels}"/>` +
     `</svg>`;
 
   return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
