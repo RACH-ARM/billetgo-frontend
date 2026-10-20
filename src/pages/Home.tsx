@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useEvents } from '../hooks/useEvents';
 import EventGrid from '../components/events/EventGrid';
+import EventCarousel from '../components/events/EventCarousel';
 import HeroSection, { HeroSkeleton } from '../components/events/HeroSection';
 import TickerTape from '../components/events/TickerTape';
 import { isEventLive } from '../utils/eventStatus';
@@ -290,7 +291,15 @@ export default function Home() {
       <section ref={eventsSectionRef} className="px-4 sm:px-6 lg:px-8 pt-8 pb-20">
         <div className="max-w-7xl mx-auto">
           <h2 className="section-title text-white mb-6">{sectionTitle}</h2>
-          <EventGrid events={data?.events || []} isLoading={isLoading} />
+
+          {!isLoading && (data?.events.length ?? 0) === 0 && (pastData?.events?.length ?? 0) > 0 ? (
+            <div>
+              <p className="text-white/40 mb-6">Aucun nouvel événement pour le moment. Jette un œil à ceux déjà passés :</p>
+              <EventCarousel events={pastData!.events} />
+            </div>
+          ) : (
+            <EventGrid events={data?.events || []} isLoading={isLoading} />
+          )}
 
           {data && data.pagination.pages > 1 && (
             <div className="flex justify-center items-center gap-3 mt-10">
@@ -339,12 +348,12 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Événements passés récemment */}
-      {(pastData?.events?.length ?? 0) > 0 && !isFiltered && (
+      {/* Événements passés récemment — pas répété si déjà montré en remplacement ci-dessus */}
+      {(pastData?.events?.length ?? 0) > 0 && !isFiltered && (data?.events.length ?? 0) > 0 && (
         <section className="px-4 sm:px-6 lg:px-8 pt-14 pb-6">
           <div className="max-w-7xl mx-auto">
             <SectionHeader title="Passés récemment" accent="violet" />
-            <EventGrid events={pastData!.events} isLoading={false} />
+            <EventCarousel events={pastData!.events} />
           </div>
         </section>
       )}

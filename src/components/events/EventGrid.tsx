@@ -35,7 +35,6 @@ export default function EventGrid({ events, isLoading }: EventGridProps) {
     return (
       <div className="text-center py-20">
         <p className="text-white/40 text-lg">Aucun événement trouvé</p>
-        <p className="text-white/20 text-sm mt-2">Revenez bientôt !</p>
       </div>
     );
   }
