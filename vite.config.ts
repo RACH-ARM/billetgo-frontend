@@ -1,10 +1,19 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import legacy from '@vitejs/plugin-legacy';
 import path from 'path';
 
 export default defineConfig({
   plugins: [
     react(),
+    // Bundle de secours (avec polyfills) pour les très vieux navigateurs
+    // (ex: Safari sur iPhone 6, bloqué sur iOS 12.5) qui plantent sur le
+    // bundle moderne. Les navigateurs récents ne sont pas affectés : ils
+    // continuent de charger exactement le même bundle moderne qu'avant.
+    legacy({
+      targets: ['defaults', 'ios_saf >= 9', 'safari >= 9', 'not IE 11'],
+      modernPolyfills: true,
+    }),
   ],
   resolve: {
     alias: { '@': path.resolve(__dirname, './src') },
