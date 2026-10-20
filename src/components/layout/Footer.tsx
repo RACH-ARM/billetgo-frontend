@@ -4,7 +4,7 @@ import BilletGabLogo from '../common/BilletGabLogo';
 const SOCIALS = [
   {
     label: 'WhatsApp',
-    href: 'https://wa.me/24100000000', // TODO: remplacer par le vrai numéro WhatsApp support
+    href: 'https://wa.me/24162557655', // 062 55 76 55
     color: 'hover:text-green-400',
     icon: (
       <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
