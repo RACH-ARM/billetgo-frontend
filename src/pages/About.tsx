@@ -2,13 +2,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
-import QRCode from 'qrcode';
 import {
   Ticket, Users, ShieldCheck, Zap, MapPin, Heart,
   Clock, Smartphone, TrendingUp, Mic2, Tent, Headphones, Trophy, ArrowRight,
 } from 'lucide-react';
 import { useEvents } from '../hooks/useEvents';
 import { generateTicketCanvas } from '../utils/ticketCanvas';
+import { buildGradientQRDataUrl } from '../utils/qrGradient';
 import BilletGabLogo from '../components/common/BilletGabLogo';
 
 const SITE_URL = 'https://billetgab.com';
@@ -48,12 +48,13 @@ const CATEGORY_TILES = [
 ];
 
 function TicketMockup() {
-  const { data } = useEvents({ limit: 6 });
+  const { data, isLoading } = useEvents({ limit: 6 });
   const event = useMemo(() => {
     const events = data?.events ?? [];
     if (!events.length) return null;
     return events.find((e) => e.isFeatured) ?? events[0];
   }, [data]);
+  const noEvents = !isLoading && (data?.events?.length ?? 0) === 0;
 
   const cheapestCategory = useMemo(() => {
     if (!event?.ticketCategories?.length) return null;
@@ -61,9 +62,11 @@ function TicketMockup() {
   }, [event]);
 
   // Rendu via le même générateur canvas que les vrais billets (utils/ticketCanvas.ts),
-  // avec les vraies données de l'événement. Seul le QR diffère : il pointe vers la
-  // fiche publique de l'événement au lieu d'encoder un vrai billet scannable — on ne
-  // peut pas exposer sur une page publique un code d'entrée réellement utilisable.
+  // avec les vraies données de l'événement, et le même style de QR dégradé que la
+  // plateforme (utils/qrGradient.ts, port du design réel du backend). Seul le payload
+  // du QR diffère : il pointe vers la fiche publique de l'événement au lieu d'encoder
+  // un vrai billet scannable — on ne peut pas exposer sur une page publique un code
+  // d'entrée réellement utilisable.
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
 
@@ -73,11 +76,7 @@ function TicketMockup() {
     let cancelled = false;
     (async () => {
       try {
-        const qrDataUrl = await QRCode.toDataURL(`${SITE_URL}/events/${event.id}`, {
-          width: 512,
-          margin: 1,
-          color: { dark: '#0D0D1AFF', light: '#FFFFFFFF' },
-        });
+        const qrDataUrl = await buildGradientQRDataUrl(`${SITE_URL}/events/${event.id}`, 512);
         if (cancelled || !canvasRef.current) return;
         await generateTicketCanvas(canvasRef.current, qrDataUrl, {
           ticketId: event.id,
@@ -133,11 +132,20 @@ function TicketMockup() {
       >
         {/* Face avant — vrai rendu du billet (même générateur que les billets achetés) */}
         <div style={{ backfaceVisibility: 'hidden' }} className="absolute inset-0 rounded-2xl overflow-hidden shadow-neon">
-          {!ready && <div className="absolute inset-0 bg-bg-secondary animate-pulse rounded-2xl border border-violet-neon/20" />}
-          <canvas
-            ref={canvasRef}
-            className={`w-full h-full rounded-2xl transition-opacity duration-500 ${ready ? 'opacity-100' : 'opacity-0'}`}
-          />
+          {noEvents ? (
+            <div className="absolute inset-0 glass-card border border-violet-neon/30 flex flex-col items-center justify-center gap-2 text-center p-4">
+              <Ticket className="w-8 h-8 text-violet-neon/50" />
+              <p className="text-white/40 text-sm">Ton billet s'affichera ici dès le premier événement publié</p>
+            </div>
+          ) : (
+            <>
+              {!ready && <div className="absolute inset-0 bg-bg-secondary animate-pulse rounded-2xl border border-violet-neon/20" />}
+              <canvas
+                ref={canvasRef}
+                className={`w-full h-full rounded-2xl transition-opacity duration-500 ${ready ? 'opacity-100' : 'opacity-0'}`}
+              />
+            </>
+          )}
         </div>
 
         {/* Face arrière */}
