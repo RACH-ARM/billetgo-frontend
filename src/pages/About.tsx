@@ -1,14 +1,17 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
+import QRCode from 'qrcode';
 import {
   Ticket, Users, ShieldCheck, Zap, MapPin, Heart,
   Clock, Smartphone, TrendingUp, Mic2, Tent, Headphones, Trophy, ArrowRight,
 } from 'lucide-react';
 import { useEvents } from '../hooks/useEvents';
-import { formatPrice } from '../utils/formatPrice';
+import { generateTicketCanvas } from '../utils/ticketCanvas';
 import BilletGabLogo from '../components/common/BilletGabLogo';
+
+const SITE_URL = 'https://billetgab.com';
 
 const VALUES = [
   { icon: Zap,        title: 'Simplicité',      desc: 'Acheter un billet en moins de 2 minutes, depuis ton téléphone, sans compte bancaire.' },
@@ -44,11 +47,6 @@ const CATEGORY_TILES = [
   { value: 'SPORT', label: 'Sport', Icon: Trophy, gradient: 'from-violet-light via-rose-neon/40 to-transparent' },
 ];
 
-// Le QR est un motif décoratif (jamais un vrai code scannable) — on affiche
-// de vraies données d'événement mais pas un billet réellement acheté, pour
-// ne jamais exposer un QR utilisable ni les infos d'un acheteur.
-const DECORATIVE_QR_CELLS = [1, 2, 4, 5, 7, 8, 10, 13, 14];
-
 function TicketMockup() {
   const { data } = useEvents({ limit: 6 });
   const event = useMemo(() => {
@@ -62,13 +60,41 @@ function TicketMockup() {
     return [...event.ticketCategories].sort((a, b) => a.price - b.price)[0];
   }, [event]);
 
-  const title = event?.title ?? 'Festival Ogooué';
-  const dateLabel = event
-    ? new Date(event.eventDate).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }).toUpperCase()
-    : '14 DÉC';
-  const city = event?.venueCity ?? 'Libreville';
-  const categoryName = cheapestCategory?.name ?? 'VIP';
-  const priceLabel = cheapestCategory ? formatPrice(cheapestCategory.price) : '25 000 FCFA';
+  // Rendu via le même générateur canvas que les vrais billets (utils/ticketCanvas.ts),
+  // avec les vraies données de l'événement. Seul le QR diffère : il pointe vers la
+  // fiche publique de l'événement au lieu d'encoder un vrai billet scannable — on ne
+  // peut pas exposer sur une page publique un code d'entrée réellement utilisable.
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (!event) return;
+    setReady(false);
+    let cancelled = false;
+    (async () => {
+      try {
+        const qrDataUrl = await QRCode.toDataURL(`${SITE_URL}/events/${event.id}`, {
+          width: 512,
+          margin: 1,
+          color: { dark: '#0D0D1AFF', light: '#FFFFFFFF' },
+        });
+        if (cancelled || !canvasRef.current) return;
+        await generateTicketCanvas(canvasRef.current, qrDataUrl, {
+          ticketId: event.id,
+          eventTitle: event.title,
+          categoryName: cheapestCategory?.name,
+          eventDate: event.eventDate,
+          venueName: event.venueName,
+          coverImageUrl: event.coverImageUrl ?? undefined,
+          price: cheapestCategory?.price,
+        });
+        if (!cancelled) setReady(true);
+      } catch {
+        // silencieux — le skeleton reste affiché si la génération échoue
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [event, cheapestCategory]);
 
   // Flip au scroll — une rotation complète sur les 1400 premiers px de la page.
   const { scrollY } = useScroll();
@@ -103,41 +129,24 @@ function TicketMockup() {
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         style={{ rotateX: tiltRotateX, rotateY, transformStyle: 'preserve-3d' }}
-        className="relative"
+        className="relative aspect-[900/380]"
       >
-        {/* Face avant */}
-        <div
-          style={{ backfaceVisibility: 'hidden' }}
-          className="glass-card rounded-2xl p-5 border border-violet-neon/30 shadow-neon"
-        >
-          <div className="flex items-center justify-between mb-5">
-            <span className="font-bebas text-lg text-gradient tracking-wider">BILLETGAB</span>
-            <Ticket className="w-5 h-5 text-cyan-neon" />
-          </div>
-          <p className="font-bebas text-2xl text-white tracking-wide leading-tight line-clamp-1">{title}</p>
-          <p className="text-white/40 text-xs mt-1 font-mono">{dateLabel} · {city.toUpperCase()}, GABON</p>
-          <div className="border-t border-dashed border-white/15 my-4" />
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-white/30 text-[10px] uppercase tracking-widest">Catégorie</p>
-              <p className="text-white text-sm font-semibold">{categoryName}</p>
-              <p className="text-cyan-neon text-xs font-mono mt-1">{priceLabel}</p>
-            </div>
-            <div className="w-16 h-16 rounded-lg bg-white grid grid-cols-4 grid-rows-4 gap-[2px] p-2 flex-shrink-0">
-              {Array.from({ length: 16 }).map((_, i) => (
-                <div key={i} className={`rounded-[1px] ${DECORATIVE_QR_CELLS.includes(i) ? 'bg-bg' : 'bg-transparent'}`} />
-              ))}
-            </div>
-          </div>
+        {/* Face avant — vrai rendu du billet (même générateur que les billets achetés) */}
+        <div style={{ backfaceVisibility: 'hidden' }} className="absolute inset-0 rounded-2xl overflow-hidden shadow-neon">
+          {!ready && <div className="absolute inset-0 bg-bg-secondary animate-pulse rounded-2xl border border-violet-neon/20" />}
+          <canvas
+            ref={canvasRef}
+            className={`w-full h-full rounded-2xl transition-opacity duration-500 ${ready ? 'opacity-100' : 'opacity-0'}`}
+          />
         </div>
 
         {/* Face arrière */}
         <div
           style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
-          className="absolute inset-0 glass-card rounded-2xl p-5 border border-violet-neon/30 shadow-neon flex flex-col items-center justify-center gap-4 text-center"
+          className="absolute inset-0 glass-card rounded-2xl p-5 border border-violet-neon/30 shadow-neon flex flex-col items-center justify-center gap-3 text-center"
         >
-          <BilletGabLogo height={36} />
-          <p className="text-white/50 text-sm max-w-[220px]">Ton événement. Ton ticket. Maintenant.</p>
+          <BilletGabLogo height={32} />
+          <p className="text-white/50 text-sm max-w-[240px]">Ton événement. Ton ticket. Maintenant.</p>
         </div>
       </motion.div>
     </div>
