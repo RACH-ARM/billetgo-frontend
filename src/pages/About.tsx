@@ -14,11 +14,17 @@ import BilletGabLogo from '../components/common/BilletGabLogo';
 const SITE_URL = 'https://billetgab.com';
 
 const VALUES = [
-  { icon: Zap,        title: 'Simplicité',      desc: 'Acheter un billet en moins de 2 minutes, depuis ton téléphone, sans compte bancaire.' },
-  { icon: ShieldCheck,title: 'Sécurité',        desc: 'QR Code unique chiffré, paiement Mobile Money certifié, zéro billet dupliqué.' },
-  { icon: Heart,      title: 'Local d\'abord',  desc: 'Une équipe gabonaise, pour les événements gabonais, avec les solutions de paiement locales.' },
-  { icon: Users,      title: 'Communauté',      desc: 'On croit en la culture, le sport et la fête à Libreville. On construit ça ensemble.' },
+  { icon: Zap,        title: 'Simplicité',      desc: 'Acheter un billet en moins de 2 minutes, depuis ton téléphone, sans compte bancaire.', accent: 'violet' as const },
+  { icon: ShieldCheck,title: 'Sécurité',        desc: 'QR Code unique chiffré, paiement Mobile Money certifié, zéro billet dupliqué.', accent: 'cyan' as const },
+  { icon: Heart,      title: 'Local d\'abord',  desc: 'Une équipe gabonaise, pour les événements gabonais, avec les solutions de paiement locales.', accent: 'rose' as const },
+  { icon: Users,      title: 'Communauté',      desc: 'On croit en la culture, le sport et la fête à Libreville. On construit ça ensemble.', accent: 'violet' as const },
 ];
+
+const VALUE_ACCENTS = {
+  violet: { text: 'text-violet-neon', bg: 'bg-violet-neon/10', top: 'before:bg-violet-neon' },
+  rose:   { text: 'text-rose-neon',   bg: 'bg-rose-neon/10',   top: 'before:bg-rose-neon' },
+  cyan:   { text: 'text-cyan-neon',   bg: 'bg-cyan-neon/10',   top: 'before:bg-cyan-neon' },
+};
 
 const STORY = [
   {
@@ -235,18 +241,28 @@ export default function About() {
         <div className="max-w-4xl mx-auto">
           <h2 className="section-title text-3xl mb-10 text-center">Nos valeurs</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {VALUES.map(({ icon: Icon, title, desc }) => (
-              <motion.div key={title} whileHover={{ y: -4 }}
-                className="glass-card rounded-2xl p-6 border border-violet-neon/20 flex gap-4">
-                <div className="w-10 h-10 rounded-xl bg-violet-neon/10 flex items-center justify-center flex-shrink-0">
-                  <Icon className="w-5 h-5 text-violet-neon" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-white mb-1">{title}</h3>
-                  <p className="text-white/55 text-sm leading-relaxed">{desc}</p>
-                </div>
-              </motion.div>
-            ))}
+            {VALUES.map(({ icon: Icon, title, desc, accent }, i) => {
+              const c = VALUE_ACCENTS[accent];
+              return (
+                <motion.div
+                  key={title}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-40px' }}
+                  transition={{ delay: i * 0.08 }}
+                  whileHover={{ y: -6, rotate: i % 2 === 0 ? -1 : 1 }}
+                  className={`relative overflow-hidden rounded-2xl p-6 bg-bg-card/80 backdrop-blur-md before:absolute before:top-0 before:left-0 before:right-0 before:h-[3px] ${c.top}`}
+                  style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 24px rgba(0,0,0,0.25)' }}
+                >
+                  <Icon className={`absolute -right-5 -bottom-5 w-32 h-32 ${c.text} opacity-[0.06] rotate-12 pointer-events-none`} />
+                  <div className={`relative w-11 h-11 rounded-xl ${c.bg} flex items-center justify-center mb-4`}>
+                    <Icon className={`w-5 h-5 ${c.text}`} />
+                  </div>
+                  <h3 className="relative font-bebas text-2xl tracking-wide text-white mb-2">{title}</h3>
+                  <p className="relative text-white/55 text-sm leading-relaxed max-w-[85%]">{desc}</p>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
