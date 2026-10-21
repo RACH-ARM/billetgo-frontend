@@ -20,27 +20,33 @@ const VALUES = [
   { icon: Users,      title: 'Communauté',      desc: 'On croit en la culture, le sport et la fête à Libreville. On construit ça ensemble.', accent: 'violet' as const },
 ];
 
-const VALUE_ACCENTS = {
+const ACCENTS = {
   violet: { text: 'text-violet-neon', bg: 'bg-violet-neon/10', top: 'before:bg-violet-neon' },
   rose:   { text: 'text-rose-neon',   bg: 'bg-rose-neon/10',   top: 'before:bg-rose-neon' },
   cyan:   { text: 'text-cyan-neon',   bg: 'bg-cyan-neon/10',   top: 'before:bg-cyan-neon' },
 };
+const VALUE_ACCENTS = ACCENTS;
 
+// Couleurs choisies pour porter le sens du récit, pas juste en alternance :
+// rose = alerte/problème, violet = la marque qui résout, cyan = le présent qui marche.
 const STORY = [
   {
     icon: Clock,
     title: 'Le constat',
     desc: "À Libreville, acheter un billet pour un concert ou une soirée était encore une aventure : files d'attente, billets papier, risques de contrefaçon, et aucun moyen de payer en ligne sans carte bancaire.",
+    accent: 'rose' as const,
   },
   {
     icon: Smartphone,
     title: 'La solution',
     desc: 'Une plateforme 100% locale : paiement Airtel Money et Moov Money, billets QR Code sécurisés, et une interface pensée pour les smartphones africains.',
+    accent: 'violet' as const,
   },
   {
     icon: TrendingUp,
     title: "Aujourd'hui",
     desc: "BilletGab accompagne les organisateurs dans la gestion complète de leurs événements : de la création à la validation d'entrée, en passant par le suivi des ventes en temps réel.",
+    accent: 'cyan' as const,
   },
 ];
 
@@ -206,32 +212,35 @@ export default function About() {
         </div>
       </section>
 
-      {/* Notre histoire — timeline */}
+      {/* Notre histoire */}
       <section className="py-16 px-4">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="section-title mb-10 text-center">Notre histoire</h2>
-          <div className="relative">
-            <div className="absolute left-5 top-2 bottom-2 w-px bg-gradient-to-b from-violet-neon via-rose-neon to-cyan-neon hidden sm:block" />
-            <div className="space-y-8">
-              {STORY.map(({ icon: Icon, title, desc }, i) => (
+        <div className="max-w-3xl mx-auto">
+          <h2 className="section-title mb-12 text-center">Notre histoire</h2>
+          <div className="space-y-12">
+            {STORY.map(({ icon: Icon, title, desc, accent }, i) => {
+              const c = ACCENTS[accent];
+              return (
                 <motion.div
                   key={title}
-                  initial={{ opacity: 0, y: 16 }}
+                  initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: '-60px' }}
                   transition={{ delay: i * 0.1 }}
-                  className="relative flex gap-5 sm:gap-6"
+                  className="grid grid-cols-[auto_1fr] gap-4 sm:gap-7 items-start"
                 >
-                  <div className="relative z-10 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-bg-card border border-violet-neon/40 flex items-center justify-center flex-shrink-0">
-                    <Icon className="w-5 h-5 text-violet-neon" />
-                  </div>
-                  <div className="glass-card rounded-2xl p-5 sm:p-6 flex-1">
-                    <h3 className="font-semibold text-white mb-2">{title}</h3>
-                    <p className="text-white/60 text-sm leading-relaxed">{desc}</p>
+                  <span className={`font-bebas text-6xl sm:text-7xl leading-[0.8] ${c.text} opacity-25 select-none`}>
+                    0{i + 1}
+                  </span>
+                  <div className="pt-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Icon className={`w-5 h-5 ${c.text}`} />
+                      <h3 className="font-bebas text-2xl sm:text-3xl tracking-wide text-white">{title}</h3>
+                    </div>
+                    <p className="text-white/60 text-sm sm:text-base leading-relaxed">{desc}</p>
                   </div>
                 </motion.div>
-              ))}
-            </div>
+              );
+            })}
           </div>
         </div>
       </section>
