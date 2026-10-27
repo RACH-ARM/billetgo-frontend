@@ -2586,13 +2586,16 @@ export default function MesEvenements() {
   const [agentsEvent, setAgentsEvent] = useState<OrganizerEventStat | null>(null);
   const [qrDownloading, setQrDownloading] = useState<string | null>(null);
   const [historyCollapsed, setHistoryCollapsed] = useState(true);
+  const [qrColorTarget, setQrColorTarget] = useState<{ id: string; title: string } | null>(null);
+  const [qrColor, setQrColor] = useState('#7B2FBE');
   const cancelEvent = useCancelEvent();
 
-  const downloadEventQR = async (eventId: string, title: string) => {
+  const downloadEventQR = async (eventId: string, title: string, color?: string) => {
     setQrDownloading(eventId);
     try {
       const eventUrl = `https://billetgab.com/events/${eventId}`;
-      const { data: blob } = await api.get(`/utils/qr?url=${encodeURIComponent(eventUrl)}`, { responseType: 'blob' });
+      const colorParam = color ? `&color=${encodeURIComponent(color)}` : '';
+      const { data: blob } = await api.get(`/utils/qr?url=${encodeURIComponent(eventUrl)}${colorParam}`, { responseType: 'blob' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(new Blob([blob], { type: 'image/png' }));
       link.download = `qr-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}.png`;
@@ -2745,7 +2748,7 @@ export default function MesEvenements() {
                       onPromo={() => setPromoEvent(event)}
                       onScanners={() => setScannersEvent(event)}
                       onAgents={() => setAgentsEvent(event)}
-                      onDownloadQR={() => downloadEventQR(event.eventId, event.title)}
+                      onDownloadQR={() => setQrColorTarget({ id: event.eventId, title: event.title })}
                       onCancel={() => setCancelTarget({ id: event.eventId, title: event.title })}
                       qrDownloading={qrDownloading === event.eventId}
                     />
@@ -2788,7 +2791,7 @@ export default function MesEvenements() {
                             key={event.eventId}
                             event={event}
                             onOpen={() => setSelectedEvent(event)}
-                            onDownloadQR={() => downloadEventQR(event.eventId, event.title)}
+                            onDownloadQR={() => setQrColorTarget({ id: event.eventId, title: event.title })}
                             qrDownloading={qrDownloading === event.eventId}
                           />
                         ))}
@@ -2848,6 +2851,63 @@ export default function MesEvenements() {
                   className="flex-1 px-4 py-2.5 rounded-xl bg-rose-neon/20 border border-rose-neon/40 text-rose-neon hover:bg-rose-neon/30 text-sm font-semibold transition-colors disabled:opacity-50"
                 >
                   {cancelEvent.isLoading ? 'Annulation...' : 'Confirmer l\'annulation'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modale couleur QR flyer */}
+      <AnimatePresence>
+        {qrColorTarget && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+            onClick={() => setQrColorTarget(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className="glass-card p-6 w-full max-w-sm border border-violet-neon/30"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="font-bebas text-2xl tracking-wider text-white mb-1">QR FLYER</h3>
+              <p className="text-white/60 text-sm mb-5">
+                <span className="text-white font-semibold">{qrColorTarget.title}</span> — Choisis la couleur du QR avant de le télécharger.
+              </p>
+              <div className="flex items-center gap-3 mb-5">
+                <input
+                  type="color"
+                  value={qrColor}
+                  onChange={(e) => setQrColor(e.target.value)}
+                  className="w-12 h-12 rounded-lg border border-white/10 bg-transparent cursor-pointer"
+                />
+                <span className="font-mono text-sm text-white/60 uppercase">{qrColor}</span>
+                {qrColor.toUpperCase() !== '#7B2FBE' && (
+                  <button
+                    onClick={() => setQrColor('#7B2FBE')}
+                    className="ml-auto text-xs text-white/30 hover:text-violet-neon transition-colors"
+                  >
+                    Réinitialiser
+                  </button>
+                )}
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setQrColorTarget(null)}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 text-white/60 hover:text-white hover:border-white/20 text-sm transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={async () => {
+                    await downloadEventQR(qrColorTarget.id, qrColorTarget.title, qrColor);
+                    setQrColorTarget(null);
+                  }}
+                  disabled={qrDownloading === qrColorTarget.id}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-violet-neon/20 border border-violet-neon/40 text-violet-neon hover:bg-violet-neon/30 text-sm font-semibold transition-colors disabled:opacity-50"
+                >
+                  {qrDownloading === qrColorTarget.id ? 'Téléchargement...' : 'Télécharger'}
                 </button>
               </div>
             </motion.div>
