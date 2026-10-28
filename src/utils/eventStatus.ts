@@ -21,3 +21,12 @@ export function isEventComingSoon(eventDate: string, doorsOpenAt: string | null)
 export function isEventUnpublished(status: string, scheduledPublishAt: string | null): boolean {
   return status === 'APPROVED' && !!scheduledPublishAt && new Date(scheduledPublishAt).getTime() > Date.now();
 }
+
+// QR flyer marketing (interface organisateur) : disponible dès que l'événement a
+// été approuvé par l'admin (y compris publication différée), publié, ou terminé —
+// jamais avant (DRAFT, PENDING_REVIEW, NEEDS_REVISION, REJECTED, CANCELLED).
+// Source unique — avant ce correctif, MesEvenements.tsx dupliquait cette logique
+// à deux endroits avec des listes différentes (un bug a déjà échappé à l'un des deux).
+export function canDownloadQRFlyer(status: string): boolean {
+  return ['PUBLISHED', 'APPROVED', 'COMPLETED'].includes(status);
+}

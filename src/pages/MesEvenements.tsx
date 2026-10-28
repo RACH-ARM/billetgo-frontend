@@ -16,6 +16,7 @@ import { promoService } from '../services/promoService';
 import type { PromoCode } from '../types/promo';
 import { formatPrice } from '../utils/formatPrice';
 import { formatEventDate } from '../utils/formatDate';
+import { canDownloadQRFlyer } from '../utils/eventStatus';
 import Button from '../components/common/Button';
 import {
   Skeleton, SkeletonEventCardGrid, SkeletonBuyersTable,
@@ -129,7 +130,7 @@ function EventActionsMenu({
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const canQR = ['PUBLISHED', 'APPROVED', 'COMPLETED'].includes(event.status);
+  const canQR = canDownloadQRFlyer(event.status);
   // Codes promo + Scanners + Vendeurs (+ QR flyer si applicable) — utilisé pour
   // estimer la hauteur du panneau et décider s'il doit s'ouvrir vers le haut.
   const itemCount = 3 + (canQR ? 1 : 0);
@@ -380,7 +381,7 @@ function EventHistoryRow({ event, onOpen, onDownloadQR, qrDownloading }: {
   onDownloadQR: () => void;
   qrDownloading: boolean;
 }) {
-  const canQR = event.status === 'COMPLETED';
+  const canQR = canDownloadQRFlyer(event.status);
   return (
     <div
       onClick={onOpen}

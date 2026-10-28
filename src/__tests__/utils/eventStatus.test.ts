@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { isEventLive, isEventComingSoon } from '../../utils/eventStatus';
+import { isEventLive, isEventComingSoon, canDownloadQRFlyer } from '../../utils/eventStatus';
 
 // Figer l'horloge à 2025-06-01T12:00:00Z pour tous les tests
 const NOW = new Date('2025-06-01T12:00:00.000Z');
@@ -79,5 +79,24 @@ describe('isEventComingSoon', () => {
     const eventDate = '2025-06-01T09:00:00Z';
     const doors = '2025-06-01T10:00:00Z';
     expect(isEventComingSoon(eventDate, doors)).toBe(false);
+  });
+});
+
+describe('canDownloadQRFlyer', () => {
+  it.each(['PUBLISHED', 'APPROVED', 'COMPLETED'])('retourne true pour le statut %s', (status) => {
+    expect(canDownloadQRFlyer(status)).toBe(true);
+  });
+
+  it.each(['DRAFT', 'PENDING_REVIEW', 'NEEDS_REVISION', 'REJECTED', 'CANCELLED'])(
+    'retourne false pour le statut %s',
+    (status) => {
+      expect(canDownloadQRFlyer(status)).toBe(false);
+    }
+  );
+
+  it('retourne true pour un événement approuvé avec publication programmée (même logique de statut)', () => {
+    // La programmation différée ne change pas le statut APPROVED — canDownloadQRFlyer
+    // ne dépend que du statut, jamais de scheduledPublishAt.
+    expect(canDownloadQRFlyer('APPROVED')).toBe(true);
   });
 });
