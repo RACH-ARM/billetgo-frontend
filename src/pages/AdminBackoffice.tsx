@@ -2356,6 +2356,16 @@ export default function AdminBackoffice() {
     }
   );
 
+  // Pour les événements approuvés avant l'ajout de l'envoi automatique du QR
+  // flyer, ou si l'organisateur ne retrouve pas le premier email.
+  const resendQrFlyer = useMutation(
+    async (id: string) => { await api.post(`/admin/events/${id}/resend-qr-flyer`); },
+    {
+      onSuccess: () => { toast.success('QR flyer renvoyé par email à l\'organisateur'); },
+      onError: () => { toast.error('Erreur lors de l\'envoi du QR flyer'); },
+    }
+  );
+
   const toggleUser = useMutation(
     async ({ id, isActive }: { id: string; isActive: boolean }) => {
       await api.patch(`/admin/users/${id}`, { isActive });
@@ -3235,6 +3245,15 @@ export default function AdminBackoffice() {
                         isLoading={updateStatus.isLoading}
                       >
                         <CheckCircle className="w-4 h-4" /> Publier maintenant
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => resendQrFlyer.mutate(event.id as string)}
+                        isLoading={resendQrFlyer.isLoading}
+                        title="Renvoyer l'email avec le QR flyer à l'organisateur"
+                      >
+                        <QrCode className="w-4 h-4" /> Renvoyer QR flyer
                       </Button>
                       <Button
                         variant="danger"
