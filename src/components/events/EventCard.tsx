@@ -177,7 +177,7 @@ export default function EventCard({ event }: { event: Event }) {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-neon opacity-75" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-neon" />
                 </span>
-                <span className="text-xs font-bold text-violet-neon tracking-wider">BIENTÔT DISPONIBLE</span>
+                <span className="text-xs font-bold text-violet-neon tracking-wider">BIENTÔT</span>
               </div>
             )}
 
