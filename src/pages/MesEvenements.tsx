@@ -141,15 +141,22 @@ function EventActionsMenu({
   // Historique plus bas...) ne peut plus jamais passer devant. S'ouvre vers le
   // haut si l'espace sous le bouton est insuffisant (ex. bouton proche du bas
   // de l'écran), pour que le dernier élément (QR flyer) reste toujours visible.
+  //
+  // window.visualViewport.height (quand dispo) plutôt que window.innerHeight :
+  // sur Android Chrome, innerHeight inclut la zone sous la barre d'adresse
+  // dynamique, donc le calcul pouvait placer "QR flyer" (dernier item de la
+  // liste) hors de la zone réellement visible — invisible sans que rien ne
+  // paraisse cassé. visualViewport reflète la hauteur vraiment affichée.
   const computeCoords = () => {
     const rect = btnRef.current?.getBoundingClientRect();
     if (!rect) return;
+    const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
     const left = Math.min(Math.max(12, rect.left), window.innerWidth - MENU_WIDTH - 12);
-    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceBelow = viewportHeight - rect.bottom;
     const openUpward = spaceBelow < estimatedHeight + 12 && rect.top > estimatedHeight + 12;
     const top = openUpward
       ? Math.max(12, rect.top - estimatedHeight - 6)
-      : Math.min(rect.bottom + 6, window.innerHeight - estimatedHeight - 12);
+      : Math.min(rect.bottom + 6, viewportHeight - estimatedHeight - 12);
     setCoords({ top, left });
   };
 
@@ -172,10 +179,14 @@ function EventActionsMenu({
     document.addEventListener('mousedown', handleClickOutside);
     window.addEventListener('scroll', computeCoords, true);
     window.addEventListener('resize', computeCoords);
+    // Barre d'adresse Android qui apparaît/disparaît au scroll → resize de
+    // visualViewport sans resize de window.
+    window.visualViewport?.addEventListener('resize', computeCoords);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
       window.removeEventListener('scroll', computeCoords, true);
       window.removeEventListener('resize', computeCoords);
+      window.visualViewport?.removeEventListener('resize', computeCoords);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -200,8 +211,8 @@ function EventActionsMenu({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.97 }}
             transition={{ duration: 0.12 }}
-            style={{ position: 'fixed', top: coords.top, left: coords.left, width: MENU_WIDTH }}
-            className="z-[100] glass-card border border-white/10 overflow-hidden py-1 shadow-xl"
+            style={{ position: 'fixed', top: coords.top, left: coords.left, width: MENU_WIDTH, maxHeight: 'min(70vh, 300px)' }}
+            className="z-[100] glass-card border border-white/10 overflow-y-auto py-1 shadow-xl"
           >
             <button onClick={() => { onPromo(); setOpen(false); }} className={itemCls}>
               <Ticket className="w-3.5 h-3.5 text-violet-neon flex-shrink-0" /> Codes promo
