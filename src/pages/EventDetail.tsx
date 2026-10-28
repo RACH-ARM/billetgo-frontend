@@ -387,28 +387,31 @@ export default function EventDetail() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        {/* Teaser — événement approuvé mais pas encore publié : vente bloquée jusqu'à
+            la bascule automatique (voir jobs/publishScheduledEvents.ts). Placé au-dessus
+            de la grille (plutôt que dans la colonne gauche) pour rester la toute première
+            section après l'image/titre sur mobile, où la colonne billets passe normalement
+            en premier — un seul message au lieu de deux quasi identiques (ici + panneau billets). */}
+        {isUnpublished && event.scheduledPublishAt && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="glass-card p-5 mb-6 border border-violet-neon/30 bg-violet-neon/[0.04] flex flex-wrap items-center gap-4"
+          >
+            <div className="w-10 h-10 rounded-xl bg-violet-neon/15 border border-violet-neon/30 flex items-center justify-center flex-shrink-0">
+              <Bell className="w-5 h-5 text-violet-neon" />
+            </div>
+            <div className="flex-1 min-w-[180px]">
+              <p className="text-white font-semibold text-sm">Vente pas encore ouverte</p>
+              <p className="text-white/40 text-xs mt-0.5">Les billets se débloquent automatiquement dès la fin du compte à rebours.</p>
+            </div>
+            <CountdownTimer date={event.scheduledPublishAt} />
+          </motion.div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           {/* ===== LEFT COL ===== */}
           <div className="lg:col-span-2 space-y-6 order-2 lg:order-1">
-            {/* Teaser — événement approuvé mais pas encore publié : vente bloquée
-                jusqu'à la bascule automatique (voir jobs/publishScheduledEvents.ts). */}
-            {isUnpublished && event.scheduledPublishAt && (
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="glass-card p-5 border border-violet-neon/30 bg-violet-neon/[0.04] flex flex-wrap items-center gap-4"
-              >
-                <div className="w-10 h-10 rounded-xl bg-violet-neon/15 border border-violet-neon/30 flex items-center justify-center flex-shrink-0">
-                  <Bell className="w-5 h-5 text-violet-neon" />
-                </div>
-                <div className="flex-1 min-w-[180px]">
-                  <p className="text-white font-semibold text-sm">Billets bientôt disponibles</p>
-                  <p className="text-white/40 text-xs mt-0.5">La vente ouvre automatiquement dès la fin du compte à rebours.</p>
-                </div>
-                <CountdownTimer date={event.scheduledPublishAt} />
-              </motion.div>
-            )}
-
             {/* Countdown + date */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
@@ -781,17 +784,8 @@ export default function EventDetail() {
               </motion.div>
             ) : isUnpublished ? (
               <>
-                <motion.div
-                  initial={{ opacity: 0, x: 16 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="glass-card p-4 border border-violet-neon/20 flex items-center gap-3"
-                >
-                  <Bell className="w-5 h-5 text-violet-neon/70 flex-shrink-0" />
-                  <div>
-                    <p className="text-white text-sm font-semibold">Vente pas encore ouverte</p>
-                    <p className="text-white/40 text-xs">Les billets ci-dessous se débloquent à la fin du compte à rebours.</p>
-                  </div>
-                </motion.div>
+                {/* Le message "vente pas encore ouverte" est maintenant affiché une seule
+                    fois, au-dessus de la grille (voir plus haut) — pas besoin de le répéter ici. */}
 
                 {/* Catégories visibles mais verrouillées — même liste que lorsque l'événement
                     est publié, pour que l'acheteur sache déjà ce qu'il pourra réserver. */}
