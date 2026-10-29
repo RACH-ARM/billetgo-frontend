@@ -2233,7 +2233,25 @@ export default function AdminBackoffice() {
   const [editingCommission, setEditingCommission] = useState<{ id: string; value: string } | null>(null);
   const [reportEventId, setReportEventId] = useState<string | null>(null);
   const [deleteEventTarget, setDeleteEventTarget] = useState<{ id: string; title: string } | null>(null);
+  const [qrDownloading, setQrDownloading] = useState<string | null>(null);
   const qc = useQueryClient();
+
+  const downloadEventQR = async (eventId: string, title: string) => {
+    setQrDownloading(eventId);
+    try {
+      const eventUrl = `https://billetgab.com/events/${eventId}`;
+      const { data: blob } = await api.get(`/utils/qr?url=${encodeURIComponent(eventUrl)}`, { responseType: 'blob' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(new Blob([blob], { type: 'image/png' }));
+      link.download = `qr-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}.png`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    } catch {
+      toast.error('Erreur téléchargement QR code');
+    } finally {
+      setQrDownloading(null);
+    }
+  };
 
   const { data: dashboard, isLoading: dashLoading } = useQuery(
     ['admin-dashboard', dashPeriod],
@@ -3708,6 +3726,15 @@ export default function AdminBackoffice() {
                         >
                           <QrCode className="w-4 h-4" /> Renvoyer QR flyer
                         </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => downloadEventQR(event.id as string, event.title as string)}
+                          isLoading={qrDownloading === event.id}
+                          title="Télécharger le QR code de l'événement"
+                        >
+                          <Download className="w-4 h-4" /> Télécharger QR
+                        </Button>
                       </div>
                     </motion.div>
                   );
@@ -3856,6 +3883,16 @@ export default function AdminBackoffice() {
                     title={(ev.operatorFeeMode as string) === 'TRANSPARENT' ? 'Acheteur paie les frais — cliquer pour basculer en Absorbés' : 'Frais absorbés par l\'organisateur — cliquer pour basculer en Répercutés'}
                   >
                     {(ev.operatorFeeMode as string) === 'TRANSPARENT' ? '2,5% → Acheteur' : '2,5% → Organisateur'}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => downloadEventQR(ev.id as string, ev.title as string)}
+                    isLoading={qrDownloading === ev.id}
+                    title="Télécharger le QR code de l'événement"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Télécharger QR
                   </Button>
                   <Button
                     variant="danger"
