@@ -2273,7 +2273,7 @@ export default function AdminBackoffice() {
   const { data: approvedEventsData, isLoading: approvedEventsLoading } = useQuery('admin-events-approved', async () => {
     const { data } = await api.get('/admin/events?status=APPROVED');
     return data.data;
-  }, { enabled: tab === 'events', staleTime: 0 });
+  }, { enabled: tab === 'events' || tab === 'vitrine', staleTime: 0 });
 
   const { data: pendingChangesData, isLoading: pendingChangesLoading } = useQuery('admin-events-pending-changes', async () => {
     const { data } = await api.get('/admin/events?pendingStatus=PENDING');
@@ -2351,7 +2351,7 @@ export default function AdminBackoffice() {
       await api.patch(`/admin/events/${id}/status`, { status, rejectionReason: reason, adminNote });
     },
     {
-      onSuccess: () => { qc.invalidateQueries('admin-events'); qc.invalidateQueries('admin-events-completed'); qc.invalidateQueries('admin-dashboard'); qc.invalidateQueries('admin-counts'); toast.success('Statut mis à jour'); },
+      onSuccess: () => { qc.invalidateQueries('admin-events'); qc.invalidateQueries('admin-events-approved'); qc.invalidateQueries('admin-events-completed'); qc.invalidateQueries('admin-vitrine'); qc.invalidateQueries('admin-dashboard'); qc.invalidateQueries('admin-counts'); toast.success('Statut mis à jour'); },
       onError: () => { toast.error('Erreur lors de la mise à jour'); },
     }
   );
@@ -3654,6 +3654,67 @@ export default function AdminBackoffice() {
               <span className="flex items-center gap-1.5"><Ban className="w-3.5 h-3.5 text-white/30 flex-shrink-0" /> Retirer — masque l'événement du site</span>
             </div>
           </div>
+
+          {(approvedEventsData?.events?.length ?? 0) > 0 && (
+            <div className="mb-6">
+              <h3 className="font-bebas text-lg tracking-wider text-white mb-3 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-cyan-neon" />
+                Programmés — publication automatique
+                <span className="min-w-5 h-5 px-1 bg-cyan-neon/20 text-cyan-neon rounded-full text-xs flex items-center justify-center font-bold border border-cyan-neon/30">
+                  {approvedEventsData.events.length}
+                </span>
+              </h3>
+              <div className="space-y-3">
+                {approvedEventsData.events.map((event: Record<string, unknown>) => {
+                  const eOrg = event.organizer as Record<string, unknown>;
+                  return (
+                    <motion.div
+                      key={event.id as string}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="glass-card p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center border border-cyan-neon/10"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <h3 className="font-bebas text-lg tracking-wide text-white truncate">{event.title as string}</h3>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-neon/20 text-cyan-neon font-semibold border border-cyan-neon/30">APPROUVÉ</span>
+                        </div>
+                        <p className="text-white/40 text-xs mb-1">{(eOrg?.companyName as string) ?? ''}</p>
+                        <div className="flex flex-wrap gap-4 text-xs text-white/40">
+                          <span className="flex items-center gap-1"><CalendarDays className="w-3 h-3" />{formatEventDate(event.eventDate as string)}</span>
+                          {(event.scheduledPublishAt as string) && (
+                            <span className="flex items-center gap-1 text-cyan-neon">
+                              <Clock className="w-3 h-3" />
+                              Publication le {new Date(event.scheduledPublishAt as string).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2 flex-shrink-0">
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => updateStatus.mutate({ id: event.id as string, status: 'PUBLISHED' })}
+                          isLoading={updateStatus.isLoading}
+                        >
+                          <CheckCircle className="w-4 h-4" /> Publier maintenant
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => resendQrFlyer.mutate(event.id as string)}
+                          isLoading={resendQrFlyer.isLoading}
+                          title="Renvoyer l'email avec le QR flyer à l'organisateur"
+                        >
+                          <QrCode className="w-4 h-4" /> Renvoyer QR flyer
+                        </Button>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {!vitrineData?.events?.length ? (
             <div className="glass-card p-16 text-center">
