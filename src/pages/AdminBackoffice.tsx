@@ -3417,6 +3417,16 @@ export default function AdminBackoffice() {
                     <Eye className="w-4 h-4" /> Prévisualiser
                   </Button>
                   <Button
+                    variant="secondary"
+                    size="sm"
+                    className="flex items-center gap-1.5"
+                    onClick={() => downloadEventQR(event.id as string, event.title as string)}
+                    isLoading={qrDownloading === event.id}
+                    title="Télécharger le QR code de l'événement (quel que soit son statut actuel)"
+                  >
+                    <Download className="w-4 h-4" /> Télécharger QR
+                  </Button>
+                  <Button
                     variant="primary"
                     size="sm"
                     className="flex items-center gap-1.5"
