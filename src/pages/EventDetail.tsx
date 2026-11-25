@@ -862,7 +862,7 @@ export default function EventDetail() {
                     {/* Availability */}
                     {saleClosed ? (
                       <p className="text-xs mb-3 font-semibold text-white/40">
-                        {saleNotStarted ? 'Vente pas encore ouverte' : 'Vente terminée'}
+                        {saleNotStarted ? 'Vente pas encore ouverte' : 'Réservations en attente'}
                       </p>
                     ) : (() => {
                       const av = categoryAvailabilityLevel(available, cat.quantityTotal);
