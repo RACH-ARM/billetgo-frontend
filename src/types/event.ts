@@ -14,6 +14,8 @@ export interface TicketCategory {
   maxPerOrder: number;
   isVisible: boolean;
   sortOrder: number;
+  saleStartsAt?: string | null;
+  saleEndsAt?: string | null;
 }
 
 export interface Organizer {

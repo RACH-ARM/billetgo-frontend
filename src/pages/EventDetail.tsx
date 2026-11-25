@@ -830,6 +830,10 @@ export default function EventDetail() {
               .map((cat, i) => {
                 const available = cat.quantityTotal - cat.quantitySold - cat.quantityReserved;
                 const isSoldOut = available <= 0;
+                const saleNotStarted = cat.saleStartsAt ? new Date(cat.saleStartsAt).getTime() > Date.now() : false;
+                const saleEnded = cat.saleEndsAt ? new Date(cat.saleEndsAt).getTime() < Date.now() : false;
+                const saleClosed = saleNotStarted || saleEnded;
+                const isUnavailable = isSoldOut || saleClosed;
                 const qty = quantities[cat.id] ?? 0;
                 const maxQty = Math.min(cat.maxPerOrder, available);
                 const atMax = qty >= maxQty;
@@ -841,7 +845,7 @@ export default function EventDetail() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.08 }}
                     className={`glass-card p-4 border transition-colors ${
-                      isSoldOut ? 'border-white/5 opacity-60' : 'border-violet-neon/20 hover:border-violet-neon/40'
+                      isUnavailable ? 'border-white/5 opacity-60' : 'border-violet-neon/20 hover:border-violet-neon/40'
                     }`}
                   >
                     {/* Header */}
@@ -856,7 +860,11 @@ export default function EventDetail() {
                     )}
 
                     {/* Availability */}
-                    {(() => {
+                    {saleClosed ? (
+                      <p className="text-xs mb-3 font-semibold text-white/40">
+                        {saleNotStarted ? 'Vente pas encore ouverte' : 'Vente terminée'}
+                      </p>
+                    ) : (() => {
                       const av = categoryAvailabilityLevel(available, cat.quantityTotal);
                       return (
                         <p className={`text-xs mb-3 font-semibold ${av.color}${av.pulse ? ' animate-pulse' : ''}`}>
@@ -866,7 +874,7 @@ export default function EventDetail() {
                     })()}
 
                     {/* Qty + Add */}
-                    {!isSoldOut && (
+                    {!isUnavailable && (
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
                           <div className="flex items-center border border-violet-neon/20 rounded-lg overflow-hidden">
