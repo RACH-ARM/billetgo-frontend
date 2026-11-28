@@ -21,7 +21,7 @@ import { formatPrice } from '../utils/formatPrice';
 import { formatEventDate } from '../utils/formatDate';
 import toast from 'react-hot-toast';
 
-type TabType = 'dashboard' | 'events' | 'vitrine' | 'users' | 'retraits' | 'scanners' | 'agents' | 'refunds' | 'audit' | 'settings' | 'influenceurs' | 'communication' | 'prospection' | 'charte';
+type TabType = 'dashboard' | 'events' | 'vitrine' | 'users' | 'retraits' | 'scanners' | 'agents' | 'refunds' | 'audit' | 'paiements' | 'settings' | 'influenceurs' | 'communication' | 'prospection' | 'charte';
 
 // ── Types ─────────────────────────────────────────────────────
 interface AuditLogEntry {
@@ -2866,6 +2866,48 @@ export default function AdminBackoffice() {
     { refetchInterval: 30_000, staleTime: 0 }
   );
 
+  const { data: stalePaymentsData, isLoading: stalePaymentsLoading } = useQuery(
+    'admin-stale-payments',
+    () => api.get('/admin/payments/stale').then((r) => r.data.data as {
+      payments: Array<{
+        id: string; pvitMerchantRef: string | null; providerReference: string | null;
+        amount: string; phoneNumber: string | null; provider: string; initiatedAt: string;
+        order: { id: string; buyerName: string; buyerEmail: string | null; buyerWhatsApp: string | null; status: string; event: { title: string } } | null;
+      }>;
+      total: number;
+      auditRunning: boolean;
+    }),
+    { enabled: tab === 'paiements', staleTime: 0, refetchInterval: tab === 'paiements' ? 5000 : false }
+  );
+
+  const recheckStalePayment = useMutation(
+    async (id: string) => {
+      const { data } = await api.post(`/admin/payments/stale/${id}/recheck`);
+      return data.data as { result: 'recovered' | 'confirmed_failed' | 'still_pending' | 'error'; detail?: string };
+    },
+    {
+      onSuccess: (outcome) => {
+        qc.invalidateQueries('admin-stale-payments');
+        if (outcome.result === 'recovered') toast.success('Paiement récupéré — billets générés et envoyés');
+        else if (outcome.result === 'confirmed_failed') toast('Échec confirmé auprès de PVit', { icon: '✔️' });
+        else if (outcome.result === 'still_pending') toast('Toujours en cours côté PVit — réessaie plus tard', { icon: '⏳' });
+        else toast.error(outcome.detail ?? 'Erreur lors de la vérification');
+      },
+      onError: () => { toast.error('Erreur lors de la vérification'); },
+    }
+  );
+
+  const recheckAllStalePayments = useMutation(
+    async () => { await api.post('/admin/payments/stale/recheck-all'); },
+    {
+      onSuccess: () => { toast.success('Audit lancé en arrière-plan — la liste se mettra à jour au fil de l\'avancement'); qc.invalidateQueries('admin-stale-payments'); },
+      onError: (err: unknown) => {
+        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+        toast.error(msg ?? 'Erreur lors du lancement de l\'audit');
+      },
+    }
+  );
+
   const TABS = [
     { key: 'dashboard' as TabType, label: 'Dashboard', Icon: LayoutDashboard },
     { key: 'events' as TabType, label: 'Validation', Icon: ListChecks, badge: (adminCounts?.pendingEvents ?? 0) + (adminCounts?.pendingChanges ?? 0) || undefined },
@@ -2875,6 +2917,7 @@ export default function AdminBackoffice() {
     { key: 'users' as TabType, label: 'Utilisateurs', Icon: Users },
     { key: 'retraits' as TabType, label: 'Retraits', Icon: Banknote, badge: adminCounts?.pendingPayouts || undefined },
     { key: 'audit' as TabType, label: 'Audit', Icon: ScrollText },
+    { key: 'paiements' as TabType, label: 'Paiements', Icon: CreditCard, badge: stalePaymentsData?.total || undefined },
     { key: 'settings' as TabType, label: 'Paramètres', Icon: Settings },
     { key: 'communication' as TabType, label: 'Communication', Icon: Megaphone },
     { key: 'prospection' as TabType, label: 'Prospection', Icon: Target },
@@ -5623,6 +5666,83 @@ export default function AdminBackoffice() {
                 </div>
               </div>
             </>
+          )}
+        </div>
+      )}
+
+      {/* ── Paiements tab — audit FAILED:POLLING_TIMEOUT ── */}
+      {tab === 'paiements' && (
+        <div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+            <p className="text-white/40 text-sm max-w-2xl">
+              Paiements marqués "ratés" après un timeout de vérification PVit — ce n'est pas toujours un vrai échec
+              (PVit peut confirmer le succès après coup). Revérifie chaque cas pour récupérer automatiquement
+              les commandes réellement payées (billets générés + envoyés).
+            </p>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => recheckAllStalePayments.mutate()}
+              isLoading={recheckAllStalePayments.isLoading}
+              disabled={stalePaymentsData?.auditRunning || !stalePaymentsData?.payments?.length}
+            >
+              <RotateCcw className="w-4 h-4" />
+              {stalePaymentsData?.auditRunning ? 'Audit en cours…' : 'Tout vérifier'}
+            </Button>
+          </div>
+
+          {stalePaymentsLoading ? (
+            <SkeletonTable rows={6} />
+          ) : !stalePaymentsData?.payments?.length ? (
+            <div className="glass-card p-16 text-center">
+              <CreditCard className="w-12 h-12 text-green-400/30 mx-auto mb-3" />
+              <p className="text-white/40">Aucun paiement à vérifier</p>
+            </div>
+          ) : (
+            <div className="glass-card overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-white/5 text-white/40 text-xs uppercase tracking-widest">
+                      <th className="text-left px-5 py-3">Date</th>
+                      <th className="text-left px-5 py-3">Événement</th>
+                      <th className="text-left px-5 py-3">Acheteur</th>
+                      <th className="text-left px-5 py-3">Téléphone</th>
+                      <th className="text-left px-5 py-3">Montant</th>
+                      <th className="text-left px-5 py-3">Réf. PVit</th>
+                      <th className="text-right px-5 py-3">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stalePaymentsData.payments.map((p) => (
+                      <tr key={p.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                        <td className="px-5 py-3 text-white/40 text-xs whitespace-nowrap">
+                          {new Date(p.initiatedAt).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                        <td className="px-5 py-3 text-white/70 text-xs max-w-[180px] truncate">{p.order?.event.title ?? '—'}</td>
+                        <td className="px-5 py-3 text-white/70 text-xs">{p.order?.buyerName ?? '—'}</td>
+                        <td className="px-5 py-3 text-white/50 text-xs font-mono">{p.phoneNumber ?? '—'}</td>
+                        <td className="px-5 py-3 text-cyan-neon text-xs font-mono">{formatPrice(Number(p.amount))}</td>
+                        <td className="px-5 py-3 text-white/30 text-xs font-mono">{p.pvitMerchantRef ?? '—'}</td>
+                        <td className="px-5 py-3 text-right">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => recheckStalePayment.mutate(p.id)}
+                            isLoading={recheckStalePayment.isLoading && recheckStalePayment.variables === p.id}
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" /> Vérifier
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="px-5 py-3 border-t border-white/5 text-xs text-white/30">
+                {stalePaymentsData.total} paiement{stalePaymentsData.total > 1 ? 's' : ''} à vérifier
+              </div>
+            </div>
           )}
         </div>
       )}
